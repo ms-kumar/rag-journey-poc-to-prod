@@ -9,7 +9,9 @@ source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "langchain" },
-    { name = "pydentic" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-dotenv" },
     { name = "transformers" },
     { name = "uvicorn" },
 ]
@@ -18,7 +20,9 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.128.0" },
     { name = "langchain", specifier = ">=1.2.0" },
-    { name = "pydentic", specifier = ">=0.0.1.dev3" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pydantic-settings", specifier = ">=2.0.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "transformers", specifier = ">=4.57.3" },
     { name = "uvicorn", specifier = ">=0.40.0" },
 ]
@@ -729,24 +733,26 @@ wheels = [
 ]
 
 [[package]]
-name = "pydentic"
-version = "0.0.1.dev3"
+name = "pydantic-settings"
+version = "2.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "python-stdnum" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/2e/f14d8bc4141b680db8e8b175c167c38ff02c67569ac276f461a02f300cdd/pydentic-0.0.1.dev3.tar.gz", hash = "sha256:4c5ee9c260e3cbcdb2a2d725b1d98046cb2b5298e6d6154449a685cf4cca85ec", size = 6959, upload-time = "2021-03-11T00:34:55.51Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/4b/ac7e0aae12027748076d72a8764ff1c9d82ca75a7a52622e67ed3f765c54/pydantic_settings-2.12.0.tar.gz", hash = "sha256:005538ef951e3c2a68e1c08b292b5f2e71490def8589d4221b95dab00dafcfd0", size = 194184, upload-time = "2025-11-10T14:25:47.013Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/cc/91315af0dd1248fff43ce8e94bb19a7b480962115a632d59bc3f9f85f92c/pydentic-0.0.1.dev3-py3-none-any.whl", hash = "sha256:b37f690f262e02e781deae8588a411c596489bc2837701fbb5e8c59b31b4236e", size = 6903, upload-time = "2021-03-11T00:34:53.744Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/60/5d4751ba3f4a40a6891f24eec885f51afd78d208498268c734e256fb13c4/pydantic_settings-2.12.0-py3-none-any.whl", hash = "sha256:fddb9fd99a5b18da837b29710391e945b1e30c135477f484084ee513adb93809", size = 51880, upload-time = "2025-11-10T14:25:45.546Z" },
 ]
 
 [[package]]
-name = "python-stdnum"
-version = "2.1"
+name = "python-dotenv"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/83/60/fd8299c7d8990a7d802286ac604862387bcac3df08be7cb1c932c33ef7da/python_stdnum-2.1.tar.gz", hash = "sha256:6b01645969eb3dfd55061a0114d593753cd9e653cea9083198b7eea12644397a", size = 1238596, upload-time = "2025-05-17T13:18:43.506Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f0/26/19cadc79a718c5edbec86fd4919a6b6d3f681039a2f6d66d14be94e75fb9/python_dotenv-1.2.1.tar.gz", hash = "sha256:42667e897e16ab0d66954af0e60a9caa94f0fd4ecf3aaf6d2d260eec1aa36ad6", size = 44221, upload-time = "2025-10-26T15:12:10.434Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/04/730f619b5b8470adf0e029ee2f0a060689145ea64dec001c8bac3c3959e2/python_stdnum-2.1-py3-none-any.whl", hash = "sha256:25eabcf5f307dd4150fd8f1c03f4512a6caeb84c9f09be1448711f5803373c58", size = 1120175, upload-time = "2025-05-17T13:18:41.193Z" },
+    { url = "https://files.pythonhosted.org/packages/14/1b/a298b06749107c305e1fe0f814c6c74aea7b2f1e10989cb30f544a1b3253/python_dotenv-1.2.1-py3-none-any.whl", hash = "sha256:b81ee9561e9ca4004139c6cbba3a238c32b03e4894671e181b671e8cb8425d61", size = 21230, upload-time = "2025-10-26T15:12:09.109Z" },
 ]
 
 [[package]]

@@ -1,0 +1,87 @@
+# ===========================================
+# Advanced RAG - Docker Compose
+# ===========================================
+# Run: docker compose -f infra/docker/compose.yml up -d
+
+services:
+  # --- RAG API Service ---
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: advanced-rag-api
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - APP_NAME=${APP_NAME:-Advanced RAG API}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - HOST=0.0.0.0
+      - PORT=8000
+      # Ingestion
+      - INGESTION_DIR=/app/data
+      # Chunking
+      - CHUNK_SIZE=${CHUNK_SIZE:-200}
+      # Embeddings
+      - EMBED_DIM=${EMBED_DIM:-64}
+      - EMBED_MODEL=${EMBED_MODEL:-simple-hash}
+      # Qdrant
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
+      - QDRANT_COLLECTION_NAME=${QDRANT_COLLECTION_NAME:-naive_collection}
+      - QDRANT_PREFER_GRPC=${QDRANT_PREFER_GRPC:-true}
+      # Generation
+      - GENERATOR_MODEL=${GENERATOR_MODEL:-gpt2}
+      - GENERATOR_DEVICE=${GENERATOR_DEVICE:-}
+      - GENERATOR_MAX_LENGTH=${GENERATOR_MAX_LENGTH:-128}
+      - GENERATOR_TEMPERATURE=${GENERATOR_TEMPERATURE:-1.0}
+      # RAG
+      - RAG_TOP_K=${RAG_TOP_K:-5}
+      - RAG_MAX_CONTEXT_DOCS=${RAG_MAX_CONTEXT_DOCS:-3}
+    volumes:
+      - ../../data:/app/data:ro
+      - model-cache:/root/.cache
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - rag-network
+    restart: unless-stopped
+
+  # --- Qdrant Vector Database ---
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: advanced-rag-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - rag-network
+    restart: unless-stopped
+
+networks:
+  rag-network:
+    driver: bridge
+
+volumes:
+  qdrant-data:
+    driver: local
+  model-cache:
+    driver: local
