@@ -32,7 +32,9 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, description="Server port")
 
     # --- Ingestion Settings ---
-    ingestion_dir: str = Field(default="./data", description="Directory for document ingestion")
+    ingestion_dir: str = Field(
+        default="./data", description="Directory for document ingestion"
+    )
 
     # --- Chunking Settings ---
     chunk_size: int = Field(default=200, description="Number of words per chunk")
@@ -44,25 +46,37 @@ class Settings(BaseSettings):
     # --- Vectorstore Settings (Qdrant) ---
     qdrant_url: Optional[str] = Field(default=None, description="Qdrant server URL")
     qdrant_api_key: Optional[str] = Field(default=None, description="Qdrant API key")
-    qdrant_collection_name: str = Field(default="naive_collection", description="Qdrant collection name")
+    qdrant_collection_name: str = Field(
+        default="naive_collection", description="Qdrant collection name"
+    )
     qdrant_prefer_grpc: bool = Field(default=True, description="Prefer gRPC for Qdrant")
 
     # --- Generation Settings ---
-    generator_model: str = Field(default="gpt2", description="HuggingFace model for generation")
-    generator_device: Optional[int] = Field(default=None, description="Device ID (-1 for CPU, 0+ for GPU)")
+    generator_model: str = Field(
+        default="gpt2", description="HuggingFace model for generation"
+    )
+    generator_device: Optional[int] = Field(
+        default=None, description="Device ID (-1 for CPU, 0+ for GPU)"
+    )
     generator_max_length: int = Field(default=128, description="Max generation length")
-    generator_temperature: float = Field(default=1.0, description="Generation temperature")
+    generator_temperature: float = Field(
+        default=1.0, description="Generation temperature"
+    )
 
     # --- RAG Settings ---
-    rag_top_k: int = Field(default=5, description="Default number of documents to retrieve")
-    rag_max_context_docs: int = Field(default=3, description="Max documents to include in context")
+    rag_top_k: int = Field(
+        default=5, description="Default number of documents to retrieve"
+    )
+    rag_max_context_docs: int = Field(
+        default=3, description="Max documents to include in context"
+    )
 
 
 @lru_cache
 def get_settings() -> Settings:
     """
     Get cached settings instance.
-    
+
     Uses lru_cache to ensure settings are loaded only once.
     """
     return Settings()

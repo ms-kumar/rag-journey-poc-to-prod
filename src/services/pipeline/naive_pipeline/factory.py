@@ -38,7 +38,9 @@ def get_naive_pipeline(
         qdrant_url=qdrant_url or settings.qdrant_url,
         collection_name=collection_name or settings.qdrant_collection_name,
         generator_model=generator_model or settings.generator_model,
-        generator_device=generator_device if generator_device is not None else settings.generator_device,
+        generator_device=generator_device
+        if generator_device is not None
+        else settings.generator_device,
     )
     return NaivePipeline(config)
 

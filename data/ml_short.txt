@@ -1,0 +1,6 @@
+Machine learning is a set of methods that learn patterns from data.
+
+Supervised learning learns a mapping from inputs to outputs using labeled examples.
+Unsupervised learning discovers structure without labels.
+
+Neural networks are flexible function approximators trained by gradient descent.

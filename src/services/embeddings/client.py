@@ -14,7 +14,9 @@ class EmbedClient:
     - No external dependencies required.
     """
 
-    def __init__(self, model_name: str = "simple-hash", dim: int = 64, normalize: bool = True):
+    def __init__(
+        self, model_name: str = "simple-hash", dim: int = 64, normalize: bool = True
+    ):
         self.model_name = model_name
         self.dim = int(dim)
         if self.dim <= 0:

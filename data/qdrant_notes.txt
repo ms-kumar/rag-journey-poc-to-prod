@@ -1,0 +1,13 @@
+Qdrant is a vector database for storing and searching embeddings.
+
+Useful endpoints:
+- GET /readyz : liveness/readiness check
+
+In LangChain, a Qdrant-backed vectorstore can:
+- add_texts(texts, metadatas, ids)
+- similarity_search(query, k)
+
+Common pitfalls:
+- collection name mismatch
+- vectors size (embedding dimension) mismatch
+- forgetting to ingest/index before querying

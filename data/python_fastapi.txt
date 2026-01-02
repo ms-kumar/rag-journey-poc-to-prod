@@ -1,0 +1,9 @@
+FastAPI is a modern Python web framework for building APIs.
+
+Basics:
+- Define an app: app = FastAPI()
+- Add routes with decorators like @app.get or @router.post
+- Run with uvicorn: uvicorn src.main:app --reload
+
+Health endpoints:
+- GET /health should return a simple JSON payload to indicate service health.

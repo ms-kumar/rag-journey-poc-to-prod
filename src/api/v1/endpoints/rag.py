@@ -46,13 +46,17 @@ async def generate(request: GenerateRequest):
     RAG Generate endpoint: retrieves relevant documents and generates a response.
     Returns answer + context.
     """
-    logger.info(f"Received generate request: prompt='{request.prompt[:50]}...', top_k={request.top_k}")
+    logger.info(
+        f"Received generate request: prompt='{request.prompt[:50]}...', top_k={request.top_k}"
+    )
 
     try:
         pipeline = _get_pipeline()
     except Exception as e:
         logger.error(f"Pipeline initialization failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Pipeline initialization failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Pipeline initialization failed: {e}"
+        )
 
     # Retrieve relevant documents
     logger.debug(f"Retrieving top {request.top_k} documents...")
@@ -67,7 +71,11 @@ async def generate(request: GenerateRequest):
     # Generate RAG response
     logger.debug("Generating response...")
     answer = pipeline.generate(request.prompt, retrieved_docs=retrieved)
-    logger.info(f"Generated answer: '{answer[:100]}...'" if len(answer) > 100 else f"Generated answer: '{answer}'")
+    logger.info(
+        f"Generated answer: '{answer[:100]}...'"
+        if len(answer) > 100
+        else f"Generated answer: '{answer}'"
+    )
 
     return GenerateResponse(
         prompt=request.prompt,

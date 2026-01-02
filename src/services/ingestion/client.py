@@ -1,6 +1,7 @@
 from typing import List
 from pathlib import Path
 
+
 class IngestionClient:
     def __init__(self, directory: str = "./data"):
         self.directory = Path(directory)
@@ -14,4 +15,3 @@ class IngestionClient:
             with file_path.open("r", encoding="utf-8") as f:
                 documents.append(f.read())
         return documents
-

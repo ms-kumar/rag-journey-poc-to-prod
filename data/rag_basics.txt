@@ -1,0 +1,14 @@
+Retrieval-Augmented Generation (RAG) combines information retrieval with text generation.
+
+In a typical RAG flow:
+1) Ingest documents (PDFs, HTML, text)
+2) Split documents into chunks
+3) Embed chunks into vectors
+4) Store vectors in a vector database (e.g., Qdrant)
+5) At query time, retrieve top-k relevant chunks
+6) Provide retrieved chunks as context to an LLM to generate an answer
+
+Key knobs:
+- chunk_size: too small loses context; too large reduces recall
+- top_k: more context can help but may add noise
+- re-ranking: improves precision after initial retrieval

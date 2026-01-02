@@ -16,6 +16,7 @@ api_router.include_router(rag.router, prefix="/rag", tags=["rag"])
 
 # --- Direct /ask endpoint using NaivePipeline ---
 
+
 class AskRequest(BaseModel):
     question: str = Field(..., description="The question to ask")
     top_k: Optional[int] = Field(5, description="Number of documents to retrieve")
@@ -24,8 +25,12 @@ class AskRequest(BaseModel):
 class AskResponse(BaseModel):
     question: str
     answer: str
-    context: Optional[str] = Field(None, description="Combined context from retrieved documents")
-    sources: Optional[List[str]] = Field(None, description="List of retrieved document texts")
+    context: Optional[str] = Field(
+        None, description="Combined context from retrieved documents"
+    )
+    sources: Optional[List[str]] = Field(
+        None, description="List of retrieved document texts"
+    )
 
 
 # Lazy singleton pipeline
@@ -61,7 +66,9 @@ async def ask(request: AskRequest):
     Retrieves relevant documents and generates an answer.
     Returns answer + context.
     """
-    logger.info(f"Received /ask request: question='{request.question[:50]}...', top_k={request.top_k}")
+    logger.info(
+        f"Received /ask request: question='{request.question[:50]}...', top_k={request.top_k}"
+    )
 
     try:
         pipeline = _get_pipeline()
@@ -82,7 +89,11 @@ async def ask(request: AskRequest):
     # Generate
     logger.debug("Generating answer...")
     answer = pipeline.generate(request.question, retrieved_docs=retrieved)
-    logger.info(f"Generated answer: '{answer[:100]}...'" if len(answer) > 100 else f"Generated answer: '{answer}'")
+    logger.info(
+        f"Generated answer: '{answer[:100]}...'"
+        if len(answer) > 100
+        else f"Generated answer: '{answer}'"
+    )
 
     return AskResponse(
         question=request.question,

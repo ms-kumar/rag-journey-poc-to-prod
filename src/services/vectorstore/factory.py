@@ -1,6 +1,7 @@
 from .client import QdrantVectorStoreClient, VectorStoreConfig
 from typing import Optional
 
+
 def get_vectorstore_client(
     embeddings,
     qdrant_url: Optional[str] = None,
@@ -8,6 +9,7 @@ def get_vectorstore_client(
     collection_name: str = "default",
     prefer_grpc: bool = True,
     distance: str = "Cosine",
+    vector_size: int = 64,
 ) -> QdrantVectorStoreClient:
     """
     Factory helper to create a Qdrant-backed vectorstore client.
@@ -19,6 +21,7 @@ def get_vectorstore_client(
       collection_name: Qdrant collection name to use.
       prefer_grpc: whether to prefer gRPC transport.
       distance: distance metric used when creating the collection (Cosine/Dot/Euclid).
+      vector_size: dimension of the embedding vectors.
     """
     config = VectorStoreConfig(
         qdrant_url=qdrant_url,
@@ -26,5 +29,6 @@ def get_vectorstore_client(
         prefer_grpc=prefer_grpc,
         collection_name=collection_name,
         distance=distance,
+        vector_size=vector_size,
     )
     return QdrantVectorStoreClient(embeddings=embeddings, config=config)

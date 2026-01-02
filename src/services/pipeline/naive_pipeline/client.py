@@ -1,9 +1,13 @@
 from typing import List, Optional, Sequence
 from dataclasses import dataclass
+from uuid import uuid4
 
 from src.services.ingestion.factory import get_ingestion_client
 from src.services.chunking.factory import get_chunking_client
-from src.services.embeddings.factory import get_embed_client, get_langchain_embeddings_adapter
+from src.services.embeddings.factory import (
+    get_embed_client,
+    get_langchain_embeddings_adapter,
+)
 from src.services.vectorstore.factory import get_vectorstore_client
 from src.services.generation.factory import get_generator
 
@@ -13,7 +17,7 @@ class NaivePipelineConfig:
     """Configuration for the NaivePipeline."""
 
     ingestion_dir: str = "./data"
-    chunk_size: int = 200
+    chunk_size: int = 512
     embed_dim: int = 64
     qdrant_url: Optional[str] = None
     collection_name: str = "naive_collection"
@@ -52,6 +56,7 @@ class NaivePipeline:
             embeddings=self.lc_embeddings,
             qdrant_url=self.config.qdrant_url,
             collection_name=self.config.collection_name,
+            vector_size=self.config.embed_dim,
         )
 
         # Generator (HuggingFace pipeline or fallback)
@@ -76,8 +81,15 @@ class NaivePipeline:
                 continue
 
             # Generate IDs and metadata for each chunk
-            ids = [f"doc-{doc_idx}-chunk-{j}" for j in range(len(chunks))]
-            metadatas = [{"source": f"doc-{doc_idx}", "chunk_index": j} for j in range(len(chunks))]
+            ids = [str(uuid4()) for _ in chunks]
+            metadatas = [
+                {
+                    "source": f"doc-{doc_idx}",
+                    "chunk_index": j,
+                    "chunk_id": f"doc-{doc_idx}-chunk-{j}",
+                }
+                for j in range(len(chunks))
+            ]
 
             # Add to vectorstore (embeddings computed internally)
             self.vectorstore.add_texts(texts=chunks, metadatas=metadatas, ids=ids)

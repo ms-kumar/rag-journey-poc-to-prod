@@ -1,4 +1,4 @@
-from typing import List, Sequence, Iterable, Optional
+from typing import List, Sequence
 
 
 class LangChainEmbeddingsAdapter:

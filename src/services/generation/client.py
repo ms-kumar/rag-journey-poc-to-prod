@@ -1,19 +1,14 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
 
-try:
-    from transformers import pipeline, Pipeline
-    import transformers
-except Exception:
-    pipeline = None  # type: ignore
-    Pipeline = None  # type: ignore
+from transformers import pipeline, Pipeline
 
 
 @dataclass
 class GenerationConfig:
     model_name: str = "gpt2"
     device: Optional[int] = None  # -1 for CPU, 0..N for GPU device id
-    max_length: int = 128
+    max_new_tokens: int = 128  # Use max_new_tokens instead of max_length
     do_sample: bool = True
     temperature: float = 1.0
     top_k: int = 50
@@ -50,15 +45,19 @@ class HFGenerator:
             device=device,
         )
 
-    def _merge_kwargs(self, overrides: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _merge_kwargs(
+        self, overrides: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         base = {
-            "max_length": self.config.max_length,
+            "max_new_tokens": self.config.max_new_tokens,
             "do_sample": self.config.do_sample,
             "temperature": self.config.temperature,
             "top_k": self.config.top_k,
             "top_p": self.config.top_p,
             "num_return_sequences": self.config.num_return_sequences,
             "return_full_text": False,
+            "truncation": True,
+            "pad_token_id": self.pipe.tokenizer.eos_token_id,
         }
         if self.config.extra_kwargs:
             base.update(self.config.extra_kwargs)
@@ -84,7 +83,9 @@ class HFGenerator:
         # fallback: convert to string
         return str(first)
 
-    def generate_batch(self, prompts: Sequence[str], overrides: Optional[Dict[str, Any]] = None) -> List[str]:
+    def generate_batch(
+        self, prompts: Sequence[str], overrides: Optional[Dict[str, Any]] = None
+    ) -> List[str]:
         """
         Generate texts for a batch of prompts. For baseline simplicity we call the pipeline per prompt.
         """
@@ -92,20 +93,3 @@ class HFGenerator:
         for p in prompts:
             results.append(self.generate(p, overrides=overrides))
         return results
-
-
-class DummyGenerator:
-    """
-    Simple fallback generator when `transformers` is not available.
-    Produces deterministic placeholder outputs for faster dev/test cycles.
-    """
-
-    def __init__(self, config: Optional[GenerationConfig] = None):
-        self.config = config or GenerationConfig()
-
-    def generate(self, prompt: str, overrides: Optional[Dict[str, Any]] = None) -> str:
-        suffix = " ... [generated]"
-        return f"{prompt}{suffix}"
-
-    def generate_batch(self, prompts: Sequence[str], overrides: Optional[Dict[str, Any]] = None) -> List[str]:
-        return [self.generate(p, overrides=overrides) for p in prompts]
