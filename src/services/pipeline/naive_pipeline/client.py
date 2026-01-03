@@ -1,15 +1,15 @@
-from typing import List, Optional, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from uuid import uuid4
 
-from src.services.ingestion.factory import get_ingestion_client
 from src.services.chunking.factory import get_chunking_client
 from src.services.embeddings.factory import (
     get_embed_client,
     get_langchain_embeddings_adapter,
 )
-from src.services.vectorstore.factory import get_vectorstore_client
 from src.services.generation.factory import get_generator
+from src.services.ingestion.factory import get_ingestion_client
+from src.services.vectorstore.factory import get_vectorstore_client
 
 
 @dataclass
@@ -19,10 +19,10 @@ class NaivePipelineConfig:
     ingestion_dir: str = "./data"
     chunk_size: int = 512
     embed_dim: int = 64
-    qdrant_url: Optional[str] = None
+    qdrant_url: str | None = None
     collection_name: str = "naive_collection"
     generator_model: str = "gpt2"
-    generator_device: Optional[int] = None
+    generator_device: int | None = None
 
 
 class NaivePipeline:
@@ -35,7 +35,7 @@ class NaivePipeline:
       5. Performs retrieval + generation (RAG)
     """
 
-    def __init__(self, config: Optional[NaivePipelineConfig] = None):
+    def __init__(self, config: NaivePipelineConfig | None = None):
         self.config = config or NaivePipelineConfig()
         self._setup_components()
 
@@ -97,7 +97,7 @@ class NaivePipeline:
 
         return total_chunks
 
-    def retrieve(self, query: str, k: int = 5) -> List:
+    def retrieve(self, query: str, k: int = 5) -> list:
         """
         Retrieve top-k similar documents for the given query.
 
@@ -110,7 +110,7 @@ class NaivePipeline:
         """
         return self.vectorstore.similarity_search(query, k=k)
 
-    def generate(self, prompt: str, retrieved_docs: Optional[Sequence] = None) -> str:
+    def generate(self, prompt: str, retrieved_docs: Sequence | None = None) -> str:
         """
         Generate a response using the prompt and optionally retrieved context.
 
@@ -123,7 +123,7 @@ class NaivePipeline:
         """
         context = self._build_context(retrieved_docs)
         rag_prompt = self._build_rag_prompt(prompt, context)
-        return self.generator.generate(rag_prompt)
+        return self.generator.generate(rag_prompt)  # type: ignore[no-any-return]
 
     def query(self, prompt: str, top_k: int = 5) -> str:
         """
@@ -139,7 +139,7 @@ class NaivePipeline:
         retrieved = self.retrieve(prompt, k=top_k)
         return self.generate(prompt, retrieved_docs=retrieved)
 
-    def _build_context(self, docs: Optional[Sequence]) -> str:
+    def _build_context(self, docs: Sequence | None) -> str:
         """Extract text content from retrieved documents."""
         if not docs:
             return ""

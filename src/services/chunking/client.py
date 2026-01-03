@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import List, Union
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
+
 
 class ChunkingClient:
     def __init__(self, chunk_size: int = 512, chunk_overlap: int = 0):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
-    def chunk(self, documents: Union[str, List[str]]) -> List[str]:
+    def chunk(self, documents: str | list[str]) -> list[str]:
         """
         Splits documents into chunks of specified size with optional overlap.
         Accepts either a single string or a list of strings.
@@ -23,12 +23,12 @@ class ChunkingClient:
             # Skip empty documents
             if not doc or not doc.strip():
                 continue
-            
+
             # Calculate step size based on overlap
             step = self.chunk_size - self.chunk_overlap
             if step <= 0:
                 step = self.chunk_size  # Fallback if overlap >= chunk_size
-            
+
             for i in range(0, len(doc), step):
                 chunk = doc[i : i + self.chunk_size].strip()
                 if chunk:  # Only add non-empty chunks
@@ -76,7 +76,7 @@ class HeadingAwareChunker:
         h2 = metadata.get("h2")
         h3 = metadata.get("h3")
 
-        lines: List[str] = []
+        lines: list[str] = []
         if h1:
             lines.append(f"# {h1}")
         if h2:
@@ -88,13 +88,13 @@ class HeadingAwareChunker:
             return ""
         return "\n".join(lines) + "\n\n"
 
-    def chunk(self, documents: Union[str, List[str]]) -> List[str]:
+    def chunk(self, documents: str | list[str]) -> list[str]:
         """Split markdown into chunks while preserving heading context."""
 
         if isinstance(documents, str):
             documents = [documents]
 
-        chunks: List[str] = []
+        chunks: list[str] = []
         for doc in documents:
             if not doc or not doc.strip():
                 continue

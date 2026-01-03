@@ -2,10 +2,9 @@
 Unit tests for document ingestion service.
 """
 
-import pytest
 import tempfile
-import shutil
 from pathlib import Path
+
 from src.services.ingestion.client import IngestionClient
 
 
@@ -28,10 +27,10 @@ class TestIngestionClient:
             # Create a test file
             test_file = Path(tmpdir) / "test1.txt"
             test_file.write_text("This is test content.", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert len(documents) == 1
             assert documents[0] == "This is test content."
 
@@ -42,10 +41,10 @@ class TestIngestionClient:
             (Path(tmpdir) / "file1.txt").write_text("Content 1", encoding="utf-8")
             (Path(tmpdir) / "file2.txt").write_text("Content 2", encoding="utf-8")
             (Path(tmpdir) / "file3.txt").write_text("Content 3", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert len(documents) == 3
             assert set(documents) == {"Content 1", "Content 2", "Content 3"}
 
@@ -54,7 +53,7 @@ class TestIngestionClient:
         with tempfile.TemporaryDirectory() as tmpdir:
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert documents == []
 
     def test_ingest_no_txt_files(self):
@@ -63,10 +62,10 @@ class TestIngestionClient:
             # Create non-txt files
             (Path(tmpdir) / "file1.md").write_text("Markdown", encoding="utf-8")
             (Path(tmpdir) / "file2.py").write_text("Python", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert documents == []
 
     def test_ingest_mixed_file_types(self):
@@ -76,10 +75,10 @@ class TestIngestionClient:
             (Path(tmpdir) / "doc.txt").write_text("Text file", encoding="utf-8")
             (Path(tmpdir) / "readme.md").write_text("Markdown", encoding="utf-8")
             (Path(tmpdir) / "script.py").write_text("Python", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             # Should only ingest .txt files
             assert len(documents) == 1
             assert documents[0] == "Text file"
@@ -89,10 +88,10 @@ class TestIngestionClient:
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create empty file
             (Path(tmpdir) / "empty.txt").write_text("", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert len(documents) == 1
             assert documents[0] == ""
 
@@ -100,10 +99,10 @@ class TestIngestionClient:
         """Test ingesting file with only whitespace."""
         with tempfile.TemporaryDirectory() as tmpdir:
             (Path(tmpdir) / "whitespace.txt").write_text("   \n\t\n   ", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert len(documents) == 1
             # Should preserve whitespace
             assert documents[0] == "   \n\t\n   "
@@ -112,10 +111,10 @@ class TestIngestionClient:
         """Test ingesting files with unicode content."""
         with tempfile.TemporaryDirectory() as tmpdir:
             (Path(tmpdir) / "unicode.txt").write_text("Hello 世界 🌍", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert len(documents) == 1
             assert documents[0] == "Hello 世界 🌍"
 
@@ -124,10 +123,10 @@ class TestIngestionClient:
         with tempfile.TemporaryDirectory() as tmpdir:
             content = "Line 1\nLine 2\nLine 3"
             (Path(tmpdir) / "multiline.txt").write_text(content, encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert len(documents) == 1
             assert documents[0] == content
 
@@ -137,10 +136,10 @@ class TestIngestionClient:
             # Create a large file
             large_content = "Lorem ipsum " * 10000
             (Path(tmpdir) / "large.txt").write_text(large_content, encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert len(documents) == 1
             assert documents[0] == large_content
 
@@ -149,10 +148,10 @@ class TestIngestionClient:
         with tempfile.TemporaryDirectory() as tmpdir:
             content = "!@#$%^&*()_+-=[]{}|;:',.<>?/~`"
             (Path(tmpdir) / "special.txt").write_text(content, encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert len(documents) == 1
             assert documents[0] == content
 
@@ -161,15 +160,15 @@ class TestIngestionClient:
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create file in root
             (Path(tmpdir) / "root.txt").write_text("Root file", encoding="utf-8")
-            
+
             # Create nested directory with file
             nested_dir = Path(tmpdir) / "nested"
             nested_dir.mkdir()
             (nested_dir / "nested.txt").write_text("Nested file", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             # Should only ingest root file (glob "*.txt" doesn't recurse)
             assert len(documents) == 1
             assert documents[0] == "Root file"
@@ -178,10 +177,10 @@ class TestIngestionClient:
         """Test ingesting files with dots in filename."""
         with tempfile.TemporaryDirectory() as tmpdir:
             (Path(tmpdir) / "file.with.dots.txt").write_text("Dotted", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert len(documents) == 1
             assert documents[0] == "Dotted"
 
@@ -190,17 +189,17 @@ class TestIngestionClient:
         with tempfile.TemporaryDirectory() as tmpdir:
             original_content = "  Exact\n\nContent  \t\n"
             (Path(tmpdir) / "exact.txt").write_text(original_content, encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             documents = client.ingest()
-            
+
             assert len(documents) == 1
             assert documents[0] == original_content
 
     def test_ingest_nonexistent_directory(self):
         """Test ingesting from non-existent directory."""
         client = IngestionClient(directory="/nonexistent/path/12345")
-        
+
         # Should handle gracefully (glob on non-existent path returns empty)
         documents = client.ingest()
         assert documents == []
@@ -209,11 +208,11 @@ class TestIngestionClient:
         """Test that multiple ingest calls return consistent results."""
         with tempfile.TemporaryDirectory() as tmpdir:
             (Path(tmpdir) / "test.txt").write_text("Content", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             docs1 = client.ingest()
             docs2 = client.ingest()
-            
+
             assert docs1 == docs2
 
     def test_ingest_order_consistency(self):
@@ -222,10 +221,10 @@ class TestIngestionClient:
             # Create files
             for i in range(5):
                 (Path(tmpdir) / f"file{i}.txt").write_text(f"Content {i}", encoding="utf-8")
-            
+
             client = IngestionClient(directory=tmpdir)
             docs1 = client.ingest()
             docs2 = client.ingest()
-            
+
             # Order should be consistent between calls
             assert docs1 == docs2

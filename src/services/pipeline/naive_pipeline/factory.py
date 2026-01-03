@@ -1,17 +1,16 @@
-from typing import Optional
-
 from src.config import settings
+
 from .client import NaivePipeline, NaivePipelineConfig
 
 
 def get_naive_pipeline(
-    ingestion_dir: Optional[str] = None,
-    chunk_size: Optional[int] = None,
-    embed_dim: Optional[int] = None,
-    qdrant_url: Optional[str] = None,
-    collection_name: Optional[str] = None,
-    generator_model: Optional[str] = None,
-    generator_device: Optional[int] = None,
+    ingestion_dir: str | None = None,
+    chunk_size: int | None = None,
+    embed_dim: int | None = None,
+    qdrant_url: str | None = None,
+    collection_name: str | None = None,
+    generator_model: str | None = None,
+    generator_device: int | None = None,
 ) -> NaivePipeline:
     """
     Factory function to create a NaivePipeline instance.

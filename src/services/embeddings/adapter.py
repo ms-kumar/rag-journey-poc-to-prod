@@ -1,4 +1,4 @@
-from typing import List, Sequence
+from collections.abc import Sequence
 
 
 class LangChainEmbeddingsAdapter:
@@ -20,26 +20,26 @@ class LangChainEmbeddingsAdapter:
         self._client = embed_client
         self.batch_size = int(batch_size)
 
-    def _call_embed(self, texts: Sequence[str]) -> List[List[float]]:
+    def _call_embed(self, texts: Sequence[str]) -> list[list[float]]:
         # Preferred names in order: embed_documents, embed, embed_texts
         if hasattr(self._client, "embed_documents"):
-            return self._client.embed_documents(texts)
+            return self._client.embed_documents(texts)  # type: ignore[no-any-return]
         if hasattr(self._client, "embed"):
-            return self._client.embed(list(texts))
+            return self._client.embed(list(texts))  # type: ignore[no-any-return]
         if hasattr(self._client, "embed_texts"):
-            return self._client.embed_texts(list(texts))
+            return self._client.embed_texts(list(texts))  # type: ignore[no-any-return]
         raise AttributeError(
             "Wrapped embed client must implement one of: "
             "'embed_documents', 'embed', or 'embed_texts'"
         )
 
-    def embed_documents(self, texts: Sequence[str]) -> List[List[float]]:
+    def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
         """
         LangChain expects this method name for embedding a batch of documents.
         """
         return self._call_embed(texts)
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> list[float]:
         """
         LangChain expects this method for embedding a single query. We reuse the
         batch endpoint and return the first vector.
@@ -48,5 +48,5 @@ class LangChainEmbeddingsAdapter:
         return vecs[0] if vecs else []
 
     # Optional: convenience alias for LangChain's duck-typing
-    def __call__(self, texts: Sequence[str]) -> List[List[float]]:
+    def __call__(self, texts: Sequence[str]) -> list[list[float]]:
         return self.embed_documents(texts)

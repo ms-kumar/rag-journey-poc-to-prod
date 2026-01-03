@@ -3,7 +3,8 @@ Unit tests for generation service.
 """
 
 import pytest
-from src.services.generation.client import GenerationConfig, HFGenerator, DependencyMissingError
+
+from src.services.generation.client import DependencyMissingError, GenerationConfig, HFGenerator
 
 
 class TestGenerationConfig:
@@ -12,7 +13,7 @@ class TestGenerationConfig:
     def test_default_config(self):
         """Test default configuration."""
         config = GenerationConfig()
-        
+
         assert config.model_name == "gpt2"
         assert config.device is None
         assert config.max_new_tokens == 128
@@ -26,13 +27,9 @@ class TestGenerationConfig:
     def test_custom_config(self):
         """Test custom configuration."""
         config = GenerationConfig(
-            model_name="gpt2-medium",
-            device=0,
-            max_new_tokens=256,
-            temperature=0.7,
-            top_k=100
+            model_name="gpt2-medium", device=0, max_new_tokens=256, temperature=0.7, top_k=100
         )
-        
+
         assert config.model_name == "gpt2-medium"
         assert config.device == 0
         assert config.max_new_tokens == 256
@@ -53,7 +50,7 @@ class TestGenerationConfig:
         """Test extra kwargs configuration."""
         extra = {"repetition_penalty": 1.2, "length_penalty": 0.8}
         config = GenerationConfig(extra_kwargs=extra)
-        
+
         assert config.extra_kwargs == extra
 
     def test_zero_temperature(self):
@@ -69,7 +66,7 @@ class TestHFGenerator:
     def test_initialization_with_valid_config(self):
         """Test generator initialization with valid config."""
         config = GenerationConfig(model_name="gpt2", device=-1)
-        
+
         try:
             generator = HFGenerator(config)
             assert generator.config == config
@@ -80,7 +77,7 @@ class TestHFGenerator:
     def test_initialization_with_custom_model(self):
         """Test initialization with custom model name."""
         config = GenerationConfig(model_name="gpt2")
-        
+
         try:
             generator = HFGenerator(config)
             assert generator.config.model_name == "gpt2"
@@ -90,17 +87,12 @@ class TestHFGenerator:
     @pytest.mark.slow
     def test_generate_simple_prompt(self):
         """Test generating text from simple prompt."""
-        config = GenerationConfig(
-            model_name="gpt2",
-            device=-1,
-            max_new_tokens=20,
-            do_sample=True
-        )
-        
+        config = GenerationConfig(model_name="gpt2", device=-1, max_new_tokens=20, do_sample=True)
+
         try:
             generator = HFGenerator(config)
             result = generator.generate("Hello world")
-            
+
             assert isinstance(result, str)
             assert len(result) > 0
         except DependencyMissingError:
@@ -110,14 +102,13 @@ class TestHFGenerator:
     def test_generate_with_overrides(self):
         """Test generation with parameter overrides."""
         config = GenerationConfig(model_name="gpt2", device=-1)
-        
+
         try:
             generator = HFGenerator(config)
             result = generator.generate(
-                "Test prompt",
-                overrides={"max_new_tokens": 10, "temperature": 0.5}
+                "Test prompt", overrides={"max_new_tokens": 10, "temperature": 0.5}
             )
-            
+
             assert isinstance(result, str)
         except DependencyMissingError:
             pytest.skip("transformers not installed")
@@ -125,17 +116,13 @@ class TestHFGenerator:
     @pytest.mark.slow
     def test_generate_batch(self):
         """Test batch generation."""
-        config = GenerationConfig(
-            model_name="gpt2",
-            device=-1,
-            max_new_tokens=10
-        )
-        
+        config = GenerationConfig(model_name="gpt2", device=-1, max_new_tokens=10)
+
         try:
             generator = HFGenerator(config)
             prompts = ["Prompt 1", "Prompt 2", "Prompt 3"]
             results = generator.generate_batch(prompts)
-            
+
             assert len(results) == 3
             assert all(isinstance(r, str) for r in results)
         except DependencyMissingError:
@@ -145,11 +132,11 @@ class TestHFGenerator:
     def test_generate_empty_prompt(self):
         """Test generation with empty prompt."""
         config = GenerationConfig(model_name="gpt2", device=-1, max_new_tokens=10)
-        
+
         try:
             generator = HFGenerator(config)
             result = generator.generate("")
-            
+
             assert isinstance(result, str)
         except DependencyMissingError:
             pytest.skip("transformers not installed")
@@ -158,27 +145,23 @@ class TestHFGenerator:
     def test_generate_unicode_prompt(self):
         """Test generation with unicode prompt."""
         config = GenerationConfig(model_name="gpt2", device=-1, max_new_tokens=10)
-        
+
         try:
             generator = HFGenerator(config)
             result = generator.generate("Hello 世界")
-            
+
             assert isinstance(result, str)
         except DependencyMissingError:
             pytest.skip("transformers not installed")
 
     def test_merge_kwargs_default(self):
         """Test merging kwargs with defaults."""
-        config = GenerationConfig(
-            max_new_tokens=100,
-            temperature=0.8,
-            top_k=40
-        )
-        
+        config = GenerationConfig(max_new_tokens=100, temperature=0.8, top_k=40)
+
         try:
             generator = HFGenerator(config)
             kwargs = generator._merge_kwargs()
-            
+
             assert kwargs["max_new_tokens"] == 100
             assert kwargs["temperature"] == 0.8
             assert kwargs["top_k"] == 40
@@ -189,12 +172,12 @@ class TestHFGenerator:
     def test_merge_kwargs_with_overrides(self):
         """Test merging kwargs with overrides."""
         config = GenerationConfig(max_new_tokens=100)
-        
+
         try:
             generator = HFGenerator(config)
             overrides = {"max_new_tokens": 50, "temperature": 0.5}
             kwargs = generator._merge_kwargs(overrides)
-            
+
             assert kwargs["max_new_tokens"] == 50
             assert kwargs["temperature"] == 0.5
         except DependencyMissingError:
@@ -204,11 +187,11 @@ class TestHFGenerator:
         """Test merging with extra_kwargs from config."""
         extra = {"repetition_penalty": 1.2}
         config = GenerationConfig(extra_kwargs=extra)
-        
+
         try:
             generator = HFGenerator(config)
             kwargs = generator._merge_kwargs()
-            
+
             assert kwargs["repetition_penalty"] == 1.2
         except DependencyMissingError:
             pytest.skip("transformers not installed")
@@ -216,20 +199,15 @@ class TestHFGenerator:
     @pytest.mark.slow
     def test_generate_deterministic(self):
         """Test deterministic generation with do_sample=False."""
-        config = GenerationConfig(
-            model_name="gpt2",
-            device=-1,
-            max_new_tokens=10,
-            do_sample=False
-        )
-        
+        config = GenerationConfig(model_name="gpt2", device=-1, max_new_tokens=10, do_sample=False)
+
         try:
             generator = HFGenerator(config)
             prompt = "The quick brown fox"
-            
+
             result1 = generator.generate(prompt)
             result2 = generator.generate(prompt)
-            
+
             # Should be identical with do_sample=False
             assert result1 == result2
         except DependencyMissingError:
@@ -239,11 +217,11 @@ class TestHFGenerator:
     def test_generate_batch_empty_list(self):
         """Test batch generation with empty list."""
         config = GenerationConfig(model_name="gpt2", device=-1)
-        
+
         try:
             generator = HFGenerator(config)
             results = generator.generate_batch([])
-            
+
             assert results == []
         except DependencyMissingError:
             pytest.skip("transformers not installed")
@@ -251,17 +229,12 @@ class TestHFGenerator:
     @pytest.mark.slow
     def test_generate_max_new_tokens_limit(self):
         """Test generation respects max_new_tokens."""
-        config = GenerationConfig(
-            model_name="gpt2",
-            device=-1,
-            max_new_tokens=5,
-            do_sample=False
-        )
-        
+        config = GenerationConfig(model_name="gpt2", device=-1, max_new_tokens=5, do_sample=False)
+
         try:
             generator = HFGenerator(config)
             result = generator.generate("Once upon a time")
-            
+
             # Result should be relatively short due to max_new_tokens=5
             assert isinstance(result, str)
             # Count tokens roughly (words as proxy)

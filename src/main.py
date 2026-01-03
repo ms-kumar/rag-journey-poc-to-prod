@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.config import settings
 from src.api.v1.endpoints import rag
+from src.config import settings
 
 # Configure logging
 logging.basicConfig(

@@ -1,11 +1,10 @@
 from .client import QdrantVectorStoreClient, VectorStoreConfig
-from typing import Optional
 
 
 def get_vectorstore_client(
     embeddings,
-    qdrant_url: Optional[str] = None,
-    api_key: Optional[str] = None,
+    qdrant_url: str | None = None,
+    api_key: str | None = None,
     collection_name: str = "default",
     prefer_grpc: bool = True,
     distance: str = "Cosine",

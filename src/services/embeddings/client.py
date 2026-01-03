@@ -1,6 +1,6 @@
-from typing import List, Sequence
 import hashlib
 import math
+from collections.abc import Sequence
 
 
 class EmbedClient:
@@ -14,20 +14,18 @@ class EmbedClient:
     - No external dependencies required.
     """
 
-    def __init__(
-        self, model_name: str = "simple-hash", dim: int = 64, normalize: bool = True
-    ):
+    def __init__(self, model_name: str = "simple-hash", dim: int = 64, normalize: bool = True):
         self.model_name = model_name
         self.dim = int(dim)
         if self.dim <= 0:
             raise ValueError("dim must be a positive integer")
         self.normalize = bool(normalize)
 
-    def _text_to_vector(self, text: str) -> List[float]:
-        vec: List[float] = []
+    def _text_to_vector(self, text: str) -> list[float]:
+        vec: list[float] = []
         for i in range(self.dim):
             # Use a unique salt per dimension so each dimension is deterministic but different
-            digest = hashlib.sha256(f"{text}\x00{i}".encode("utf-8")).digest()
+            digest = hashlib.sha256(f"{text}\x00{i}".encode()).digest()
             # Take first 8 bytes (64 bits) and convert to integer
             num = int.from_bytes(digest[:8], "big", signed=False)
             # Map integer to float in [-1, 1]
@@ -40,7 +38,7 @@ class EmbedClient:
 
         return vec
 
-    def embed(self, texts: Sequence[str]) -> List[List[float]]:
+    def embed(self, texts: Sequence[str]) -> list[list[float]]:
         """
         Generate embeddings for a sequence of texts.
 

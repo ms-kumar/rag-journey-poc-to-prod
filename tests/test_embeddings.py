@@ -2,10 +2,12 @@
 Unit tests for embedding services.
 """
 
-import pytest
 import math
-from src.services.embeddings.client import EmbedClient
+
+import pytest
+
 from src.services.embeddings.adapter import LangChainEmbeddingsAdapter
+from src.services.embeddings.client import EmbedClient
 
 
 class TestEmbedClient:
@@ -37,7 +39,7 @@ class TestEmbedClient:
         """Test embedding a single text."""
         client = EmbedClient(dim=64, normalize=True)
         embeddings = client.embed(["hello world"])
-        
+
         assert len(embeddings) == 1
         assert len(embeddings[0]) == 64
         # All values should be floats
@@ -48,7 +50,7 @@ class TestEmbedClient:
         client = EmbedClient(dim=32, normalize=True)
         texts = ["hello", "world", "test"]
         embeddings = client.embed(texts)
-        
+
         assert len(embeddings) == 3
         assert all(len(emb) == 32 for emb in embeddings)
 
@@ -56,14 +58,14 @@ class TestEmbedClient:
         """Test embedding empty list."""
         client = EmbedClient(dim=64)
         embeddings = client.embed([])
-        
+
         assert embeddings == []
 
     def test_embed_empty_string(self):
         """Test embedding empty string."""
         client = EmbedClient(dim=64)
         embeddings = client.embed([""])
-        
+
         assert len(embeddings) == 1
         assert len(embeddings[0]) == 64
 
@@ -71,20 +73,20 @@ class TestEmbedClient:
         """Test that same text produces same embeddings."""
         client = EmbedClient(dim=64, normalize=True)
         text = "deterministic test"
-        
+
         emb1 = client.embed([text])[0]
         emb2 = client.embed([text])[0]
-        
+
         # Should be identical
         assert emb1 == emb2
 
     def test_different_texts_different_embeddings(self):
         """Test that different texts produce different embeddings."""
         client = EmbedClient(dim=64, normalize=True)
-        
+
         emb1 = client.embed(["hello"])[0]
         emb2 = client.embed(["world"])[0]
-        
+
         # Should be different
         assert emb1 != emb2
 
@@ -92,11 +94,11 @@ class TestEmbedClient:
         """Test that normalized embeddings have unit norm."""
         client = EmbedClient(dim=64, normalize=True)
         embeddings = client.embed(["test text"])
-        
+
         # Calculate L2 norm
         vec = embeddings[0]
         norm = math.sqrt(sum(x * x for x in vec))
-        
+
         # Should be approximately 1.0
         assert abs(norm - 1.0) < 1e-6
 
@@ -104,10 +106,10 @@ class TestEmbedClient:
         """Test embeddings without normalization."""
         client = EmbedClient(dim=64, normalize=False)
         embeddings = client.embed(["test text"])
-        
+
         vec = embeddings[0]
         norm = math.sqrt(sum(x * x for x in vec))
-        
+
         # Should not necessarily be 1.0
         # Just verify it's a reasonable value
         assert norm > 0
@@ -116,7 +118,7 @@ class TestEmbedClient:
         """Test that embedding values are in expected range."""
         client = EmbedClient(dim=64, normalize=False)
         embeddings = client.embed(["test"])
-        
+
         # Without normalization, values should be in [-1, 1]
         vec = embeddings[0]
         assert all(-1.0 <= x <= 1.0 for x in vec)
@@ -125,7 +127,7 @@ class TestEmbedClient:
         """Test embedding with None value."""
         client = EmbedClient(dim=32)
         embeddings = client.embed([None])
-        
+
         # Should handle None as empty string
         assert len(embeddings) == 1
         assert len(embeddings[0]) == 32
@@ -135,7 +137,7 @@ class TestEmbedClient:
         client = EmbedClient(dim=32)
         texts = ["hello", None, "world"]
         embeddings = client.embed(texts)
-        
+
         assert len(embeddings) == 3
         assert all(len(emb) == 32 for emb in embeddings)
 
@@ -144,7 +146,7 @@ class TestEmbedClient:
         client = EmbedClient(dim=64)
         texts = ["Hello 世界", "🌍 emoji", "café"]
         embeddings = client.embed(texts)
-        
+
         assert len(embeddings) == 3
         assert all(len(emb) == 64 for emb in embeddings)
 
@@ -153,7 +155,7 @@ class TestEmbedClient:
         client = EmbedClient(dim=64)
         long_text = "word " * 10000
         embeddings = client.embed([long_text])
-        
+
         assert len(embeddings) == 1
         assert len(embeddings[0]) == 64
 
@@ -162,7 +164,7 @@ class TestEmbedClient:
         client = EmbedClient(dim=32)
         texts = ["!@#$%^&*()", "\n\t\r", "line1\nline2"]
         embeddings = client.embed(texts)
-        
+
         assert len(embeddings) == 3
         assert all(len(emb) == 32 for emb in embeddings)
 
@@ -170,7 +172,7 @@ class TestEmbedClient:
         """Test with dimension of 1."""
         client = EmbedClient(dim=1, normalize=True)
         embeddings = client.embed(["test"])
-        
+
         assert len(embeddings[0]) == 1
         # With normalization, single dimension should be ±1
         assert abs(abs(embeddings[0][0]) - 1.0) < 1e-6
@@ -179,14 +181,14 @@ class TestEmbedClient:
         """Test with large dimension."""
         client = EmbedClient(dim=1024)
         embeddings = client.embed(["test"])
-        
+
         assert len(embeddings[0]) == 1024
 
     def test_whitespace_only_text(self):
         """Test embedding whitespace-only text."""
         client = EmbedClient(dim=32)
         embeddings = client.embed(["   \t\n   "])
-        
+
         assert len(embeddings) == 1
         assert len(embeddings[0]) == 32
 
@@ -198,17 +200,17 @@ class TestLangChainEmbeddingsAdapter:
         """Test adapter initialization."""
         embed_client = EmbedClient(dim=64)
         adapter = LangChainEmbeddingsAdapter(embed_client)
-        
+
         assert adapter._client == embed_client
 
     def test_embed_documents(self):
         """Test embed_documents method."""
         embed_client = EmbedClient(dim=32)
         adapter = LangChainEmbeddingsAdapter(embed_client)
-        
+
         docs = ["doc1", "doc2", "doc3"]
         embeddings = adapter.embed_documents(docs)
-        
+
         assert len(embeddings) == 3
         assert all(len(emb) == 32 for emb in embeddings)
 
@@ -216,10 +218,10 @@ class TestLangChainEmbeddingsAdapter:
         """Test embed_query method."""
         embed_client = EmbedClient(dim=32)
         adapter = LangChainEmbeddingsAdapter(embed_client)
-        
+
         query = "test query"
         embedding = adapter.embed_query(query)
-        
+
         assert len(embedding) == 32
         assert all(isinstance(x, float) for x in embedding)
 
@@ -227,15 +229,15 @@ class TestLangChainEmbeddingsAdapter:
         """Test that adapter produces same results as client."""
         embed_client = EmbedClient(dim=64)
         adapter = LangChainEmbeddingsAdapter(embed_client)
-        
+
         text = "consistency test"
-        
+
         # Direct client call
         client_emb = embed_client.embed([text])[0]
-        
+
         # Via adapter
         adapter_emb = adapter.embed_query(text)
-        
+
         # Should be identical
         assert client_emb == adapter_emb
 
@@ -243,7 +245,7 @@ class TestLangChainEmbeddingsAdapter:
         """Test adapter with empty document list."""
         embed_client = EmbedClient(dim=32)
         adapter = LangChainEmbeddingsAdapter(embed_client)
-        
+
         embeddings = adapter.embed_documents([])
         assert embeddings == []
 
@@ -251,6 +253,6 @@ class TestLangChainEmbeddingsAdapter:
         """Test adapter with empty query."""
         embed_client = EmbedClient(dim=32)
         adapter = LangChainEmbeddingsAdapter(embed_client)
-        
+
         embedding = adapter.embed_query("")
         assert len(embedding) == 32

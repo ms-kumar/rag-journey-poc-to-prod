@@ -4,6 +4,7 @@ Unit tests for Pydantic models.
 
 import pytest
 from pydantic import ValidationError
+
 from src.models.rag_request import GenerateRequest, GenerateResponse
 
 
@@ -13,7 +14,7 @@ class TestGenerateRequest:
     def test_valid_request_minimal(self):
         """Test valid request with minimal fields."""
         request = GenerateRequest(prompt="What is RAG?")
-        
+
         assert request.prompt == "What is RAG?"
         assert request.top_k == 5  # default
         assert request.max_length is None
@@ -22,12 +23,9 @@ class TestGenerateRequest:
     def test_valid_request_all_fields(self):
         """Test valid request with all fields."""
         request = GenerateRequest(
-            prompt="Test prompt",
-            top_k=10,
-            max_length=256,
-            metadata_filters={"source": "doc1"}
+            prompt="Test prompt", top_k=10, max_length=256, metadata_filters={"source": "doc1"}
         )
-        
+
         assert request.prompt == "Test prompt"
         assert request.top_k == 10
         assert request.max_length == 256
@@ -86,11 +84,7 @@ class TestGenerateRequest:
 
     def test_metadata_filters_complex(self):
         """Test complex metadata filters."""
-        filters = {
-            "source": "doc1",
-            "type": "research",
-            "tags": ["ml", "nlp"]
-        }
+        filters = {"source": "doc1", "type": "research", "tags": ["ml", "nlp"]}
         request = GenerateRequest(prompt="test", metadata_filters=filters)
         assert request.metadata_filters == filters
 
@@ -107,13 +101,10 @@ class TestGenerateRequest:
     def test_json_serialization(self):
         """Test model can be serialized to JSON."""
         request = GenerateRequest(
-            prompt="test",
-            top_k=3,
-            max_length=100,
-            metadata_filters={"key": "value"}
+            prompt="test", top_k=3, max_length=100, metadata_filters={"key": "value"}
         )
         json_data = request.model_dump()
-        
+
         assert json_data["prompt"] == "test"
         assert json_data["top_k"] == 3
         assert json_data["max_length"] == 100
@@ -121,13 +112,9 @@ class TestGenerateRequest:
 
     def test_from_dict(self):
         """Test creating model from dictionary."""
-        data = {
-            "prompt": "test prompt",
-            "top_k": 7,
-            "max_length": 150
-        }
+        data = {"prompt": "test prompt", "top_k": 7, "max_length": 150}
         request = GenerateRequest(**data)
-        
+
         assert request.prompt == "test prompt"
         assert request.top_k == 7
         assert request.max_length == 150
@@ -138,11 +125,8 @@ class TestGenerateResponse:
 
     def test_valid_response_minimal(self):
         """Test valid response with minimal fields."""
-        response = GenerateResponse(
-            prompt="Test",
-            answer="Response"
-        )
-        
+        response = GenerateResponse(prompt="Test", answer="Response")
+
         assert response.prompt == "Test"
         assert response.answer == "Response"
         assert response.context is None
@@ -151,12 +135,9 @@ class TestGenerateResponse:
     def test_valid_response_all_fields(self):
         """Test valid response with all fields."""
         response = GenerateResponse(
-            prompt="Test",
-            answer="Response",
-            context="Context text",
-            sources=["source1", "source2"]
+            prompt="Test", answer="Response", context="Context text", sources=["source1", "source2"]
         )
-        
+
         assert response.prompt == "Test"
         assert response.answer == "Response"
         assert response.context == "Context text"
@@ -174,46 +155,30 @@ class TestGenerateResponse:
 
     def test_empty_strings(self):
         """Test with empty strings."""
-        response = GenerateResponse(
-            prompt="",
-            answer="",
-            context=""
-        )
-        
+        response = GenerateResponse(prompt="", answer="", context="")
+
         assert response.prompt == ""
         assert response.answer == ""
         assert response.context == ""
 
     def test_empty_sources_list(self):
         """Test with empty sources list."""
-        response = GenerateResponse(
-            prompt="Test",
-            answer="Response",
-            sources=[]
-        )
-        
+        response = GenerateResponse(prompt="Test", answer="Response", sources=[])
+
         assert response.sources == []
 
     def test_sources_with_multiple_items(self):
         """Test sources with multiple items."""
         sources = ["source1", "source2", "source3", "source4"]
-        response = GenerateResponse(
-            prompt="Test",
-            answer="Response",
-            sources=sources
-        )
-        
+        response = GenerateResponse(prompt="Test", answer="Response", sources=sources)
+
         assert response.sources == sources
         assert len(response.sources) == 4
 
     def test_unicode_in_response(self):
         """Test unicode in response fields."""
-        response = GenerateResponse(
-            prompt="世界",
-            answer="🌍 response",
-            context="Context 文本"
-        )
-        
+        response = GenerateResponse(prompt="世界", answer="🌍 response", context="Context 文本")
+
         assert "世界" in response.prompt
         assert "🌍" in response.answer
         assert "文本" in response.context
@@ -221,11 +186,9 @@ class TestGenerateResponse:
     def test_multiline_in_fields(self):
         """Test multiline content in fields."""
         response = GenerateResponse(
-            prompt="Line1\nLine2",
-            answer="Answer1\nAnswer2",
-            context="Context1\nContext2"
+            prompt="Line1\nLine2", answer="Answer1\nAnswer2", context="Context1\nContext2"
         )
-        
+
         assert "\n" in response.prompt
         assert "\n" in response.answer
         assert "\n" in response.context
@@ -233,24 +196,17 @@ class TestGenerateResponse:
     def test_long_context(self):
         """Test with very long context."""
         long_context = "word " * 10000
-        response = GenerateResponse(
-            prompt="Test",
-            answer="Response",
-            context=long_context
-        )
-        
+        response = GenerateResponse(prompt="Test", answer="Response", context=long_context)
+
         assert len(response.context) == 50000  # "word " is 5 chars * 10000
 
     def test_json_serialization(self):
         """Test model can be serialized to JSON."""
         response = GenerateResponse(
-            prompt="test",
-            answer="answer",
-            context="context",
-            sources=["s1", "s2"]
+            prompt="test", answer="answer", context="context", sources=["s1", "s2"]
         )
         json_data = response.model_dump()
-        
+
         assert json_data["prompt"] == "test"
         assert json_data["answer"] == "answer"
         assert json_data["context"] == "context"
@@ -258,14 +214,9 @@ class TestGenerateResponse:
 
     def test_from_dict(self):
         """Test creating response from dictionary."""
-        data = {
-            "prompt": "test",
-            "answer": "answer",
-            "context": "ctx",
-            "sources": ["src"]
-        }
+        data = {"prompt": "test", "answer": "answer", "context": "ctx", "sources": ["src"]}
         response = GenerateResponse(**data)
-        
+
         assert response.prompt == "test"
         assert response.answer == "answer"
         assert response.context == "ctx"
@@ -273,24 +224,15 @@ class TestGenerateResponse:
 
     def test_sources_with_empty_strings(self):
         """Test sources containing empty strings."""
-        response = GenerateResponse(
-            prompt="Test",
-            answer="Response",
-            sources=["", "source1", ""]
-        )
-        
+        response = GenerateResponse(prompt="Test", answer="Response", sources=["", "source1", ""])
+
         assert len(response.sources) == 3
         assert response.sources[0] == ""
         assert response.sources[1] == "source1"
 
     def test_none_values_for_optional_fields(self):
         """Test explicit None for optional fields."""
-        response = GenerateResponse(
-            prompt="Test",
-            answer="Response",
-            context=None,
-            sources=None
-        )
-        
+        response = GenerateResponse(prompt="Test", answer="Response", context=None, sources=None)
+
         assert response.context is None
         assert response.sources is None

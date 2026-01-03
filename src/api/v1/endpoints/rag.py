@@ -1,6 +1,6 @@
 import logging
+
 from fastapi import APIRouter, HTTPException
-from typing import List
 
 from src.models.rag_request import GenerateRequest, GenerateResponse
 from src.services.pipeline.naive_pipeline.factory import get_naive_pipeline
@@ -22,9 +22,9 @@ def _get_pipeline():
     return _pipeline_instance
 
 
-def _extract_sources(retrieved) -> List[str]:
+def _extract_sources(retrieved) -> list[str]:
     """Extract text content from retrieved documents."""
-    sources: List[str] = []
+    sources: list[str] = []
     for doc in retrieved:
         if hasattr(doc, "page_content"):
             sources.append(doc.page_content)
@@ -35,7 +35,7 @@ def _extract_sources(retrieved) -> List[str]:
     return sources
 
 
-def _build_context(sources: List[str], max_sources: int = 3) -> str:
+def _build_context(sources: list[str], max_sources: int = 3) -> str:
     """Build context string from sources."""
     return "\n\n".join(sources[:max_sources])
 
@@ -54,9 +54,7 @@ async def generate(request: GenerateRequest):
         pipeline = _get_pipeline()
     except Exception as e:
         logger.error(f"Pipeline initialization failed: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Pipeline initialization failed: {e}"
-        )
+        raise HTTPException(status_code=500, detail=f"Pipeline initialization failed: {e}")
 
     # Retrieve relevant documents
     logger.debug(f"Retrieving top {request.top_k} documents...")

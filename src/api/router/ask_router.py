@@ -1,10 +1,10 @@
 import logging
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional, List
 
-from src.services.pipeline.naive_pipeline.factory import get_naive_pipeline
 from src.api.v1.endpoints import rag
+from src.services.pipeline.naive_pipeline.factory import get_naive_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -19,18 +19,14 @@ api_router.include_router(rag.router, prefix="/rag", tags=["rag"])
 
 class AskRequest(BaseModel):
     question: str = Field(..., description="The question to ask")
-    top_k: Optional[int] = Field(5, description="Number of documents to retrieve")
+    top_k: int | None = Field(5, description="Number of documents to retrieve")
 
 
 class AskResponse(BaseModel):
     question: str
     answer: str
-    context: Optional[str] = Field(
-        None, description="Combined context from retrieved documents"
-    )
-    sources: Optional[List[str]] = Field(
-        None, description="List of retrieved document texts"
-    )
+    context: str | None = Field(None, description="Combined context from retrieved documents")
+    sources: list[str] | None = Field(None, description="List of retrieved document texts")
 
 
 # Lazy singleton pipeline
@@ -46,9 +42,9 @@ def _get_pipeline():
     return _pipeline
 
 
-def _extract_sources(retrieved) -> List[str]:
+def _extract_sources(retrieved) -> list[str]:
     """Extract text content from retrieved documents."""
-    sources: List[str] = []
+    sources: list[str] = []
     for doc in retrieved:
         if hasattr(doc, "page_content"):
             sources.append(doc.page_content)

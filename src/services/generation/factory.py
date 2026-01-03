@@ -1,16 +1,18 @@
-from typing import Any, Dict, Optional
-from .client import HFGenerator, GenerationConfig
+from typing import Any
+
+from .client import GenerationConfig, HFGenerator
+
 
 def get_generator(
     model_name: str = "gpt2",
-    device: Optional[int] = None,
+    device: int | None = None,
     max_new_tokens: int = 128,
     do_sample: bool = True,
     temperature: float = 1.0,
     top_k: int = 50,
     top_p: float = 0.95,
     num_return_sequences: int = 1,
-    extra_kwargs: Optional[Dict[str, Any]] = None,
+    extra_kwargs: dict[str, Any] | None = None,
 ):
     """
     Factory: returns an `HFGenerator` when `transformers` is installed, otherwise a `DummyGenerator`.

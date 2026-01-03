@@ -1,13 +1,14 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
 
-from transformers import pipeline, Pipeline
+from transformers import Pipeline, pipeline
 
 
 @dataclass
 class GenerationConfig:
     model_name: str = "gpt2"
-    device: Optional[int] = None  # -1 for CPU, 0..N for GPU device id
+    device: int | None = None  # -1 for CPU, 0..N for GPU device id
     max_new_tokens: int = 128  # Use max_new_tokens instead of max_length
     do_sample: bool = True
     temperature: float = 1.0
@@ -15,7 +16,7 @@ class GenerationConfig:
     top_p: float = 0.95
     num_return_sequences: int = 1
     # Any additional kwargs passed through to pipeline call
-    extra_kwargs: Dict[str, Any] = None
+    extra_kwargs: dict[str, Any] | None = None
 
 
 class DependencyMissingError(RuntimeError):
@@ -45,9 +46,7 @@ class HFGenerator:
             device=device,
         )
 
-    def _merge_kwargs(
-        self, overrides: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def _merge_kwargs(self, overrides: dict[str, Any] | None = None) -> dict[str, Any]:
         base = {
             "max_new_tokens": self.config.max_new_tokens,
             "do_sample": self.config.do_sample,
@@ -57,7 +56,7 @@ class HFGenerator:
             "num_return_sequences": self.config.num_return_sequences,
             "return_full_text": False,
             "truncation": True,
-            "pad_token_id": self.pipe.tokenizer.eos_token_id,
+            "pad_token_id": self.pipe.tokenizer.eos_token_id,  # type: ignore[union-attr]
         }
         if self.config.extra_kwargs:
             base.update(self.config.extra_kwargs)
@@ -65,7 +64,7 @@ class HFGenerator:
             base.update(overrides)
         return base
 
-    def generate(self, prompt: str, overrides: Optional[Dict[str, Any]] = None) -> str:
+    def generate(self, prompt: str, overrides: dict[str, Any] | None = None) -> str:
         """
         Generate text for a single prompt and return the first generated sequence as a string.
         """
@@ -79,17 +78,17 @@ class HFGenerator:
         # if num_return_sequences > 1, pipeline returns list of dicts
         first = out[0]
         if isinstance(first, dict) and "generated_text" in first:
-            return first["generated_text"]
+            return first["generated_text"]  # type: ignore[no-any-return]
         # fallback: convert to string
         return str(first)
 
     def generate_batch(
-        self, prompts: Sequence[str], overrides: Optional[Dict[str, Any]] = None
-    ) -> List[str]:
+        self, prompts: Sequence[str], overrides: dict[str, Any] | None = None
+    ) -> list[str]:
         """
         Generate texts for a batch of prompts. For baseline simplicity we call the pipeline per prompt.
         """
-        results: List[str] = []
+        results: list[str] = []
         for p in prompts:
             results.append(self.generate(p, overrides=overrides))
         return results
