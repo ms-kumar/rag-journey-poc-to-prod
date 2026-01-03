@@ -38,6 +38,11 @@ class Settings(BaseSettings):
 
     # --- Chunking Settings ---
     chunk_size: int = Field(default=200, description="Number of words per chunk")
+    chunk_overlap: int = Field(default=50, description="Number of overlapping characters between chunks")
+    chunking_strategy: str = Field(
+        default="heading_aware",
+        description="Chunking strategy: fixed|heading_aware",
+    )
 
     # --- Embedding Settings ---
     embed_dim: int = Field(default=64, description="Embedding vector dimension")

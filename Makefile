@@ -1,12 +1,13 @@
-.PHONY: clean format check lint run ingest test help
+.PHONY: clean format check lint run ingest test help sync
 
 # Python and project settings
-PYTHON := python
+PYTHON := uv run python
 SRC_DIR := src
 TESTS_DIR := tests
 
 help:
 	@echo "Available targets:"
+	@echo "  make sync      - Sync dependencies with uv"
 	@echo "  make run       - Run the FastAPI server"
 	@echo "  make ingest    - Ingest documents via API"
 	@echo "  make format    - Format code with ruff"
@@ -15,9 +16,14 @@ help:
 	@echo "  make clean     - Remove cache and build artifacts"
 	@echo "  make test      - Run tests"
 
-# Run the server
-run:
-	$(PYTHON) -m src.main
+# Sync dependencies with uv
+sync:
+	@echo "Syncing dependencies with uv..."
+	uv sync
+
+# Run the server (with dependency check)
+run: sync
+	uv run python -m src.main
 
 # Ingest documents
 ingest:
@@ -25,19 +31,19 @@ ingest:
 
 # Format code with ruff
 format:
-	ruff format $(SRC_DIR) $(TESTS_DIR)
+	uv run ruff format $(SRC_DIR) $(TESTS_DIR)
 
 # Check formatting without making changes
 check:
-	ruff format --check $(SRC_DIR) $(TESTS_DIR)
+	uv run ruff format --check $(SRC_DIR) $(TESTS_DIR)
 
 # Lint code with ruff
 lint:
-	ruff check $(SRC_DIR) $(TESTS_DIR)
+	uv run ruff check $(SRC_DIR) $(TESTS_DIR)
 
 # Lint and auto-fix
 lint-fix:
-	ruff check --fix $(SRC_DIR) $(TESTS_DIR)
+	uv run ruff check --fix $(SRC_DIR) $(TESTS_DIR)
 
 # Run all checks (format check + lint)
 all-checks: check lint
@@ -53,9 +59,9 @@ clean:
 	find . -type f -name ".coverage" -delete 2>/dev/null || true
 	rm -rf build/ dist/ .eggs/ 2>/dev/null || true
 
-# Run tests
-test:
-	$(PYTHON) -m pytest $(TESTS_DIR) -v
+# Run tests (with dependency check)
+test: sync
+	uv run pytest $(TESTS_DIR) -v
 
 # Install dependencies
 install:
