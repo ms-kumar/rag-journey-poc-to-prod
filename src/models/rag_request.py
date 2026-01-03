@@ -1,4 +1,3 @@
-from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -14,10 +13,8 @@ class GenerateRequest(BaseModel):
 
     prompt: str = Field(..., description="Prompt text to generate from")
     top_k: int = Field(5, description="Number of retrieved passages to return/use")
-    max_length: Optional[int] = Field(
-        None, description="Optional generation max tokens"
-    )
-    metadata_filters: Optional[dict] = Field(
+    max_length: int | None = Field(None, description="Optional generation max tokens")
+    metadata_filters: dict | None = Field(
         None, description="Optional metadata filters for retrieval"
     )
 
@@ -27,9 +24,5 @@ class GenerateResponse(BaseModel):
 
     prompt: str
     answer: str
-    context: Optional[str] = Field(
-        None, description="Combined context from retrieved documents"
-    )
-    sources: Optional[List[str]] = Field(
-        None, description="List of retrieved document texts"
-    )
+    context: str | None = Field(None, description="Combined context from retrieved documents")
+    sources: list[str] | None = Field(None, description="List of retrieved document texts")
