@@ -6,12 +6,12 @@
 services:
   # --- RAG API Service ---
   api:
-    build:
-      context: ../..
-      dockerfile: Dockerfile
+    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
     container_name: advanced-rag-api
+    working_dir: /app
     ports:
       - "${PORT:-8000}:8000"
+    command: ["sh", "-c", "uv sync --frozen && uv run python -m src.main"]
     environment:
       - APP_NAME=${APP_NAME:-Advanced RAG API}
       - APP_VERSION=${APP_VERSION:-1.0.0}
@@ -40,13 +40,13 @@ services:
       - RAG_TOP_K=${RAG_TOP_K:-5}
       - RAG_MAX_CONTEXT_DOCS=${RAG_MAX_CONTEXT_DOCS:-3}
     volumes:
+      - ../..:/app
       - ../../data:/app/data:ro
       - model-cache:/root/.cache
     depends_on:
-      qdrant:
-        condition: service_healthy
+      - qdrant
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2).read()"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -66,12 +66,6 @@ services:
       - QDRANT__SERVICE__GRPC_PORT=6334
     volumes:
       - qdrant-data:/qdrant/storage
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     networks:
       - rag-network
     restart: unless-stopped
