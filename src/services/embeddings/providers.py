@@ -322,7 +322,7 @@ class CohereEmbeddings(BaseEmbeddingProvider):
         # Apply overflow guard - truncate texts to model limits
         truncator = TextTruncator.from_embedding_model(self.model)
         texts_list = truncator.truncate_batch(list(texts))
-        all_embeddings = []
+        all_embeddings: list[list[float]] = []
 
         # Process in batches
         for i in range(0, len(texts_list), self.batch_size):
