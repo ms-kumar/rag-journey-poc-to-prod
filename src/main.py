@@ -8,7 +8,7 @@ from src.config import settings
 
 # Configure logging
 logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper(), logging.INFO),
+    level=getattr(logging, settings.app.log_level.upper(), logging.INFO),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
@@ -17,18 +17,18 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info(f"Starting {settings.app_name} v{settings.app_version}")
-    logger.info(f"Debug mode: {settings.debug}")
-    logger.info(f"Log level: {settings.log_level}")
+    logger.info(f"Starting {settings.app.name} v{settings.app.version}")
+    logger.info(f"Debug mode: {settings.app.debug}")
+    logger.info(f"Log level: {settings.app.log_level}")
     yield
     # Shutdown (if needed)
-    logger.info(f"Shutting down {settings.app_name}")
+    logger.info(f"Shutting down {settings.app.name}")
 
 
 app = FastAPI(
-    title=settings.app_name,
-    version=settings.app_version,
-    debug=settings.debug,
+    title=settings.app.name,
+    version=settings.app.version,
+    debug=settings.app.debug,
     lifespan=lifespan,
 )
 
@@ -40,8 +40,8 @@ app.include_router(rag.router, prefix="/api/v1/rag", tags=["rag"])
 def health_check():
     return {
         "status": "API is running",
-        "app": settings.app_name,
-        "version": settings.app_version,
+        "app": settings.app.name,
+        "version": settings.app.version,
     }
 
 
@@ -53,7 +53,7 @@ def health():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host=settings.host, port=settings.port)
+    uvicorn.run(app, host=settings.server.host, port=settings.server.port)
 
 """
 curl -X POST http://localhost:8000/api/v1/rag/ingest

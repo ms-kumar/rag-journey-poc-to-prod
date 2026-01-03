@@ -31,15 +31,15 @@ def get_naive_pipeline(
         Configured NaivePipeline instance.
     """
     config = NaivePipelineConfig(
-        ingestion_dir=ingestion_dir or settings.ingestion_dir,
-        chunk_size=chunk_size or settings.chunk_size,
-        embed_dim=embed_dim or settings.embed_dim,
-        qdrant_url=qdrant_url or settings.qdrant_url,
-        collection_name=collection_name or settings.qdrant_collection_name,
-        generator_model=generator_model or settings.generator_model,
+        ingestion_dir=ingestion_dir or settings.ingestion.dir,
+        chunk_size=chunk_size or settings.chunking.chunk_size,
+        embed_dim=embed_dim or settings.embedding.dim,
+        qdrant_url=qdrant_url or settings.vectorstore.url,
+        collection_name=collection_name or settings.vectorstore.collection_name,
+        generator_model=generator_model or settings.generation.model,
         generator_device=generator_device
         if generator_device is not None
-        else settings.generator_device,
+        else settings.generation.device,
     )
     return NaivePipeline(config)
 
