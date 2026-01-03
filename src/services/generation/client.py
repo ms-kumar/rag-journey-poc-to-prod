@@ -4,6 +4,8 @@ from typing import Any
 
 from transformers import Pipeline, pipeline
 
+from src.services.truncation import TextTruncator
+
 
 @dataclass
 class GenerationConfig:
@@ -67,7 +69,11 @@ class HFGenerator:
     def generate(self, prompt: str, overrides: dict[str, Any] | None = None) -> str:
         """
         Generate text for a single prompt and return the first generated sequence as a string.
-        """
+        """  # Apply overflow guard - truncate prompt to model limits (reserve space for output)
+        truncator = TextTruncator.from_generation_model(
+            self.config.model_name, reserve_output_tokens=self.config.max_new_tokens
+        )
+        prompt = truncator.truncate(prompt)
         kwargs = self._merge_kwargs(overrides)
         # call pipeline for the single prompt
         out = self.pipe(prompt, **kwargs)

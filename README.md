@@ -34,11 +34,17 @@ Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answe
 
 📄 **Multi-Format**: Ingest TXT, Markdown, HTML, and PDF documents with format-specific processing
 
-🧪 **Comprehensive Tests**: 184 tests with 70% coverage across all components
+🧪 **Comprehensive Tests**: 261 tests with 77% coverage across all components
 
 🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
 
 📊 **Performance Benchmarks**: Built-in retrieval@k and latency benchmarking tools
+
+💰 **Token Budget Management**: Comprehensive token limits and cost estimation for all models
+
+✂️ **Smart Truncation**: Multiple truncation strategies (HEAD/TAIL/MIDDLE) with word boundary preservation
+
+🛡️ **Overflow Protection**: Automatic token limit enforcement prevents model API errors
 
 ### Project Structure
 
@@ -231,6 +237,86 @@ This benchmarks:
 - Answer generation time
 - End-to-end pipeline performance
 
+#### Token Budget Management
+
+Check token limits and estimate costs for any model:
+
+```python
+from src.models.token_budgets import get_embedding_budget, estimate_cost
+
+# Check model limits
+budget = get_embedding_budget("text-embedding-3-small")
+print(f"Max tokens: {budget.max_input_tokens}")
+print(f"Batch size: {budget.recommended_batch_size}")
+
+# Estimate costs
+cost = estimate_cost("gpt-4-turbo", input_tokens=5000, output_tokens=1000)
+print(f"Estimated cost: ${cost:.4f}")
+```
+
+**Supported Models:**
+- **Embeddings**: OpenAI (text-embedding-3-*), Cohere (embed-*), E5, BGE, Hash
+- **Generation**: GPT-4, GPT-3.5, Claude 3 (Opus/Sonnet/Haiku), Llama 2, Mistral, GPT-2
+
+See [docs/token-budgets.md](docs/token-budgets.md) for complete details and cost optimization strategies.
+
+#### Text Truncation
+
+Automatically truncate text to fit model token limits:
+
+```python
+from src.services.truncation import TextTruncator, TruncationStrategy
+
+# Create truncator for specific model
+truncator = TextTruncator.from_embedding_model("text-embedding-3-small")
+
+# Truncate with different strategies
+text = "..." * 10000
+truncated = truncator.truncate(text)  # HEAD strategy (keep beginning)
+
+# Or use TAIL (keep end), MIDDLE (keep both ends), NONE (error on exceed)
+truncator = TextTruncator(max_tokens=512, strategy=TruncationStrategy.MIDDLE)
+```
+
+**Features:**
+- 4 truncation strategies: HEAD, TAIL, MIDDLE, NONE
+- Word boundary preservation
+- Batch processing support
+- Model-aware token limits
+- Conservative token estimation (~4 chars/token)
+
+See [docs/truncation.md](docs/truncation.md) for complete truncation guide.
+
+#### Overflow Protection
+
+The system automatically protects against token limit overflows in all embedding and generation calls:
+
+```python
+# Overflow guards are built-in - no manual truncation needed!
+from src.services.embeddings.providers import OpenAIEmbeddings
+
+# Create embedding client
+embedder = OpenAIEmbeddings(model="text-embedding-3-small")
+
+# Automatically truncates to 8191 tokens if needed
+long_texts = ["..." * 10000]  # Way over token limit
+embeddings = embedder.embed(long_texts)  # No error! Auto-truncated
+```
+
+**How It Works:**
+- Embedding providers automatically truncate texts before API calls
+- Generation client reserves space for output tokens
+- Uses model-specific token limits from token budget system
+- Prevents costly API errors and failed requests
+
+**Protected Components:**
+- ✅ OpenAI embeddings (8191 token limit)
+- ✅ Cohere embeddings (512 token limit)
+- ✅ HuggingFace embeddings (model-specific limits)
+- ✅ Text generation (reserves output tokens from input budget)
+
+See [docs/overflow-guards.md](docs/overflow-guards.md) for complete documentation and [tests/test_overflow_guards.py](tests/test_overflow_guards.py) for 12 comprehensive tests.
+
 #### Embedding Providers
 
 The system supports multiple embedding providers:
@@ -298,7 +384,7 @@ make test-cov
 open htmlcov/index.html
 ```
 
-**Test Coverage**: 184 tests | 70% coverage
+**Test Coverage**: 261 tests | 77% coverage
 
 Quality gates enforced:
 - ✅ Ruff formatting (100 char line length)

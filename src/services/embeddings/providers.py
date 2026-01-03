@@ -5,6 +5,8 @@ Provider-specific embedding adapters for E5, BGE, OpenAI, and other services.
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
+from src.services.truncation import TextTruncator
+
 
 class BaseEmbeddingProvider(ABC):
     """Base class for embedding providers."""
@@ -66,8 +68,9 @@ class HuggingFaceEmbeddings(BaseEmbeddingProvider):
         if not texts:
             return []
 
-        # Convert to list if needed
-        texts_list = list(texts)
+        # Apply overflow guard - truncate texts to model limits
+        truncator = TextTruncator.from_embedding_model(self.model_name)
+        texts_list = truncator.truncate_batch(list(texts))
 
         # Encode texts
         embeddings = self._model.encode(  # type: ignore[union-attr]
@@ -240,7 +243,9 @@ class OpenAIEmbeddings(BaseEmbeddingProvider):
         if not texts:
             return []
 
-        texts_list = list(texts)
+        # Apply overflow guard - truncate texts to model limits
+        truncator = TextTruncator.from_embedding_model(self.model)
+        texts_list = truncator.truncate_batch(list(texts))
         all_embeddings = []
 
         # Process in batches
@@ -314,7 +319,9 @@ class CohereEmbeddings(BaseEmbeddingProvider):
         if not texts:
             return []
 
-        texts_list = list(texts)
+        # Apply overflow guard - truncate texts to model limits
+        truncator = TextTruncator.from_embedding_model(self.model)
+        texts_list = truncator.truncate_batch(list(texts))
         all_embeddings = []
 
         # Process in batches
