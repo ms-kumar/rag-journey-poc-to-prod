@@ -15,11 +15,17 @@ jobs:
       - name: Install dependencies
         run: |
           set -euo pipefail
-          uv sync --frozen
+          uv sync --extra dev --no-dev
 
-      - name: Run tests
-        env:
-          PYTHONPATH: src
+      - name: Run quality checks
         run: |
           set -euo pipefail
-          uv run --with pytest pytest -q || test $? -eq 5
+          uv run ruff format --check src tests
+          uv run ruff check src tests
+          uv run mypy --namespace-packages -p src
+          uv run --extra dev bandit -r src -c pyproject.toml
+
+      - name: Run tests
+        run: |
+          set -euo pipefail
+          uv run python -m pytest tests -v -k "not slow" --cov=src --cov-report=term-missing
