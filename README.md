@@ -1,42 +1,44 @@
 # Advanced RAG
 
-A Retrieval-Augmented Generation (RAG) system built with FastAPI, Qdrant, and HuggingFace.
-
-## Week 1: Naive RAG Pipeline
-
-This week focuses on building a foundational RAG pipeline with the following components:
+A production-ready Retrieval-Augmented Generation (RAG) system built with FastAPI, Qdrant, and HuggingFace, featuring intelligent caching, multiple embedding providers, and comprehensive quality tooling.
 
 ### Architecture
 
 ```
 Documents → Chunking → Embeddings → Vector Store (Qdrant)
-                                          ↓
+                           ↓
+                    LRU Cache (83x speedup)
+                           ↓
 Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answer
 ```
 
-### Components Built
+### Core Components
 
 | Component | Description |
 |-----------|-------------|
-| **Ingestion** | Multi-format document loading (TXT, MD, HTML, PDF) |
-| **Chunking** | Smart chunking with overlap support (200-512 chars) |
-| **Embeddings** | Multiple providers (Hash, E5, BGE, OpenAI, Cohere) |
-| **Cache** | LRU embedding cache with 83x speedup on repeated texts |
-| **Vector Store** | Qdrant for similarity search |
-| **Generation** | GPT-2 for text generation |
-| **API** | FastAPI endpoints for ingest and generate |
+| **Ingestion** | Multi-format document loading (TXT, MD, HTML, PDF) with BeautifulSoup and PyPDF2 |
+| **Chunking** | Fixed-size and heading-aware chunking with configurable overlap |
+| **Embeddings** | Multiple providers with automatic caching (Hash, E5, BGE, OpenAI, Cohere) |
+| **Cache** | LRU embedding cache with disk persistence (83x speedup on repeated texts) |
+| **Vector Store** | Qdrant integration with efficient similarity search |
+| **Generation** | HuggingFace transformers for text generation (GPT-2 default) |
+| **API** | FastAPI with async endpoints for ingest and generate |
 
 ### Key Features
 
-✨ **Intelligent Caching**: Built-in LRU cache with disk persistence reduces redundant computations by up to 83x
+✨ **Intelligent Caching**: LRU cache with disk persistence reduces redundant computations by up to 83x
 
-🔄 **Batch Processing**: Efficient batch encoding for embedding large datasets
+🔄 **Batch Processing**: Efficient batch encoding with configurable batch sizes
 
 🔌 **Multiple Providers**: Support for local (E5, BGE) and API-based (OpenAI, Cohere) embeddings
 
-📄 **Multi-Format**: Ingest TXT, Markdown, HTML, and PDF documents
+📄 **Multi-Format**: Ingest TXT, Markdown, HTML, and PDF documents with format-specific processing
 
-🧪 **Comprehensive Tests**: 182 tests covering all components (94% coverage)
+🧪 **Comprehensive Tests**: 184 tests with 70% coverage across all components
+
+🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
+
+📊 **Performance Benchmarks**: Built-in retrieval@k and latency benchmarking tools
 
 ### Project Structure
 
@@ -194,9 +196,9 @@ uv run pytest -k "test_embedding" -v
 
 ### Examples & Demos
 
-#### Embedding Cache Demo
+#### Embedding Cache Performance
 
-See the performance benefits of caching in action:
+See the performance benefits of intelligent caching:
 
 ```bash
 python examples/cache_demo.py
@@ -212,9 +214,22 @@ Speedup:    83.1x
 ```
 
 For detailed caching documentation, see [docs/embedding-cache.md](docs/embedding-cache.md).
-   ```bash
-   make dev         # Runs uvicorn with --reload
-   ```
+
+#### Retrieval Benchmarks
+
+Run comprehensive retrieval@k and latency benchmarks:
+
+```bash
+python examples/benchmark_retrieval.py
+```
+
+This benchmarks:
+- Document ingestion and chunking latency
+- Embedding generation (cold vs warm cache)
+- Vector store indexing performance  
+- Retrieval@k latency for k=1,3,5,10
+- Answer generation time
+- End-to-end pipeline performance
 
 #### Embedding Providers
 
@@ -241,27 +256,65 @@ EMBED_MODEL=text-embedding-3-small
 EMBED_API_KEY=sk-proj-...
 ```
 
-# Clean cache files
-make clean
+### Configuration
 
-# Run tests
-make test
+All configuration is managed through environment variables and `.env` file:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `INGESTION_DIR` | `./data` | Directory for document ingestion |
+| `CHUNK_SIZE` | `200` | Characters per chunk |
+| `CHUNK_OVERLAP` | `50` | Overlapping characters between chunks |
+| `CHUNKING_STRATEGY` | `heading_aware` | Chunking strategy: `fixed` or `heading_aware` |
+| `EMBED_PROVIDER` | `hash` | Embedding provider |
+| `EMBED_MODEL` | `simple-hash` | Model name/identifier |
+| `EMBED_DIM` | `64` | Embedding dimension |
+| `EMBED_CACHE_ENABLED` | `true` | Enable embedding cache |
+| `EMBED_CACHE_MAX_SIZE` | `10000` | Maximum cache entries |
+| `EMBED_CACHE_DIR` | `.cache/embeddings` | Cache directory |
+| `QDRANT_URL` | `None` | Qdrant server URL |
+| `QDRANT_COLLECTION_NAME` | `naive_collection` | Collection name |
+
+See [.env.example](.env.example) for complete configuration options.
+
+### Testing & Quality
+
+The project maintains high code quality standards with automated tooling:
+
+```bash
+# Run all quality checks (format, lint, type-check, security)
+make quality
+
+# Individual checks
+make format      # Format code with ruff
+make lint        # Lint with ruff  
+make type-check  # Type check with mypy
+make security    # Security scan with bandit
+
+# Run tests with coverage
+make test-cov
+
+# View coverage report
+open htmlcov/index.html
 ```
 
-### Week 1 Limitations
+**Test Coverage**: 184 tests | 70% coverage
 
-- Simple hash-based embeddings (not semantic)
-- Basic GPT-2 model (not instruction-tuned)
-- Fixed chunk size without overlap
-- No re-ranking or hybrid search
+Quality gates enforced:
+- ✅ Ruff formatting (100 char line length)
+- ✅ Ruff linting (E, W, F, I, N, UP, B, C4, SIM, TCH, Q, RET, PTH rules)
+- ✅ Mypy type checking (strict mode)
+- ✅ Bandit security scanning
+- ✅ Pre-commit hooks for automated checks
 
-### Next Steps (Week 2+)
+### CI/CD
 
-- [ ] Semantic embeddings (sentence-transformers)
-- [ ] Better LLM integration (OpenAI, Anthropic)
-- [ ] Chunk overlap and smarter splitting
-- [ ] Re-ranking for improved precision
-- [ ] Hybrid search (dense + sparse)
+GitHub Actions workflow runs on every push:
+- Install dependencies with uv
+- Run all quality checks
+- Execute full test suite with coverage
+
+See [.github/workflows/ci.yml](.github/workflows/ci.yml) for details.
 
 ## Special Thanks
 
