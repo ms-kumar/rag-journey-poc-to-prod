@@ -119,3 +119,15 @@ make test
 - [ ] Chunk overlap and smarter splitting
 - [ ] Re-ranking for improved precision
 - [ ] Hybrid search (dense + sparse)
+
+## Special Thanks
+
+- [uv](https://github.com/astral-sh/uv) for fast, modern Python packaging/workflows.
+- [Ruff](https://github.com/astral-sh/ruff) for linting/formatting.
+- [Mother of AI project (arxiv-paper-curator)](https://github.com/jamwithai/arxiv-paper-curator.git) for inspiration and learning resources.
+- The open-source ecosystem that makes this project possible, including:
+   - [FastAPI](https://github.com/fastapi/fastapi) and [Uvicorn](https://github.com/encode/uvicorn)
+   - [Qdrant](https://github.com/qdrant/qdrant) and [qdrant-client](https://github.com/qdrant/qdrant-client)
+   - [LangChain](https://github.com/langchain-ai/langchain)
+   - [Transformers](https://github.com/huggingface/transformers) and [PyTorch](https://github.com/pytorch/pytorch)
+   - [Pydantic](https://github.com/pydantic/pydantic)
