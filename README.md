@@ -529,7 +529,8 @@ Comprehensive guides for all major features:
 **Development Progress:**
 - [Week 1](docs/week-plans/week-1.md): Naive RAG Pipeline
 - [Week 2](docs/week-plans/week-2.md): Production-Ready Enhancements (caching, providers, quality)
-- [Week 3](docs/week-plans/week-3.md): Resilience and Observability (retry, health checks)
+- [Week 3](docs/week-plans/week-3.md): Hybrid Retrieval & Fusion (dense, sparse, RRF, weighted fusion)
+- [Week 4](docs/week-plans/week-4.md): Metadata Filtering (source, date, tag filters)
 
 ### Configuration
 
