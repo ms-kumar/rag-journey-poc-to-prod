@@ -77,3 +77,6 @@ qdrant_storage/
 # models/
 *.bin
 *.safetensors
+
+# Generated benchmark corpora (keep repo small)
+data/generated/

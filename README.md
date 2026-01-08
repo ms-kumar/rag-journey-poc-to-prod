@@ -120,14 +120,39 @@ src/
    uv run python -m src.main
    ```
 
-5. **Ingest documents**:
+5. **(Optional) Generate a larger benchmark corpus** (recommended for performance analysis):
+   ```bash
+   # Generates ~a few MiB of synthetic docs under data/generated/ (gitignored)
+   python scripts/generate_benchmark_corpus.py \
+     --docs 1500 \
+     --min-words 140 \
+     --max-words 360 \
+     --jsonl \
+     --combined
+   ```
+
+    For **GiB-scale end-to-end benchmarking**, prefer sharded `.txt` files to avoid millions of tiny files:
+    ```bash
+    # Example: ~1 GiB corpus split across 64 shard files
+    python scripts/generate_benchmark_corpus.py \
+       --out-dir data/generated/benchmark_1gib \
+       --target-gib 1 \
+       --shards 64 \
+       --min-words 140 \
+       --max-words 360
+
+    # Point ingestion to the generated folder (either via env var or .env)
+    export INGESTION__DIR=./data/generated/benchmark_1gib
+    ```
+
+6. **Ingest documents**:
    ```bash
    make ingest
    # or
    curl -X POST http://localhost:8000/api/v1/rag/ingest
    ```
 
-6. **Query the RAG system**:
+7. **Query the RAG system**:
    ```bash
    curl -X POST http://localhost:8000/api/v1/rag/generate \
      -H "Content-Type: application/json" \

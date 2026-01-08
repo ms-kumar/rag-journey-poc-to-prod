@@ -1,0 +1,104 @@
+Synthetic Sample Document (for local testing)
+
+This file is intentionally *not* a real manual or copied article.
+It’s original text meant to be long enough to exercise chunking,
+embedding, retrieval, and answer grounding in a RAG pipeline.
+
+Section 1 — RAG overview
+
+Retrieval-Augmented Generation (RAG) is a pattern where a model answers a
+question using both its internal parameters and a short, retrieved context.
+The goal is to keep answers up-to-date and grounded in the documents you own.
+
+In a typical pipeline:
+1) You ingest documents.
+2) You split documents into chunks.
+3) You embed chunks into vectors.
+4) You store vectors in a vector database.
+5) You embed the user query.
+6) You retrieve the nearest chunks.
+7) You construct a prompt with the retrieved context.
+8) You generate an answer.
+
+Section 2 — Chunking considerations
+
+Chunk size and overlap determine how much text is visible to the retriever.
+Large chunks may preserve more context but can dilute relevance and increase
+token usage. Small chunks can improve recall for narrow facts but may lose
+cross-paragraph context.
+
+Practical heuristic:
+- Start with 300–800 tokens per chunk.
+- Use 10–20% overlap when paragraphs are short.
+- For structured Markdown or HTML, prefer heading-aware chunking.
+
+Section 3 — Token budgets and truncation
+
+You usually have a hard limit on how many tokens can be sent to an LLM.
+That budget must cover:
+- system instructions
+- user prompt
+- retrieved context
+- expected completion tokens
+
+If you exceed the budget you can:
+- reduce top_k
+- shorten chunks
+- trim the longest chunks
+- apply a middle/edge truncation strategy
+- perform summarization as a pre-step
+
+Section 4 — Retrieval quality vs latency
+
+Performance analysis is not only about speed; it’s also about the trade-off
+between quality metrics and latency.
+
+Common quality metrics:
+- Recall@k (did the correct chunk appear in the top k?)
+- MRR (how early did the correct chunk appear?)
+- nDCG (ranking quality with graded relevance)
+
+Common latency metrics:
+- p50 and p95 for end-to-end request latency
+- retrieval latency alone (vector search + filters)
+- embedding latency (query embedding, and ingestion embedding)
+- cache hit rate and time saved per hit
+
+Section 5 — Metadata and filters
+
+Metadata is valuable for debugging and for restricting retrieval.
+Examples of metadata keys:
+- source (file path, URL, dataset name)
+- doc_id (stable identifier)
+- section (heading path)
+- created_at (timestamp)
+- tags (topic, product, team)
+
+Filters help reduce false positives but can increase query complexity.
+If your vector database supports payload indexes, index the fields that are
+frequently filtered so you can keep tail latencies under control.
+
+Section 6 — Synthetic benchmark guidance
+
+If your dataset is too small, performance measurements may be misleading.
+You want a corpus big enough to:
+- force meaningful batching behavior in embedding
+- exercise caching (warm vs cold)
+- reveal tail latency behavior
+- test filtering/indexing behavior
+
+For that reason, this repository includes a generator script in:
+scripts/generate_benchmark_corpus.py
+
+It can generate many documents into:
+data/generated/benchmark_corpus/
+
+Section 7 — Example queries
+
+Try prompts like:
+- “How does overlap affect chunk recall?”
+- “What metrics should I track for retrieval latency?”
+- “Why do p95 latencies matter more than p50 in production?”
+- “How do metadata filters interact with vector search?”
+
+End of synthetic sample.
