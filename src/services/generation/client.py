@@ -4,6 +4,7 @@ from typing import Any
 
 from transformers import Pipeline, pipeline
 
+from src.services.retry import RetryConfig, retry_with_backoff
 from src.services.truncation import TextTruncator
 
 
@@ -19,6 +20,8 @@ class GenerationConfig:
     num_return_sequences: int = 1
     # Any additional kwargs passed through to pipeline call
     extra_kwargs: dict[str, Any] | None = None
+    # Retry configuration
+    retry_config: RetryConfig | None = None
 
 
 class DependencyMissingError(RuntimeError):
@@ -39,6 +42,13 @@ class HFGenerator:
             raise DependencyMissingError("transformers is not installed")
 
         self.config = config
+        self.retry_config = config.retry_config or RetryConfig(
+            max_retries=2,
+            initial_delay=0.5,
+            max_delay=10.0,
+            exponential_base=2.0,
+            jitter=True,
+        )
         device = config.device if config.device is not None else -1
 
         # Create pipeline for text-generation. Use return_full_text=False to get only generated continuation.
@@ -75,8 +85,14 @@ class HFGenerator:
         )
         prompt = truncator.truncate(prompt)
         kwargs = self._merge_kwargs(overrides)
-        # call pipeline for the single prompt
-        out = self.pipe(prompt, **kwargs)
+
+        # call pipeline for the single prompt with retry
+        @retry_with_backoff(self.retry_config)
+        def _generate():
+            return self.pipe(prompt, **kwargs)
+
+        out = _generate()
+        
         # pipeline returns a list of generated sequences (dicts) for the prompt
         # handle common response shapes
         if not out:

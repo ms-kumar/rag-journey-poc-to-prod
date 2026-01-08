@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.api.v1.endpoints import rag
+from src.api.v1.endpoints import health, rag
 from src.config import settings
 
 # Configure logging
@@ -34,20 +34,24 @@ app = FastAPI(
 
 # Include routers
 app.include_router(rag.router, prefix="/api/v1/rag", tags=["rag"])
+app.include_router(health.router, prefix="/api/v1", tags=["health"])
 
 
 @app.get("/")
-def health_check():
+def root():
     return {
         "status": "API is running",
         "app": settings.app.name,
         "version": settings.app.version,
+        "health_check": "/api/v1/health",
+        "detailed_health": "/api/v1/health/detailed",
     }
 
 
 @app.get("/health")
-def health():
-    return {"status": "healthy"}
+def legacy_health():
+    """Legacy health endpoint - redirects to new health API."""
+    return {"status": "healthy", "note": "Use /api/v1/health for detailed checks"}
 
 
 if __name__ == "__main__":

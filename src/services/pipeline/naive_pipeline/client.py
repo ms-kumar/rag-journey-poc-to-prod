@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Literal
 from uuid import uuid4
 
 from src.services.chunking.factory import get_chunking_client
@@ -97,18 +98,39 @@ class NaivePipeline:
 
         return total_chunks
 
-    def retrieve(self, query: str, k: int = 5) -> list:
+    def retrieve(
+        self,
+        query: str,
+        k: int = 5,
+        search_type: Literal["vector", "bm25", "hybrid"] = "vector",
+        filters: dict | None = None,
+        hybrid_alpha: float = 0.5,
+    ) -> list:
         """
         Retrieve top-k similar documents for the given query.
 
         Args:
             query: The search query.
             k: Number of results to return.
+            search_type: Type of search ("vector", "bm25", or "hybrid")
+            filters: Optional metadata filters (dict format)
+            hybrid_alpha: Weight for hybrid search (0.0=BM25, 1.0=vector)
 
         Returns:
             List of retrieved documents (LangChain Document objects or similar).
         """
-        return self.vectorstore.similarity_search(query, k=k)
+        if search_type == "bm25":
+            return self.vectorstore.bm25_search(query, k=k, filter_dict=filters)
+        elif search_type == "hybrid":
+            return self.vectorstore.hybrid_search(
+                query, k=k, filter_dict=filters, alpha=hybrid_alpha
+            )
+        else:  # vector (default)
+            if filters:
+                return self.vectorstore.similarity_search_with_filter(
+                    query, k=k, filter_dict=filters
+                )
+            return self.vectorstore.similarity_search(query, k=k)
 
     def generate(self, prompt: str, retrieved_docs: Sequence | None = None) -> str:
         """

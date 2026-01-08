@@ -9,6 +9,7 @@ def get_vectorstore_client(
     prefer_grpc: bool = True,
     distance: str = "Cosine",
     vector_size: int = 64,
+    enable_bm25: bool = False,
 ) -> QdrantVectorStoreClient:
     """
     Factory helper to create a Qdrant-backed vectorstore client.
@@ -21,6 +22,7 @@ def get_vectorstore_client(
       prefer_grpc: whether to prefer gRPC transport.
       distance: distance metric used when creating the collection (Cosine/Dot/Euclid).
       vector_size: dimension of the embedding vectors.
+      enable_bm25: whether to enable BM25 indexing on page_content for hybrid search.
     """
     config = VectorStoreConfig(
         qdrant_url=qdrant_url,
@@ -29,5 +31,6 @@ def get_vectorstore_client(
         collection_name=collection_name,
         distance=distance,
         vector_size=vector_size,
+        enable_bm25=enable_bm25,
     )
     return QdrantVectorStoreClient(embeddings=embeddings, config=config)

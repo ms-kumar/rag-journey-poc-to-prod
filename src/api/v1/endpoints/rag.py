@@ -45,9 +45,21 @@ async def generate(request: GenerateRequest):
     """
     RAG Generate endpoint: retrieves relevant documents and generates a response.
     Returns answer + context.
+
+    Supports multiple search types:
+    - vector: Semantic similarity search using embeddings (default)
+    - bm25: Keyword-based search using BM25 algorithm
+    - hybrid: Combined vector + BM25 search for best results
+
+    Optional metadata filters can be applied using filter syntax:
+    - Exact match: {"source": "doc1.txt"}
+    - Range: {"year$gte": 2020, "score$lte": 0.9}
+    - Match any: {"category$in": ["AI", "ML"]}
+    - Negation: {"status$not": "deleted"}
     """
     logger.info(
-        f"Received generate request: prompt='{request.prompt[:50]}...', top_k={request.top_k}"
+        f"Received generate request: prompt='{request.prompt[:50]}...', "
+        f"top_k={request.top_k}, search_type={request.search_type}"
     )
 
     try:
@@ -56,9 +68,15 @@ async def generate(request: GenerateRequest):
         logger.error(f"Pipeline initialization failed: {e}")
         raise HTTPException(status_code=500, detail=f"Pipeline initialization failed: {e}")
 
-    # Retrieve relevant documents
-    logger.debug(f"Retrieving top {request.top_k} documents...")
-    retrieved = pipeline.retrieve(request.prompt, k=request.top_k)
+    # Retrieve relevant documents with filters and search type
+    logger.debug(f"Retrieving top {request.top_k} documents using {request.search_type} search...")
+    retrieved = pipeline.retrieve(
+        request.prompt,
+        k=request.top_k,
+        search_type=request.search_type,
+        filters=request.metadata_filters,
+        hybrid_alpha=request.hybrid_alpha,
+    )
     logger.info(f"Retrieved {len(retrieved)} documents")
 
     # Extract sources and build context

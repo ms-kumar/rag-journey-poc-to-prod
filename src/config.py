@@ -141,6 +141,7 @@ class VectorStoreSettings(BaseConfigSettings):
     api_key: str | None = None
     collection_name: str = "naive_collection"
     prefer_grpc: bool = True
+    enable_bm25: bool = False  # Enable BM25 indexing for hybrid search
 
 
 class GenerationSettings(BaseConfigSettings):

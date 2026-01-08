@@ -34,7 +34,17 @@ Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answe
 
 📄 **Multi-Format**: Ingest TXT, Markdown, HTML, and PDF documents with format-specific processing
 
-🧪 **Comprehensive Tests**: 261 tests with 77% coverage across all components
+🔍 **Advanced Search**: BM25 keyword search, vector similarity, and hybrid search with metadata filtering
+
+🎯 **Smart Filtering**: Flexible query filters with range, exact match, text search, and exclusion operators
+
+⚡ **Index Mappings**: Optimized payload indices for 10-100x faster filtering on large collections
+
+🔁 **Retry & Backoff**: Exponential backoff with jitter for resilient external service calls
+
+🏥 **Health Checks**: Comprehensive health monitoring with Kubernetes-ready readiness/liveness probes
+
+🧪 **Comprehensive Tests**: 311+ tests with high coverage across all components
 
 🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
 
