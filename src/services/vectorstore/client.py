@@ -9,6 +9,8 @@ from qdrant_client.models import (
     Filter,
     PointStruct,
     Prefetch,
+    SparseVector,
+    SparseVectorParams,
     VectorParams,
 )
 
@@ -39,6 +41,9 @@ class VectorStoreConfig:
     # Metrics tracking
     enable_metrics: bool = False  # Track retrieval metrics
     normalize_scores: bool = False  # Normalize scores to [0, 1]
+    # Sparse vectors (SPLADE)
+    enable_sparse: bool = False  # Enable sparse vector storage
+    sparse_vector_name: str = "sparse"  # Name for sparse vector field
 
 
 class DependencyMissingError(RuntimeError):
@@ -53,7 +58,7 @@ class QdrantVectorStoreClient:
     - Uses `qdrant-client.QdrantClient` for connection.
     """
 
-    def __init__(self, embeddings, config: VectorStoreConfig):
+    def __init__(self, embeddings, config: VectorStoreConfig, sparse_encoder=None):
         if QdrantClient is None:
             raise DependencyMissingError(
                 "qdrant-client is required. Install with: pip install 'qdrant-client'"
@@ -63,6 +68,7 @@ class QdrantVectorStoreClient:
 
         self.embeddings = embeddings
         self.config = config
+        self.sparse_encoder = sparse_encoder
         self.retry_config = config.retry_config or RetryConfig(
             max_retries=3,
             initial_delay=1.0,
@@ -109,15 +115,24 @@ class QdrantVectorStoreClient:
             self._create_collection(distance_map)
 
     def _create_collection(self, distance_map: dict) -> None:
-        """Helper to create collection with optional BM25 indexing."""
+        """Helper to create collection with optional BM25 indexing and sparse vectors."""
         from qdrant_client.models import TextIndexParams, TokenizerType
+
+        # Configure vectors (dense and optionally sparse)
+        vectors_config = VectorParams(
+            size=self.config.vector_size,
+            distance=distance_map.get(self.config.distance, Distance.COSINE),
+        )
+
+        # Add sparse vector configuration if enabled
+        sparse_vectors_config = None
+        if self.config.enable_sparse:
+            sparse_vectors_config = {self.config.sparse_vector_name: SparseVectorParams()}
 
         self.qdrant_client.create_collection(
             collection_name=self.config.collection_name,
-            vectors_config=VectorParams(
-                size=self.config.vector_size,
-                distance=distance_map.get(self.config.distance, Distance.COSINE),
-            ),
+            vectors_config=vectors_config,
+            sparse_vectors_config=sparse_vectors_config,
         )
 
         # Enable BM25 indexing on page_content if configured
@@ -142,12 +157,26 @@ class QdrantVectorStoreClient:
     ) -> list[str]:
         """
         Adds texts to the Qdrant collection. Computes embeddings and stores them.
+        Optionally computes and stores sparse vectors if sparse encoder is enabled.
         """
         if not texts:
             return []
 
-        # Generate embeddings
+        # Generate dense embeddings
         vectors = self.embeddings.embed_documents(list(texts))
+
+        # Generate sparse embeddings if enabled
+        sparse_vectors = None
+        if self.config.enable_sparse and self.sparse_encoder:
+            sparse_dicts = self.sparse_encoder.encode_documents(list(texts))
+            # Convert to SparseVector objects
+            sparse_vectors = [
+                SparseVector(
+                    indices=list(sparse_dict.keys()),
+                    values=list(sparse_dict.values()),
+                )
+                for sparse_dict in sparse_dicts
+            ]
 
         # Generate IDs if not provided
         if ids is None:
@@ -159,7 +188,31 @@ class QdrantVectorStoreClient:
             payload = {"page_content": text}
             if metadatas and i < len(metadatas) and metadatas[i]:
                 payload.update(metadatas[i])  # type: ignore[arg-type]
-            points.append(PointStruct(id=point_id, vector=vector, payload=payload))
+
+            # Create PointStruct with both dense and sparse vectors
+            # For Qdrant v1.7+, use vector dict with named vectors
+            if sparse_vectors and i < len(sparse_vectors):
+                # Named vectors approach
+                vector_dict = {
+                    "": vector,  # Default dense vector
+                    self.config.sparse_vector_name: sparse_vectors[i],
+                }
+                points.append(
+                    PointStruct(
+                        id=point_id,
+                        vector=vector_dict,
+                        payload=payload,
+                    )
+                )
+            else:
+                # Regular point with only dense vector
+                points.append(
+                    PointStruct(
+                        id=point_id,
+                        vector=vector,
+                        payload=payload,
+                    )
+                )
 
         # Upsert to Qdrant with retry
         @retry_with_backoff(self.retry_config)
@@ -466,6 +519,91 @@ class QdrantVectorStoreClient:
             )
             metadata["score"] = result.score
             metadata["search_type"] = "hybrid"
+            documents.append(Document(page_content=page_content, metadata=metadata))
+
+        return documents
+
+    def sparse_search(
+        self,
+        query: str,
+        k: int = 5,
+        filter: Filter | None = None,
+        filter_dict: dict | None = None,
+    ) -> list[Document]:
+        """
+        Performs sparse vector search using SPLADE encoder.
+
+        Uses learned sparse representations (SPLADE) for neural retrieval
+        that combines benefits of sparse (efficient, interpretable) and
+        dense (semantic) vectors.
+
+        Args:
+            query: Text query to search for
+            k: Number of results to return
+            filter: Pre-built Qdrant Filter object
+            filter_dict: Simple dict to build filter from
+
+        Returns:
+            List of Document objects ranked by sparse similarity
+
+        Example:
+            # Basic sparse search
+            docs = client.sparse_search("machine learning algorithms", k=10)
+
+            # With filters
+            docs = client.sparse_search(
+                "deep learning",
+                k=10,
+                filter_dict={"year$gte": 2020, "category": "AI"}
+            )
+
+        Note:
+            Requires enable_sparse=True in VectorStoreConfig and
+            a sparse_encoder to be provided during initialization.
+        """
+        if not self.config.enable_sparse:
+            raise ValueError(
+                "Sparse search not enabled. Set enable_sparse=True in VectorStoreConfig."
+            )
+        if not self.sparse_encoder:
+            raise ValueError(
+                "No sparse encoder provided. Pass sparse_encoder during initialization."
+            )
+
+        # Generate sparse query vector
+        sparse_dict = self.sparse_encoder.encode_query(query)
+        sparse_query = SparseVector(
+            indices=list(sparse_dict.keys()),
+            values=list(sparse_dict.values()),
+        )
+
+        # Build filter from dict if provided
+        if filter_dict and not filter:
+            filter = build_filter_from_dict(filter_dict)
+
+        # Sparse search
+        @retry_with_backoff(self.retry_config)
+        def _query_points():
+            return self.qdrant_client.query_points(
+                collection_name=self.config.collection_name,
+                query=sparse_query,
+                using=self.config.sparse_vector_name,
+                limit=k,
+                query_filter=filter,
+            )
+
+        results = _query_points()
+
+        documents = []
+        for result in results.points:
+            page_content = result.payload.get("page_content", "") if result.payload else ""
+            metadata = (
+                {k: v for k, v in result.payload.items() if k != "page_content"}
+                if result.payload
+                else {}
+            )
+            metadata["score"] = result.score
+            metadata["search_type"] = "sparse"
             documents.append(Document(page_content=page_content, metadata=metadata))
 
         return documents
@@ -793,6 +931,51 @@ class QdrantVectorStoreClient:
             scores = [doc.metadata.get("score", 0.0) for doc in docs]
             # Use sigmoid for hybrid scores (can be unbounded)
             normalized = normalize_score_list(scores, method="sigmoid")
+            for doc, norm_score in zip(docs, normalized, strict=True):
+                doc.metadata["score"] = norm_score
+                doc.metadata["score_normalized"] = True
+
+        return docs
+
+    def sparse_search_with_metrics(
+        self,
+        query: str,
+        k: int = 5,
+        normalize_scores: bool | None = None,
+    ) -> list[Document]:
+        """
+        Perform sparse search with automatic metrics tracking and score normalization.
+
+        Args:
+            query: Text query to search for
+            k: Number of results to return
+            normalize_scores: Override config.normalize_scores setting
+
+        Returns:
+            List of Document objects with normalized scores (if enabled)
+
+        Example:
+            docs = client.sparse_search_with_metrics(
+                "neural information retrieval",
+                k=10,
+                normalize_scores=True
+            )
+        """
+        if self.metrics:
+            with RetrievalTimer(self.metrics, search_type="sparse") as timer:
+                docs = self.sparse_search(query, k=k)
+                scores = [doc.metadata.get("score", 0.0) for doc in docs]
+                timer.set_scores(scores)
+        else:
+            docs = self.sparse_search(query, k=k)
+
+        # Normalize scores if requested
+        should_normalize = (
+            normalize_scores if normalize_scores is not None else self.config.normalize_scores
+        )
+        if should_normalize and docs:
+            scores = [doc.metadata.get("score", 0.0) for doc in docs]
+            normalized = normalize_score_list(scores, method="minmax")
             for doc, norm_score in zip(docs, normalized, strict=True):
                 doc.metadata["score"] = norm_score
                 doc.metadata["score_normalized"] = True

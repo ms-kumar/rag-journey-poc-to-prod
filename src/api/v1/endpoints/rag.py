@@ -50,6 +50,7 @@ async def generate(request: GenerateRequest):
     - vector: Semantic similarity search using embeddings (default)
     - bm25: Keyword-based search using BM25 algorithm
     - hybrid: Combined vector + BM25 search for best results
+    - sparse: Neural sparse retrieval using SPLADE encoder
 
     Optional metadata filters can be applied using filter syntax:
     - Exact match: {"source": "doc1.txt"}

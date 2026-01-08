@@ -102,7 +102,7 @@ class NaivePipeline:
         self,
         query: str,
         k: int = 5,
-        search_type: Literal["vector", "bm25", "hybrid"] = "vector",
+        search_type: Literal["vector", "bm25", "hybrid", "sparse"] = "vector",
         filters: dict | None = None,
         hybrid_alpha: float = 0.5,
     ) -> list:
@@ -112,7 +112,7 @@ class NaivePipeline:
         Args:
             query: The search query.
             k: Number of results to return.
-            search_type: Type of search ("vector", "bm25", or "hybrid")
+            search_type: Type of search ("vector", "bm25", "hybrid", or "sparse")
             filters: Optional metadata filters (dict format)
             hybrid_alpha: Weight for hybrid search (0.0=BM25, 1.0=vector)
 
@@ -125,6 +125,8 @@ class NaivePipeline:
             return self.vectorstore.hybrid_search(
                 query, k=k, filter_dict=filters, alpha=hybrid_alpha
             )
+        if search_type == "sparse":
+            return self.vectorstore.sparse_search(query, k=k, filter_dict=filters)
         # vector (default)
         if filters:
             return self.vectorstore.similarity_search_with_filter(query, k=k, filter_dict=filters)

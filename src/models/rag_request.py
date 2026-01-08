@@ -11,7 +11,7 @@ class GenerateRequest(BaseModel):
     - `top_k`: number of retrieved passages to use (defaults to 5).
     - `max_length`: optional generation max tokens override.
     - `metadata_filters`: optional filters applied to retrieval metadata.
-    - `search_type`: type of search to perform (vector, bm25, or hybrid).
+    - `search_type`: type of search to perform (vector, bm25, hybrid, or sparse).
     - `hybrid_alpha`: weight for hybrid search (0.0=BM25 only, 1.0=vector only).
     """
 
@@ -21,7 +21,7 @@ class GenerateRequest(BaseModel):
     metadata_filters: dict | None = Field(
         None, description="Optional metadata filters for retrieval"
     )
-    search_type: Literal["vector", "bm25", "hybrid"] = Field(
+    search_type: Literal["vector", "bm25", "hybrid", "sparse"] = Field(
         "vector", description="Type of search to perform"
     )
     hybrid_alpha: float = Field(

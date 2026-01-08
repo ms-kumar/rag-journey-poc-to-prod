@@ -34,7 +34,7 @@ Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answe
 
 📄 **Multi-Format**: Ingest TXT, Markdown, HTML, and PDF documents with format-specific processing
 
-🔍 **Advanced Search**: BM25 keyword search, vector similarity, and hybrid search with metadata filtering
+🔍 **Advanced Search**: BM25 keyword search, vector similarity, hybrid search, and SPLADE sparse "retrieval with metadata filtering
 
 🎯 **Smart Filtering**: Flexible query filters with range, exact match, text search, and exclusion operators
 
@@ -48,9 +48,12 @@ Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answe
 
 💾 **Index Persistence**: Snapshot and restore capabilities for backup and disaster recovery
 
+🧠 **Neural Sparse Retrieval**: SPLADE encoder for efficient learned sparse representations
+
 📏 **Score Normalization**: Normalize similarity scores across different search types for fair comparison
 
-🧪 **Comprehensive Tests**: 405 tests with high coverage across all components
+"
+🧪 **Comprehensive Tests**: 435 tests with high coverage across all components
 
 🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
 

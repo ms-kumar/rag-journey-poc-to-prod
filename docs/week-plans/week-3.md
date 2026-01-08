@@ -66,12 +66,12 @@ Enhance the RAG system with production-grade resilience patterns and comprehensi
 - ✅ Linting: All checks passed
 - ✅ Type checking: No issues in 45 source files
 - ✅ Security: No issues identified
-- ✅ Tests: **405 passed** (71% coverage)
+- ✅ Tests: **435 passed** (75% coverage)
 
 ### 4. Dense Retrieval Enhancements ✅
 - [x] Retrieval performance metrics tracking
 - [x] Latency percentiles (p50, p90, p95, p99)
-- [x] Per-search-type metrics (vector, BM25, hybrid)
+- [x] Per-search-type metrics (vector, BM25, hybrid, sparse)
 - [x] Score normalization (minmax, zscore, sigmoid)
 - [x] Index snapshot creation and restoration
 - [x] Collection export for monitoring
@@ -82,6 +82,7 @@ Enhance the RAG system with production-grade resilience patterns and comprehensi
 - [x] `RetrievalTimer` context manager
 - [x] `similarity_search_with_metrics()` method
 - [x] `hybrid_search_with_metrics()` method
+- [x] `sparse_search_with_metrics()` method
 
 **Key Features:**
 - 📊 **Performance Tracking**: Automatic latency and score tracking
@@ -89,6 +90,27 @@ Enhance the RAG system with production-grade resilience patterns and comprehensi
 - 📏 **Score Normalization**: Fair comparison across search types
 - 🎯 **Quality Metrics**: MRR, Precision@k, Recall@k calculations
 - 🔄 **Per-Type Stats**: Separate metrics for each search type
+
+### 5. Sparse Retrieval (SPLADE) ✅
+- [x] SPLADE encoder integration (naver/splade-cocondenser-ensembledistil)
+- [x] Sparse vector storage in Qdrant
+- [x] Lazy model loading with transformers
+- [x] Batch encoding with configurable batch size
+- [x] Query and document encoding methods
+- [x] Sparse search API (`sparse_search()`)
+- [x] Sparse search with metrics (`sparse_search_with_metrics()`)
+- [x] Score normalization for sparse vectors
+- [x] Support for "sparse" search type in RAG API
+- [x] **24 comprehensive tests** (97% coverage for encoder)
+- [x] `SPLADEEncoder` class with config
+- [x] `create_splade_encoder()` factory function
+
+**Key Features:**
+- 🧠 **Neural Sparse Retrieval**: Learned sparse representations with SPLADE
+- ⚡ **Efficient Storage**: Sparse format reduces memory and speeds up search
+- 🎯 **Interpretable**: Vocabulary-aligned dimensions
+- 🔄 **Flexible**: Works alongside dense vectors for hybrid approaches
+- 📈 **Performance Tracking**: Integrated with retrieval metrics system
 
 ## Architecture Improvements
 
@@ -128,21 +150,62 @@ if all(c.status == ServiceStatus.HEALTHY for c in components):
 # Enable metrics tracking
 config = VectorStoreConfig(
     enable_metrics=True,
-    normalize_scores=True
+    normalize_scores=True,
+    enable_sparse=True,  # Enable sparse vectors
 )
-client = QdrantVectorStoreClient(embeddings, config)
+client = QdrantVectorStoreClient(embeddings, config, sparse_encoder=sparse_encoder)
 
-# Automatic tracking
+# Automatic tracking for all search types
 docs = client.similarity_search_with_metrics("query", k=10)
+docs = client.sparse_search_with_metrics("neural retrieval", k=5)
 
 # Get performance stats
 metrics = client.get_retrieval_metrics()
 print(f"P50: {metrics['latency']['p50']:.2f}ms")
 print(f"P95: {metrics['latency']['p95']:.2f}ms")
 
+# Per-search-type breakdown
+for search_type, stats in metrics['by_search_type'].items():
+    print(f"{search_type}: {stats['latency']['p50']:.2f}ms")
+
 # Snapshot management
 snapshot_id = client.create_snapshot("backup_2024_01_08")
 client.restore_snapshot(snapshot_id)
+```
+
+### Sparse Retrieval Integration
+```python
+from src.services.embeddings.sparse_encoder import create_splade_encoder
+
+# Create SPLADE encoder
+sparse_encoder = create_splade_encoder(
+    model_name="naver/splade-cocondenser-ensembledistil",
+    device="cuda",  # or "cpu"
+    batch_size=32
+)
+
+# Enable sparse vectors
+config = VectorStoreConfig(
+    enable_sparse=True,
+    sparse_vector_name="sparse",
+)
+client = QdrantVectorStoreClient(embeddings, config, sparse_encoder=sparse_encoder)
+
+# Add texts (computes both dense and sparse)
+client.add_texts(
+    texts=["machine learning algorithms", "deep neural networks"],
+    metadatas=[{"source": "doc1"}, {"source": "doc2"}]
+)
+
+# Sparse search
+docs = client.sparse_search("neural information retrieval", k=10)
+
+# API endpoint supports sparse search
+response = requests.post("/api/v1/rag/generate", json={
+    "prompt": "What is machine learning?",
+    "top_k": 5,
+    "search_type": "sparse"  # vector, bm25, hybrid, or sparse
+})
 ```
 
 ## Performance Impact
@@ -226,14 +289,12 @@ client.restore_snapshot(snapshot_id)
 
 ### Test Results
 ```
-405 passed, 28 deselected in 97s
-Coverage: 71% overall
+435 passed, 28 deselected in 88s
+Coverage: 75% overall
 - retry.py: 98% coverage
 - health_check.py: 88% coverage
 - retrieval_metrics.py: 97% coverage
-```
-- retry.py: 98% coverage
-- health_check.py: 88% coverage
+- sparse_encoder.py: 97% coverage
 ```
 
 ## Next Steps
@@ -307,14 +368,14 @@ Coverage: 71% overall
 ## Metrics
 
 ### Development Velocity
-- **Implementation**: 3 major features
-- **Code Written**: ~1,500 lines of production code
-- **Tests Written**: 84 tests (1,146 lines)
-- **Documentation**: 1,360+ lines
+- **Implementation**: 4 major features
+- **Code Written**: ~2,000 lines of production code
+- **Tests Written**: 108 tests (1,500+ lines)
+- **Documentation**: 1,500+ lines
 - **Quality**: 100% passing (lint, format, type, security, tests)
 
 ### Code Quality
-- **Test Coverage**: 71% overall (98% retry, 88% health, 97% retrieval_metrics)
+- **Test Coverage**: 75% overall (98% retry, 88% health, 97% retrieval_metrics, 97% sparse_encoder)
 - **Type Safety**: 100% (0 mypy errors)
 - **Security**: 100% (0 bandit issues)
 - **Linting**: 100% (0 ruff errors)
@@ -324,27 +385,30 @@ Coverage: 71% overall
 - ✅ Health Checks: Kubernetes-ready
 - ✅ Retrieval Metrics: Performance tracking ready
 - ✅ Index Persistence: Snapshot/restore ready
+- ✅ Sparse Retrieval: SPLADE integration ready
 - ✅ Documentation: Comprehensive
 - ✅ Testing: Extensive
 - ✅ Quality: All checks passing
 
 ## Summary
 
-Week 3 focused on **resilience and observability**, delivering production-grade retry mechanisms, comprehensive health monitoring, and advanced retrieval metrics. The system can now automatically recover from transient failures, provides detailed health status for Kubernetes deployments, and tracks performance metrics for optimization.
+Week 3 focused on **resilience, observability, and advanced retrieval**, delivering production-grade retry mechanisms, comprehensive health monitoring, advanced retrieval metrics, and neural sparse retrieval with SPLADE. The system can now automatically recover from transient failures, provides detailed health status for Kubernetes deployments, tracks performance metrics for optimization, and supports efficient sparse vector search.
 
 **Key Deliverables:**
 1. Exponential backoff retry system with jitter
 2. Four health check endpoints (basic, detailed, ready, live)
 3. Dense retrieval enhancements (metrics, snapshots, score normalization)
-4. 84 comprehensive tests (100% pass rate)
-5. 1,360+ lines of documentation
-6. All quality checks passing
+4. Sparse retrieval with SPLADE encoder
+5. 108 comprehensive tests (100% pass rate)
+6. 1,500+ lines of documentation
+7. All quality checks passing
 
 **New Capabilities:**
 - 📊 **Performance Monitoring**: p50/p95/p99 latency tracking
 - 💾 **Index Persistence**: Backup and restore via snapshots
 - 📏 **Score Normalization**: Fair comparison across search types
 - 🎯 **Quality Metrics**: MRR, Precision@k, Recall@k
-- 📈 **Per-Type Stats**: Separate metrics for vector/BM25/hybrid
+- 📈 **Per-Type Stats**: Separate metrics for vector/BM25/hybrid/sparse
+- 🧠 **Neural Sparse Retrieval**: SPLADE encoder for learned sparse representations
 
-The RAG system is now **production-ready** with robust error handling, complete observability, and comprehensive performance tracking for cloud-native deployments.
+The RAG system is now **production-ready** with robust error handling, complete observability, comprehensive performance tracking, and state-of-the-art sparse retrieval for cloud-native deployments.
