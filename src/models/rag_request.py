@@ -14,13 +14,52 @@ class GenerateRequest(BaseModel):
     - `search_type`: type of search to perform (vector, bm25, hybrid, or sparse).
     - `hybrid_alpha`: weight for hybrid search (0.0=BM25 only, 1.0=vector only).
     - `enable_reranking`: whether to apply cross-encoder re-ranking.
+
+    Metadata Filter Examples:
+    ```python
+    # Simple source filter
+    {"source": "paper.pdf"}
+
+    # Multiple sources
+    {"sources": ["paper1.pdf", "paper2.pdf"]}
+
+    # Date range
+    {"date_after": "2024-01-01", "date_before": "2024-12-31"}
+
+    # Tags
+    {"tags": ["machine-learning", "ai"]}
+
+    # Complex filter
+    {
+        "source": "research.pdf",
+        "author": "Smith",
+        "date_after": "2024-01-01",
+        "tags": ["ai", "ml"]
+    }
+
+    # Range operators
+    {"year$gte": 2020, "score$gt": 0.8}
+
+    # Exclusions
+    {"status$not": "draft"}
+    ```
     """
 
     prompt: str = Field(..., description="Prompt text to generate from")
     top_k: int = Field(5, description="Number of retrieved passages to return/use")
     max_length: int | None = Field(None, description="Optional generation max tokens")
     metadata_filters: dict | None = Field(
-        None, description="Optional metadata filters for retrieval"
+        None,
+        description=(
+            "Optional metadata filters for retrieval. "
+            "Supports: source/sources, tag/tags, author/authors, "
+            "date_after/date_before, and operators like $gte, $in, $not."
+        ),
+        examples=[
+            {"source": "paper.pdf"},
+            {"sources": ["doc1.txt", "doc2.txt"]},
+            {"tags": ["ai", "ml"], "date_after": "2024-01-01"},
+        ],
     )
     search_type: Literal["vector", "bm25", "hybrid", "sparse"] = Field(
         "vector", description="Type of search to perform"

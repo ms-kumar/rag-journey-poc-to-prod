@@ -90,6 +90,33 @@ uv run python examples/reranker_benchmark.py
 - **Precision@5**: +0.05-0.2 improvement typical  
 - **Latency**: 50-200ms per query depending on candidates
 - **Throughput**: 10-50 docs/second depending on batch size
+
+### `metadata_filters_demo.py`
+Comprehensive demonstration of metadata filtering capabilities for source, date, tag, and author filtering.
+
+**Features:**
+- Source filtering (single/multiple, exclusions)
+- Tag-based filtering
+- Date range filtering (ISO format, datetime objects)
+- Author filtering
+- Complex filter combinations
+- Dictionary vs FilterBuilder patterns
+- Real-world usage scenarios
+- API curl examples
+
+**Usage:**
+```bash
+uv run python examples/metadata_filters_demo.py
+```
+
+**Expected Output:**
+- Filter construction examples
+- Builder pattern demonstrations
+- Dictionary-based filters
+- Complex scenario examples
+- Practical use cases (academic, corporate, legal, medical)
+
+**Key Metrics:**
 - **k=5**: 2.23ms
 - **k=10**: 2.61ms
 

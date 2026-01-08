@@ -6,6 +6,7 @@ Supports metadata filtering, range queries, and compound conditions.
 """
 
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Any
 
 from qdrant_client.models import (
@@ -173,6 +174,186 @@ class FilterBuilder:
         self.must_not_conditions.append(condition)
         return self
 
+    # Convenience methods for common metadata filters
+
+    def source(self, source: str) -> "FilterBuilder":
+        """
+        Filter by document source (exact match).
+
+        Args:
+            source: Source identifier (e.g., filename, URL, document ID)
+
+        Returns:
+            Self for chaining
+
+        Example:
+            FilterBuilder().source("paper.pdf")
+        """
+        return self.match("source", source)
+
+    def sources(self, sources: list[str]) -> "FilterBuilder":
+        """
+        Filter by multiple sources (match any).
+
+        Args:
+            sources: List of source identifiers
+
+        Returns:
+            Self for chaining
+
+        Example:
+            FilterBuilder().sources(["paper1.pdf", "paper2.pdf"])
+        """
+        return self.match_any("source", sources)
+
+    def exclude_source(self, source: str) -> "FilterBuilder":
+        """
+        Exclude documents from a specific source.
+
+        Args:
+            source: Source identifier to exclude
+
+        Returns:
+            Self for chaining
+
+        Example:
+            FilterBuilder().exclude_source("draft.txt")
+        """
+        return self.must_not("source", source)
+
+    def tag(self, tag: str) -> "FilterBuilder":
+        """
+        Filter by a single tag (exact match).
+
+        Args:
+            tag: Tag value
+
+        Returns:
+            Self for chaining
+
+        Example:
+            FilterBuilder().tag("machine-learning")
+        """
+        return self.match("tag", tag)
+
+    def tags(self, tags: list[str]) -> "FilterBuilder":
+        """
+        Filter by multiple tags (match any).
+
+        Args:
+            tags: List of tag values
+
+        Returns:
+            Self for chaining
+
+        Example:
+            FilterBuilder().tags(["ai", "ml", "deep-learning"])
+        """
+        return self.match_any("tags", tags)
+
+    def date_range(
+        self,
+        *,
+        after: datetime | str | None = None,
+        before: datetime | str | None = None,
+        field: str = "date",
+    ) -> "FilterBuilder":
+        """
+        Filter by date range. Accepts datetime objects or ISO format strings.
+
+        Args:
+            after: Documents created/modified after this date (inclusive)
+            before: Documents created/modified before this date (inclusive)
+            field: Metadata field name containing the date (default: "date")
+
+        Returns:
+            Self for chaining
+
+        Example:
+            FilterBuilder().date_range(after="2024-01-01", before="2024-12-31")
+            FilterBuilder().date_range(after=datetime(2024, 1, 1))
+        """
+        gte_value = None
+        lte_value = None
+
+        if after is not None:
+            if isinstance(after, str):
+                after = datetime.fromisoformat(after)
+            gte_value = after.timestamp()
+
+        if before is not None:
+            if isinstance(before, str):
+                before = datetime.fromisoformat(before)
+            lte_value = before.timestamp()
+
+        # Only add range if at least one bound is specified
+        if gte_value is not None or lte_value is not None:
+            self.range(field, gte=gte_value, lte=lte_value)
+
+        return self
+
+    def created_after(self, date: datetime | str, field: str = "created_at") -> "FilterBuilder":
+        """
+        Filter documents created after a specific date.
+
+        Args:
+            date: Cutoff date (datetime or ISO string)
+            field: Metadata field name (default: "created_at")
+
+        Returns:
+            Self for chaining
+
+        Example:
+            FilterBuilder().created_after("2024-01-01")
+        """
+        return self.date_range(after=date, field=field)
+
+    def created_before(self, date: datetime | str, field: str = "created_at") -> "FilterBuilder":
+        """
+        Filter documents created before a specific date.
+
+        Args:
+            date: Cutoff date (datetime or ISO string)
+            field: Metadata field name (default: "created_at")
+
+        Returns:
+            Self for chaining
+
+        Example:
+            FilterBuilder().created_before("2024-12-31")
+        """
+        return self.date_range(before=date, field=field)
+
+    def author(self, author: str) -> "FilterBuilder":
+        """
+        Filter by document author.
+
+        Args:
+            author: Author name
+
+        Returns:
+            Self for chaining
+
+        Example:
+            FilterBuilder().author("John Smith")
+        """
+        return self.match("author", author)
+
+    def authors(self, authors: list[str]) -> "FilterBuilder":
+        """
+        Filter by multiple authors (match any).
+
+        Args:
+            authors: List of author names
+
+        Returns:
+            Self for chaining
+
+        Example:
+            FilterBuilder().authors(["Smith", "Johnson"])
+        """
+        return self.match_any("author", authors)
+
     def build(self) -> Filter | None:
         """
         Build the final Qdrant Filter object.
@@ -194,12 +375,19 @@ def build_filter_from_dict(filter_dict: dict[str, Any] | None) -> Filter | None:
     """
     Build a Qdrant Filter from a simple dictionary format.
 
-    Supports simple key-value pairs and some special operators:
+    Supports simple key-value pairs and special operators:
     - Regular keys: exact match (e.g., {"author": "Smith"})
     - "$in" suffix: match any (e.g., {"category$in": ["AI", "ML"]})
     - "$gt", "$gte", "$lt", "$lte": range queries (e.g., {"year$gte": 2020})
     - "$not": negation (e.g., {"status$not": "deleted"})
     - "$text": text search (e.g., {"content$text": "machine learning"})
+    - "$after", "$before": date range (e.g., {"date$after": "2024-01-01"})
+
+    Convenience fields:
+    - "source" or "sources": document source filtering
+    - "tag" or "tags": tag filtering
+    - "author" or "authors": author filtering
+    - "date_after", "date_before": date range filtering
 
     Args:
         filter_dict: Dictionary with field names and values
@@ -212,7 +400,8 @@ def build_filter_from_dict(filter_dict: dict[str, Any] | None) -> Filter | None:
             "source": "doc1.txt",
             "year$gte": 2020,
             "category$in": ["AI", "ML"],
-            "status$not": "deleted"
+            "status$not": "deleted",
+            "date_after": "2024-01-01"
         }
         filter = build_filter_from_dict(filter_dict)
     """
@@ -221,9 +410,46 @@ def build_filter_from_dict(filter_dict: dict[str, Any] | None) -> Filter | None:
 
     builder = FilterBuilder()
 
+    # Handle date range fields specially to combine them
+    date_after = filter_dict.get("date_after")
+    date_before = filter_dict.get("date_before")
+    created_after = filter_dict.get("created_after")
+    created_before = filter_dict.get("created_before")
+
+    # Apply combined date ranges
+    if date_after or date_before:
+        builder.date_range(after=date_after, before=date_before)
+    if created_after or created_before:
+        builder.date_range(after=created_after, before=created_before, field="created_at")
+
+    # Process other keys
     for key, value in filter_dict.items():
-        # Handle special operators
-        if "$in" in key:
+        # Skip already-processed date fields
+        if key in ("date_after", "date_before", "created_after", "created_before"):
+            continue
+
+        # Convenience fields with special handling
+        if key == "sources" and isinstance(value, list):
+            builder.sources(value)
+        elif key == "source" and isinstance(value, str):
+            builder.source(value)
+        elif key == "tags" and isinstance(value, list):
+            builder.tags(value)
+        elif key == "tag" and isinstance(value, str):
+            builder.tag(value)
+        elif key == "authors" and isinstance(value, list):
+            builder.authors(value)
+        elif key == "author" and isinstance(value, str):
+            builder.author(value)
+        # Date range operators
+        elif "$after" in key:
+            field_name = key.replace("$after", "")
+            builder.date_range(after=value, field=field_name or "date")
+        elif "$before" in key:
+            field_name = key.replace("$before", "")
+            builder.date_range(before=value, field=field_name or "date")
+        # Other special operators
+        elif "$in" in key:
             field_name = key.replace("$in", "")
             if isinstance(value, list):
                 builder.match_any(field_name, value)

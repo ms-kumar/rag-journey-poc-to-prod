@@ -37,7 +37,9 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 🔍 **Advanced Search**: BM25 keyword search, vector similarity, hybrid search, and SPLADE sparse retrieval with metadata filtering
 
-🎯 **Smart Filtering**: Flexible query filters with range, exact match, text search, and exclusion operators
+�️ **Metadata Filtering**: Rich filtering by source, date range, tags, author with flexible operators ($in, $gte, $not)
+
+�🎯 **Smart Filtering**: Flexible query filters with range, exact match, text search, and exclusion operators
 
 🔧 **Cross-Encoder Re-ranking**: Improve retrieval precision@k with configurable timeouts and fallback strategies
 
