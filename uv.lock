@@ -13,10 +13,12 @@ name = "advanced-rag"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "cohere" },
     { name = "fastapi" },
     { name = "langchain" },
     { name = "langchain-community" },
     { name = "langchain-qdrant" },
+    { name = "openai" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
@@ -79,6 +81,7 @@ requires-dist = [
     { name = "advanced-rag", extras = ["dev", "production", "embeddings", "parsers"], marker = "extra == 'all'" },
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.7.10" },
     { name = "beautifulsoup4", marker = "extra == 'parsers'", specifier = ">=4.12.3" },
+    { name = "cohere", specifier = ">=5.20.1" },
     { name = "cohere", marker = "extra == 'embeddings'", specifier = ">=5.13.4" },
     { name = "fastapi", specifier = ">=0.128.0" },
     { name = "gunicorn", marker = "extra == 'production'", specifier = ">=23.0.0" },
@@ -89,6 +92,7 @@ requires-dist = [
     { name = "langchain-qdrant", specifier = ">=1.1.0" },
     { name = "markdown", marker = "extra == 'parsers'", specifier = ">=3.7" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13.0" },
+    { name = "openai", specifier = ">=2.14.0" },
     { name = "openai", marker = "extra == 'embeddings'", specifier = ">=1.59.5" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "prometheus-client", marker = "extra == 'production'", specifier = ">=0.21.0" },

@@ -44,7 +44,13 @@ Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answe
 
 🏥 **Health Checks**: Comprehensive health monitoring with Kubernetes-ready readiness/liveness probes
 
-🧪 **Comprehensive Tests**: 371 tests with high coverage across all components
+📈 **Retrieval Metrics**: Track p50/p95/p99 latencies, cache hit rates, and per-search-type performance
+
+💾 **Index Persistence**: Snapshot and restore capabilities for backup and disaster recovery
+
+📏 **Score Normalization**: Normalize similarity scores across different search types for fair comparison
+
+🧪 **Comprehensive Tests**: 405 tests with high coverage across all components
 
 🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
 
@@ -327,6 +333,76 @@ embeddings = embedder.embed(long_texts)  # No error! Auto-truncated
 
 See [docs/overflow-guards.md](docs/overflow-guards.md) for complete documentation and [tests/test_overflow_guards.py](tests/test_overflow_guards.py) for 12 comprehensive tests.
 
+#### Retrieval Metrics & Performance Tracking
+
+Track detailed retrieval performance metrics including latency percentiles (p50/p95/p99), cache hit rates, and per-search-type statistics:
+
+```python
+from src.services.vectorstore.client import QdrantVectorStoreClient, VectorStoreConfig
+
+# Enable metrics tracking
+config = VectorStoreConfig(
+    qdrant_url="http://localhost:6333",
+    collection_name="my_collection",
+    vector_size=384,
+    enable_metrics=True,  # Enable performance tracking
+    normalize_scores=True  # Normalize scores to [0, 1]
+)
+client = QdrantVectorStoreClient(embeddings, config)
+
+# Perform searches with automatic metrics tracking
+docs = client.similarity_search_with_metrics("machine learning", k=10)
+docs = client.hybrid_search_with_metrics("deep learning", k=5, alpha=0.6)
+
+# Get comprehensive metrics
+metrics = client.get_retrieval_metrics()
+print(f"Total queries: {metrics['total_queries']}")
+print(f"P50 latency: {metrics['latency']['p50']:.2f}ms")
+print(f"P95 latency: {metrics['latency']['p95']:.2f}ms")
+print(f"P99 latency: {metrics['latency']['p99']:.2f}ms")
+print(f"Cache hit rate: {metrics['cache_hit_rate']:.1f}%")
+
+# Per-search-type breakdown
+for search_type, stats in metrics['by_search_type'].items():
+    print(f"{search_type}: {stats['latency']['p50']:.2f}ms (p50)")
+```
+
+**Score Normalization**:
+```python
+from src.services.vectorstore.retrieval_metrics import normalize_scores
+
+# Normalize different search types for fair comparison
+vector_scores = [0.92, 0.87, 0.81]  # Cosine similarity (0-1)
+bm25_scores = [15.3, 12.1, 8.9]  # BM25 (unbounded)
+
+normalized_vector = normalize_scores(vector_scores, method="minmax")
+normalized_bm25 = normalize_scores(bm25_scores, method="sigmoid")
+```
+
+**Index Persistence**:
+```python
+# Create snapshots for backup/disaster recovery
+snapshot_id = client.create_snapshot("backup_2024_01_08")
+
+# List available snapshots
+snapshots = client.list_snapshots()
+
+# Restore from snapshot
+client.restore_snapshot(snapshot_id)
+
+# Export collection info for monitoring
+info = client.export_collection_info()
+print(f"Vectors: {info['vectors_count']}, Indices: {info['payload_indices']}")
+```
+
+**Features:**
+- 📊 **Latency Percentiles**: p50, p90, p95, p99, mean, min, max
+- 🎯 **Score Statistics**: mean, median, std, min, max
+- 💾 **Index Snapshots**: Create, list, restore collection snapshots
+- 📈 **Per-Type Metrics**: Separate stats for vector, BM25, hybrid searches
+- 🔄 **Score Normalization**: MinMax, Z-score, Sigmoid methods
+- 📏 **Quality Metrics**: MRR, Recall@k, Precision@k calculations
+
 #### Embedding Providers
 
 The system supports multiple embedding providers:
@@ -414,7 +490,7 @@ make test-cov
 open htmlcov/index.html
 ```
 
-**Test Coverage**: 371 tests | 71% coverage
+**Test Coverage**: 405 tests | 71% coverage
 
 Quality gates enforced:
 - ✅ Ruff formatting (100 char line length)

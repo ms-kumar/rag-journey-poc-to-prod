@@ -16,6 +16,13 @@ from src.services.retry import RetryConfig, retry_with_backoff
 
 from .filters import FilterBuilder, build_filter_from_dict
 from .index_mappings import IndexMapping, IndexMappingBuilder, get_qdrant_field_schema
+from .retrieval_metrics import (
+    RetrievalMetrics,
+    RetrievalTimer,
+)
+from .retrieval_metrics import (
+    normalize_scores as normalize_score_list,
+)
 
 
 @dataclass
@@ -29,6 +36,9 @@ class VectorStoreConfig:
     enable_bm25: bool = False  # Enable BM25 indexing on page_content
     # Retry configuration
     retry_config: RetryConfig | None = None
+    # Metrics tracking
+    enable_metrics: bool = False  # Track retrieval metrics
+    normalize_scores: bool = False  # Normalize scores to [0, 1]
 
 
 class DependencyMissingError(RuntimeError):
@@ -60,6 +70,9 @@ class QdrantVectorStoreClient:
             exponential_base=2.0,
             jitter=True,
         )
+
+        # Initialize metrics if enabled
+        self.metrics = RetrievalMetrics() if config.enable_metrics else None
 
         # Create Qdrant client
         client_kwargs = {}
@@ -604,3 +617,216 @@ class QdrantVectorStoreClient:
             client.create_indices_from_mappings(mappings)
         """
         return IndexMappingBuilder()
+
+    # ========================================
+    # Dense Retrieval Enhancements
+    # ========================================
+
+    def create_snapshot(self, snapshot_name: str | None = None) -> str:
+        """
+        Create a snapshot of the collection for backup/persistence.
+
+        Args:
+            snapshot_name: Optional name for snapshot. Auto-generated if None.
+
+        Returns:
+            Snapshot name/ID
+
+        Example:
+            snapshot_id = client.create_snapshot("backup_2024_01_08")
+            print(f"Created snapshot: {snapshot_id}")
+        """
+        result = self.qdrant_client.create_snapshot(
+            collection_name=self.config.collection_name,
+            snapshot_name=snapshot_name,
+        )
+        return result.name if (result and hasattr(result, "name")) else str(result)
+
+    def list_snapshots(self) -> list[str]:
+        """
+        List all available snapshots for the collection.
+
+        Returns:
+            List of snapshot names/IDs
+
+        Example:
+            snapshots = client.list_snapshots()
+            print(f"Available snapshots: {snapshots}")
+        """
+        result = self.qdrant_client.list_snapshots(collection_name=self.config.collection_name)
+        if hasattr(result, "snapshots"):
+            return [s.name for s in result.snapshots]
+        return []
+
+    def restore_snapshot(self, snapshot_name: str, priority: str = "snapshot") -> bool:
+        """
+        Restore collection from a snapshot.
+
+        Args:
+            snapshot_name: Name of the snapshot to restore
+            priority: "snapshot" or "replica" - determines conflict resolution
+
+        Returns:
+            True if successful
+
+        Example:
+            success = client.restore_snapshot("backup_2024_01_08")
+            if success:
+                print("Snapshot restored successfully")
+        """
+        try:
+            self.qdrant_client.recover_snapshot(
+                collection_name=self.config.collection_name,
+                location=snapshot_name,
+                priority=priority,  # type: ignore[arg-type]
+            )
+            return True
+        except Exception:
+            return False
+
+    def get_retrieval_metrics(self) -> dict | None:
+        """
+        Get retrieval performance metrics (if enabled).
+
+        Returns:
+            Dict with metrics summary or None if metrics disabled
+
+        Example:
+            metrics = client.get_retrieval_metrics()
+            if metrics:
+                print(f"P50 latency: {metrics['latency']['p50']:.2f}ms")
+                print(f"P95 latency: {metrics['latency']['p95']:.2f}ms")
+                print(f"Cache hit rate: {metrics['cache_hit_rate']:.1f}%")
+        """
+        if self.metrics:
+            return self.metrics.get_summary()
+        return None
+
+    def reset_metrics(self) -> None:
+        """Reset all tracked metrics."""
+        if self.metrics:
+            self.metrics.reset()
+
+    def similarity_search_with_metrics(
+        self,
+        query: str,
+        k: int = 5,
+        normalize_scores: bool | None = None,
+    ) -> list[Document]:
+        """
+        Perform similarity search with automatic metrics tracking and optional score normalization.
+
+        Args:
+            query: Text query to search for
+            k: Number of results to return
+            normalize_scores: Override config.normalize_scores setting
+
+        Returns:
+            List of Document objects with normalized scores (if enabled)
+
+        Example:
+            docs = client.similarity_search_with_metrics("machine learning", k=10)
+            for doc in docs:
+                print(f"Score: {doc.metadata['score']:.3f}")
+        """
+        if self.metrics:
+            with RetrievalTimer(self.metrics, search_type="vector") as timer:
+                docs = self.similarity_search(query, k=k)
+                scores = [doc.metadata.get("score", 0.0) for doc in docs]
+                timer.set_scores(scores)
+        else:
+            docs = self.similarity_search(query, k=k)
+
+        # Normalize scores if requested
+        should_normalize = (
+            normalize_scores if normalize_scores is not None else self.config.normalize_scores
+        )
+        if should_normalize and docs:
+            scores = [doc.metadata.get("score", 0.0) for doc in docs]
+            normalized = normalize_score_list(scores, method="minmax")
+            for doc, norm_score in zip(docs, normalized, strict=True):
+                doc.metadata["score"] = norm_score
+                doc.metadata["score_normalized"] = True
+
+        return docs
+
+    def hybrid_search_with_metrics(
+        self,
+        query: str,
+        k: int = 5,
+        alpha: float = 0.5,
+        normalize_scores: bool | None = None,
+    ) -> list[Document]:
+        """
+        Perform hybrid search with automatic metrics tracking and score normalization.
+
+        Args:
+            query: Text query to search for
+            k: Number of results to return
+            alpha: Weight between vector (1.0) and BM25 (0.0)
+            normalize_scores: Override config.normalize_scores setting
+
+        Returns:
+            List of Document objects with normalized scores (if enabled)
+
+        Example:
+            docs = client.hybrid_search_with_metrics(
+                "deep learning",
+                k=10,
+                alpha=0.6,
+                normalize_scores=True
+            )
+        """
+        if self.metrics:
+            with RetrievalTimer(self.metrics, search_type="hybrid") as timer:
+                docs = self.hybrid_search(query, k=k, alpha=alpha)
+                scores = [doc.metadata.get("score", 0.0) for doc in docs]
+                timer.set_scores(scores)
+        else:
+            docs = self.hybrid_search(query, k=k, alpha=alpha)
+
+        # Normalize scores if requested
+        should_normalize = (
+            normalize_scores if normalize_scores is not None else self.config.normalize_scores
+        )
+        if should_normalize and docs:
+            scores = [doc.metadata.get("score", 0.0) for doc in docs]
+            # Use sigmoid for hybrid scores (can be unbounded)
+            normalized = normalize_score_list(scores, method="sigmoid")
+            for doc, norm_score in zip(docs, normalized, strict=True):
+                doc.metadata["score"] = norm_score
+                doc.metadata["score_normalized"] = True
+
+        return docs
+
+    def export_collection_info(self) -> dict:
+        """
+        Export comprehensive collection information for monitoring/debugging.
+
+        Returns:
+            Dict with collection stats, config, and index info
+
+        Example:
+            info = client.export_collection_info()
+            print(f"Total vectors: {info['vectors_count']}")
+            print(f"Indexed fields: {info['payload_indices']}")
+        """
+        collection_info = self.qdrant_client.get_collection(self.config.collection_name)
+
+        return {
+            "collection_name": self.config.collection_name,
+            "vectors_count": getattr(collection_info, "vectors_count", 0),
+            "points_count": collection_info.points_count,
+            "vector_size": self.config.vector_size,
+            "distance": self.config.distance,
+            "enable_bm25": self.config.enable_bm25,
+            "payload_indices": self.list_payload_indices(),
+            "status": collection_info.status.value
+            if hasattr(collection_info, "status")
+            else "unknown",
+            "optimizer_status": (
+                getattr(collection_info.optimizer_status, "value", "unknown")
+                if hasattr(collection_info, "optimizer_status")
+                else "unknown"
+            ),
+        }
