@@ -80,3 +80,5 @@ qdrant_storage/
 
 # Generated benchmark corpora (keep repo small)
 data/generated/
+
+other/
