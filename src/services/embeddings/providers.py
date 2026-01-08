@@ -330,7 +330,7 @@ class CohereEmbeddings(BaseEmbeddingProvider):
 
             response = self._client.embed(texts=batch, model=self.model, input_type=self.input_type)  # type: ignore[union-attr]
 
-            all_embeddings.extend(response.embeddings)
+            all_embeddings.extend(response.embeddings)  # type: ignore[arg-type]
 
         return all_embeddings
 
