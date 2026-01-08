@@ -4,13 +4,12 @@ Tests for retry and backoff utilities.
 
 import asyncio
 import time
-from unittest.mock import Mock, patch
 
 import pytest
 
 from src.services.retry import (
-    RetryConfig,
     RetryableClient,
+    RetryConfig,
     async_retry_with_backoff,
     calculate_delay,
     retry_with_backoff,
@@ -340,22 +339,22 @@ class TestRetryIntegration:
         """Test that custom fatal exceptions prevent retry."""
         call_count = 0
 
-        class CustomFatal(Exception):
+        class CustomFatalError(Exception):
             pass
 
         @retry_with_backoff(
             RetryConfig(
                 max_retries=3,
                 retryable_exceptions=(Exception,),
-                fatal_exceptions=(CustomFatal,),
+                fatal_exceptions=(CustomFatalError,),
             )
         )
         def raise_custom_fatal():
             nonlocal call_count
             call_count += 1
-            raise CustomFatal("should not retry")
+            raise CustomFatalError("should not retry")
 
-        with pytest.raises(CustomFatal):
+        with pytest.raises(CustomFatalError):
             raise_custom_fatal()
         assert call_count == 1
 

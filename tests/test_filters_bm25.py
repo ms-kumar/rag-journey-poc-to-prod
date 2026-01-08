@@ -271,7 +271,7 @@ def mock_vectorstore():
     """Create a mock vectorstore for testing."""
     # This would create a test vectorstore with sample data
     # For now, return None as placeholder
-    return None
+    return
 
 
 @pytest.fixture

@@ -92,7 +92,7 @@ class HFGenerator:
             return self.pipe(prompt, **kwargs)
 
         out = _generate()
-        
+
         # pipeline returns a list of generated sequences (dicts) for the prompt
         # handle common response shapes
         if not out:

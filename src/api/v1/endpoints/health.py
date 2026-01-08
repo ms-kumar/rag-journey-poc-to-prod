@@ -85,7 +85,7 @@ async def detailed_health_check(
                 pipeline = get_naive_pipeline()
                 components = await check_all_components(
                     vectorstore_client=pipeline.vectorstore,
-                    embeddings_client=pipeline.embeddings,
+                    embeddings_client=pipeline.lc_embeddings,
                     generator_client=pipeline.generator,
                 )
             except Exception as e:
@@ -101,22 +101,17 @@ async def detailed_health_check(
         status = ServiceStatus.HEALTHY
 
     # Build response
-    response_data = {
-        "status": status,
-        "version": settings.app.version,
-        "timestamp": timestamp,
-        "components": components,
-        "uptime_seconds": round(uptime, 2),
-    }
+    response = DetailedHealthResponse(
+        status=status,
+        version=settings.app.version,
+        timestamp=timestamp,
+        components=components,
+        uptime_seconds=round(uptime, 2),
+        system_info=get_system_info() if include_system_info else None,
+        dependencies=get_dependency_versions() if include_dependencies else None,
+    )
 
-    # Add optional fields
-    if include_system_info:
-        response_data["system_info"] = get_system_info()
-
-    if include_dependencies:
-        response_data["dependencies"] = get_dependency_versions()
-
-    return DetailedHealthResponse(**response_data)
+    return response
 
 
 @router.get("/health/ready")
@@ -139,7 +134,7 @@ async def readiness_check():
         # Run quick component checks
         components = await check_all_components(
             vectorstore_client=pipeline.vectorstore,
-            embeddings_client=pipeline.embeddings,
+            embeddings_client=pipeline.lc_embeddings,
             generator_client=pipeline.generator,
         )
 

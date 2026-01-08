@@ -121,16 +121,14 @@ class NaivePipeline:
         """
         if search_type == "bm25":
             return self.vectorstore.bm25_search(query, k=k, filter_dict=filters)
-        elif search_type == "hybrid":
+        if search_type == "hybrid":
             return self.vectorstore.hybrid_search(
                 query, k=k, filter_dict=filters, alpha=hybrid_alpha
             )
-        else:  # vector (default)
-            if filters:
-                return self.vectorstore.similarity_search_with_filter(
-                    query, k=k, filter_dict=filters
-                )
-            return self.vectorstore.similarity_search(query, k=k)
+        # vector (default)
+        if filters:
+            return self.vectorstore.similarity_search_with_filter(query, k=k, filter_dict=filters)
+        return self.vectorstore.similarity_search(query, k=k)
 
     def generate(self, prompt: str, retrieved_docs: Sequence | None = None) -> str:
         """

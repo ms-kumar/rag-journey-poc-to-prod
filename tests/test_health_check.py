@@ -3,7 +3,7 @@ Tests for health check functionality.
 """
 
 import time
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -117,9 +117,7 @@ class TestCheckVectorstoreHealth:
         """Test vectorstore health check when connection fails."""
         mock_client = Mock()
         mock_client.config.collection_name = "test_collection"
-        mock_client.qdrant_client.get_collection.side_effect = ConnectionError(
-            "Connection refused"
-        )
+        mock_client.qdrant_client.get_collection.side_effect = ConnectionError("Connection refused")
 
         result = await check_vectorstore_health(mock_client)
 
@@ -232,9 +230,7 @@ class TestCheckAllComponents:
         mock_generation.config.model_name = "gpt2"
         mock_generation.generate.return_value = "output"
 
-        components = await check_all_components(
-            mock_vectorstore, mock_embeddings, mock_generation
-        )
+        components = await check_all_components(mock_vectorstore, mock_embeddings, mock_generation)
 
         assert len(components) == 3
         assert all(c.status == ServiceStatus.HEALTHY for c in components)
@@ -254,9 +250,7 @@ class TestCheckAllComponents:
         mock_generation.config.model_name = "gpt2"
         mock_generation.generate.return_value = "output"
 
-        components = await check_all_components(
-            mock_vectorstore, mock_embeddings, mock_generation
-        )
+        components = await check_all_components(mock_vectorstore, mock_embeddings, mock_generation)
 
         assert len(components) == 3
         # Find vectorstore component

@@ -68,7 +68,7 @@ def calculate_delay(
 
     # Add jitter: random value between 0 and calculated delay
     if jitter:
-        delay = random.uniform(0, delay)
+        delay = random.uniform(0, delay)  # nosec B311  # Not used for security/crypto
 
     return delay
 
@@ -157,7 +157,9 @@ def retry_with_backoff(config: RetryConfig | None = None):
             logger.error(
                 f"{func.__name__}: All retry attempts failed. Last exception: {last_exception}"
             )
-            raise last_exception
+            if last_exception:
+                raise last_exception
+            raise RuntimeError("All retry attempts failed")
 
         return wrapper
 
@@ -225,7 +227,9 @@ def async_retry_with_backoff(config: RetryConfig | None = None):
             logger.error(
                 f"{func.__name__}: All retry attempts failed. Last exception: {last_exception}"
             )
-            raise last_exception
+            if last_exception:
+                raise last_exception
+            raise RuntimeError("All retry attempts failed")
 
         return wrapper
 
@@ -259,7 +263,7 @@ class RetryableClient:
         Returns:
             Wrapped function with retry logic
         """
-        return retry_with_backoff(self.retry_config)(func)
+        return retry_with_backoff(self.retry_config)(func)  # type: ignore[no-any-return]
 
     def with_async_retry(self, func: Callable[..., Any]) -> Callable[..., Any]:
         """
@@ -271,4 +275,4 @@ class RetryableClient:
         Returns:
             Wrapped async function with retry logic
         """
-        return async_retry_with_backoff(self.retry_config)(func)
+        return async_retry_with_backoff(self.retry_config)(func)  # type: ignore[no-any-return]

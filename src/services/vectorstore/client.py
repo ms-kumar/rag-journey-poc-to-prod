@@ -113,7 +113,7 @@ class QdrantVectorStoreClient:
                 collection_name=self.config.collection_name,
                 field_name="page_content",
                 field_schema=TextIndexParams(
-                    type="text",
+                    type="text",  # type: ignore[arg-type]
                     tokenizer=TokenizerType.WORD,
                     min_token_len=2,
                     max_token_len=20,
@@ -193,6 +193,7 @@ class QdrantVectorStoreClient:
         """
         Performs similarity search using a raw vector.
         """
+
         @retry_with_backoff(self.retry_config)
         def _query_points():
             return self.qdrant_client.query_points(
@@ -549,7 +550,7 @@ class QdrantVectorStoreClient:
             collection_info = self.qdrant_client.get_collection(self.config.collection_name)
             indices = {}
             if collection_info.config and collection_info.config.params:
-                payload_schema = collection_info.config.params.payload_schema
+                payload_schema = collection_info.config.params.payload_schema  # type: ignore[attr-defined]
                 if payload_schema:
                     for field_name, schema in payload_schema.items():
                         # Extract index type from schema

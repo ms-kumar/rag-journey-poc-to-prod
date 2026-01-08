@@ -44,7 +44,7 @@ Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answe
 
 🏥 **Health Checks**: Comprehensive health monitoring with Kubernetes-ready readiness/liveness probes
 
-🧪 **Comprehensive Tests**: 311+ tests with high coverage across all components
+🧪 **Comprehensive Tests**: 371 tests with high coverage across all components
 
 🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
 
@@ -352,6 +352,26 @@ EMBED_MODEL=text-embedding-3-small
 EMBED_API_KEY=sk-proj-...
 ```
 
+### Documentation
+
+Comprehensive guides for all major features:
+
+| Document | Description |
+|----------|-------------|
+| [retry-backoff.md](docs/retry-backoff.md) | Exponential backoff retry system with jitter for resilient service calls |
+| [health-check.md](docs/health-check.md) | Health monitoring with Kubernetes-ready readiness/liveness probes |
+| [embedding-cache.md](docs/embedding-cache.md) | LRU embedding cache with 83x speedup and disk persistence |
+| [token-budgets.md](docs/token-budgets.md) | Token limits and cost estimation for all embedding/generation models |
+| [truncation.md](docs/truncation.md) | Text truncation strategies (HEAD/TAIL/MIDDLE) with word boundaries |
+| [overflow-guards.md](docs/overflow-guards.md) | Automatic token limit enforcement to prevent API errors |
+| [bm25-filters.md](docs/bm25-filters.md) | BM25 keyword search and metadata filtering with query builders |
+| [index-mappings.md](docs/index-mappings.md) | Payload index optimization for 10-100x faster filtering |
+
+**Development Progress:**
+- [Week 1](docs/week-plans/week-1.md): Naive RAG Pipeline
+- [Week 2](docs/week-plans/week-2.md): Production-Ready Enhancements (caching, providers, quality)
+- [Week 3](docs/week-plans/week-3.md): Resilience and Observability (retry, health checks)
+
 ### Configuration
 
 All configuration is managed through environment variables and `.env` file:
@@ -394,7 +414,7 @@ make test-cov
 open htmlcov/index.html
 ```
 
-**Test Coverage**: 261 tests | 77% coverage
+**Test Coverage**: 371 tests | 71% coverage
 
 Quality gates enforced:
 - ✅ Ruff formatting (100 char line length)

@@ -218,11 +218,11 @@ def get_qdrant_field_schema(mapping: IndexMapping):
         Qdrant field schema (PayloadSchemaType or specific index params)
     """
     if mapping.field_type == "keyword":
-        return KeywordIndexParams(type="keyword", is_tenant=False, on_disk=None)
+        return KeywordIndexParams(type="keyword", is_tenant=False, on_disk=None)  # type: ignore[arg-type]
 
     if mapping.field_type == "integer":
         return IntegerIndexParams(
-            type="integer",
+            type="integer",  # type: ignore[arg-type]
             range=mapping.range,
             lookup=mapping.lookup,
             on_disk=None,
@@ -235,7 +235,7 @@ def get_qdrant_field_schema(mapping: IndexMapping):
 
     if mapping.field_type == "text":
         return TextIndexParams(
-            type="text",
+            type="text",  # type: ignore[arg-type]
             tokenizer=mapping.tokenizer or TokenizerType.WORD,
             min_token_len=mapping.min_token_len or 2,
             max_token_len=mapping.max_token_len or 20,
@@ -245,9 +245,7 @@ def get_qdrant_field_schema(mapping: IndexMapping):
 
     if mapping.field_type == "datetime":
         return DatetimeIndexParams(
-            type="datetime",
-            range=mapping.range,
-            lookup=mapping.lookup,
+            type="datetime",  # type: ignore[arg-type]
             on_disk=None,
         )
 

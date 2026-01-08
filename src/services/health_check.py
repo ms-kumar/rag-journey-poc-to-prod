@@ -48,8 +48,8 @@ def get_dependency_versions() -> dict[str, str]:
     try:
         import qdrant_client
 
-        versions["qdrant-client"] = qdrant_client.__version__
-    except (ImportError, AttributeError):
+        versions["qdrant-client"] = getattr(qdrant_client, "__version__", "unknown")
+    except ImportError:
         versions["qdrant-client"] = "not installed"
 
     try:
@@ -102,6 +102,7 @@ async def check_vectorstore_health(
             name="vectorstore",
             status=ServiceStatus.UNKNOWN,
             message="Vectorstore client not initialized",
+            details=None,
             response_time_ms=None,
         )
 
@@ -114,11 +115,7 @@ async def check_vectorstore_health(
 
         # Extract useful info
         vector_count = collection_info.points_count if collection_info else 0
-        vector_size = (
-            collection_info.config.params.vectors.size  # type: ignore[union-attr]
-            if collection_info
-            else 0
-        )
+        vector_size = collection_info.config.params.vectors.size if collection_info else 0
 
         return ComponentHealth(
             name="vectorstore",
@@ -139,6 +136,7 @@ async def check_vectorstore_health(
             name="vectorstore",
             status=ServiceStatus.UNHEALTHY,
             message=f"Failed to connect: {str(e)}",
+            details=None,
             response_time_ms=round(elapsed_ms, 2),
         )
 
@@ -160,6 +158,7 @@ async def check_embeddings_health(embeddings_client: Any | None = None) -> Compo
             name="embeddings",
             status=ServiceStatus.UNKNOWN,
             message="Embeddings client not initialized",
+            details=None,
             response_time_ms=None,
         )
 
@@ -188,6 +187,7 @@ async def check_embeddings_health(embeddings_client: Any | None = None) -> Compo
             name="embeddings",
             status=ServiceStatus.UNHEALTHY,
             message=f"Failed to generate embeddings: {str(e)}",
+            details=None,
             response_time_ms=round(elapsed_ms, 2),
         )
 
@@ -209,6 +209,7 @@ async def check_generation_health(generator_client: Any | None = None) -> Compon
             name="generation",
             status=ServiceStatus.UNKNOWN,
             message="Generation client not initialized",
+            details=None,
             response_time_ms=None,
         )
 
@@ -239,6 +240,7 @@ async def check_generation_health(generator_client: Any | None = None) -> Compon
             name="generation",
             status=ServiceStatus.UNHEALTHY,
             message=f"Failed to generate text: {str(e)}",
+            details=None,
             response_time_ms=round(elapsed_ms, 2),
         )
 
@@ -278,6 +280,8 @@ async def check_all_components(
                     name="unknown",
                     status=ServiceStatus.UNHEALTHY,
                     message=f"Check failed with exception: {str(result)}",
+                    details=None,
+                    response_time_ms=None,
                 )
             )
 
