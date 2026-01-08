@@ -17,12 +17,14 @@ dependencies = [
     { name = "fastapi" },
     { name = "langchain" },
     { name = "langchain-community" },
+    { name = "langchain-core" },
     { name = "langchain-qdrant" },
     { name = "openai" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
     { name = "qdrant-client" },
+    { name = "sentence-transformers" },
     { name = "torch" },
     { name = "transformers" },
     { name = "uvicorn" },
@@ -47,7 +49,6 @@ all = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "ruff" },
-    { name = "sentence-transformers" },
 ]
 dev = [
     { name = "bandit" },
@@ -64,7 +65,6 @@ dev = [
 embeddings = [
     { name = "cohere" },
     { name = "openai" },
-    { name = "sentence-transformers" },
 ]
 parsers = [
     { name = "beautifulsoup4" },
@@ -89,6 +89,7 @@ requires-dist = [
     { name = "ipython", marker = "extra == 'dev'", specifier = ">=8.30.0" },
     { name = "langchain", specifier = ">=1.2.0" },
     { name = "langchain-community", specifier = ">=0.4.1" },
+    { name = "langchain-core", specifier = ">=1.2.5" },
     { name = "langchain-qdrant", specifier = ">=1.1.0" },
     { name = "markdown", marker = "extra == 'parsers'", specifier = ">=3.7" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13.0" },
@@ -106,7 +107,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "qdrant-client", specifier = ">=1.16.2" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9.0" },
-    { name = "sentence-transformers", marker = "extra == 'embeddings'", specifier = ">=3.3.1" },
+    { name = "sentence-transformers", specifier = ">=3.3.1" },
     { name = "torch", specifier = ">=2.9.1" },
     { name = "transformers", specifier = ">=4.57.3" },
     { name = "uvicorn", specifier = ">=0.40.0" },

@@ -48,6 +48,48 @@ uv run python examples/benchmark_retrieval.py
 #### Retrieval Performance
 - **k=1**: 4.06ms
 - **k=3**: 2.38ms
+
+### `reranker_demo.py`
+Demonstrates cross-encoder re-ranking functionality for improving retrieval precision.
+
+**Features:**
+- Basic re-ranking with precision@k evaluation
+- Comparison with baseline retrieval
+- Batch re-ranking performance
+- Timeout and fallback handling
+- Health check and model information
+
+**Usage:**
+```bash
+uv run python examples/reranker_demo.py
+```
+
+**Expected Output:**
+- Re-ranking latency: ~100-300ms
+- Precision@k improvements across all k values
+- Fallback behavior demonstration
+- Model loading and health status
+
+### `reranker_benchmark.py`
+Comprehensive benchmark for cross-encoder re-ranking performance evaluation.
+
+**Measures:**
+- Precision@k improvements over baseline
+- Latency overhead analysis
+- Batch size optimization
+- Timeout and fallback behavior
+- Search type comparison framework
+
+**Usage:**
+```bash
+uv run python examples/reranker_benchmark.py
+```
+
+**Key Metrics:**
+- **Precision@1**: +0.1-0.3 improvement typical
+- **Precision@5**: +0.05-0.2 improvement typical  
+- **Latency**: 50-200ms per query depending on candidates
+- **Throughput**: 10-50 docs/second depending on batch size
 - **k=5**: 2.23ms
 - **k=10**: 2.61ms
 

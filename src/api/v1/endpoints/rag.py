@@ -77,6 +77,7 @@ async def generate(request: GenerateRequest):
         search_type=request.search_type,
         filters=request.metadata_filters,
         hybrid_alpha=request.hybrid_alpha,
+        enable_reranking=request.enable_reranking,
     )
     logger.info(f"Retrieved {len(retrieved)} documents")
 

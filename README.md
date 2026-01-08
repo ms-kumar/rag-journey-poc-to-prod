@@ -9,7 +9,7 @@ Documents → Chunking → Embeddings → Vector Store (Qdrant)
                            ↓
                     LRU Cache (83x speedup)
                            ↓
-Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answer
+Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retrieved Chunks → LLM → Answer
 ```
 
 ### Core Components
@@ -21,6 +21,7 @@ Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answe
 | **Embeddings** | Multiple providers with automatic caching (Hash, E5, BGE, OpenAI, Cohere) |
 | **Cache** | LRU embedding cache with disk persistence (83x speedup on repeated texts) |
 | **Vector Store** | Qdrant integration with efficient similarity search |
+| **Re-ranking** | Cross-encoder re-ranking for improved precision@k with timeout & fallback |
 | **Generation** | HuggingFace transformers for text generation (GPT-2 default) |
 | **API** | FastAPI with async endpoints for ingest and generate |
 
@@ -38,6 +39,8 @@ Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answe
 
 🎯 **Smart Filtering**: Flexible query filters with range, exact match, text search, and exclusion operators
 
+🔧 **Cross-Encoder Re-ranking**: Improve retrieval precision@k with configurable timeouts and fallback strategies
+
 ⚡ **Index Mappings**: Optimized payload indices for 10-100x faster filtering on large collections
 
 🔁 **Retry & Backoff**: Exponential backoff with jitter for resilient external service calls
@@ -54,7 +57,7 @@ Query → Embedding → Similarity Search → Retrieved Chunks → LLM → Answe
 
 🔀 **Fusion Orchestration**: Combine multiple search methods using RRF or weighted fusion for 33%+ recall uplift
 
-🧪 **Comprehensive Tests**: 435 tests with high coverage across all components
+🧪 **Comprehensive Tests**: 435+ tests with high coverage across all components
 
 🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
 

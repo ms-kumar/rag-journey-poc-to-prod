@@ -13,6 +13,7 @@ class GenerateRequest(BaseModel):
     - `metadata_filters`: optional filters applied to retrieval metadata.
     - `search_type`: type of search to perform (vector, bm25, hybrid, or sparse).
     - `hybrid_alpha`: weight for hybrid search (0.0=BM25 only, 1.0=vector only).
+    - `enable_reranking`: whether to apply cross-encoder re-ranking.
     """
 
     prompt: str = Field(..., description="Prompt text to generate from")
@@ -29,6 +30,9 @@ class GenerateRequest(BaseModel):
         ge=0.0,
         le=1.0,
         description="Weight for hybrid search (0.0=BM25, 1.0=vector, 0.5=balanced)",
+    )
+    enable_reranking: bool = Field(
+        False, description="Whether to apply cross-encoder re-ranking to improve precision"
     )
 
 
