@@ -19,6 +19,7 @@ class SparseEncoderConfig:
         device: str = "cpu",
         batch_size: int = 32,
         max_length: int = 256,
+        revision: str | None = None,
     ):
         """
         Initialize SPLADE encoder config.
@@ -28,11 +29,13 @@ class SparseEncoderConfig:
             device: Device to run model on ('cpu' or 'cuda')
             batch_size: Batch size for encoding
             max_length: Maximum sequence length
+            revision: Model revision (commit hash) for reproducibility
         """
         self.model_name = model_name
         self.device = device
         self.batch_size = batch_size
         self.max_length = max_length
+        self.revision = revision
 
 
 class SPLADEEncoder:
@@ -68,8 +71,14 @@ class SPLADEEncoder:
             ) from e
 
         logger.info(f"Loading SPLADE model: {self.config.model_name}")
-        self._tokenizer = AutoTokenizer.from_pretrained(self.config.model_name)
-        self._model = AutoModelForMaskedLM.from_pretrained(self.config.model_name)
+        self._tokenizer = AutoTokenizer.from_pretrained(
+            self.config.model_name,
+            revision=self.config.revision,  # nosec B615
+        )
+        self._model = AutoModelForMaskedLM.from_pretrained(
+            self.config.model_name,
+            revision=self.config.revision,  # nosec B615
+        )
         assert self._model is not None  # type guard
         self._model.to(self.config.device)
         self._model.eval()
@@ -177,6 +186,7 @@ def create_splade_encoder(
     model_name: str = "naver/splade-cocondenser-ensembledistil",
     device: str = "cpu",
     batch_size: int = 32,
+    revision: str | None = None,
 ) -> SPLADEEncoder:
     """
     Factory function to create SPLADE encoder.
@@ -185,6 +195,7 @@ def create_splade_encoder(
         model_name: HuggingFace model name
         device: Device to run on
         batch_size: Batch size for encoding
+        revision: Model revision (commit hash) for reproducibility
 
     Returns:
         SPLADEEncoder instance
@@ -197,5 +208,6 @@ def create_splade_encoder(
         model_name=model_name,
         device=device,
         batch_size=batch_size,
+        revision=revision,
     )
     return SPLADEEncoder(config)
