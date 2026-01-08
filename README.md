@@ -42,7 +42,7 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 �🎯 **Smart Filtering**: Flexible query filters with range, exact match, text search, and exclusion operators
 
 🔧 **Cross-Encoder Re-ranking**: Improve retrieval precision@k with configurable timeouts and fallback strategies
-
+🧠 **Query Understanding**: Automatic query rewriting (acronyms, typos, context), synonym expansion, and intent classification (<1ms latency)
 ⚡ **Index Mappings**: Optimized payload indices for 10-100x faster filtering on large collections
 
 🔁 **Retry & Backoff**: Exponential backoff with jitter for resilient external service calls
