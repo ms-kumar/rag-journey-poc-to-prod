@@ -1,4 +1,4 @@
-.PHONY: clean format check lint run ingest test help sync install test-cov test-all type-check security quality pre-commit dev
+.PHONY: clean format check lint run ingest test help sync install test-cov test-all type-check security quality pre-commit dev eval-datasets eval eval-ci dashboard eval-full
 
 # Python and project settings
 PYTHON := uv run python
@@ -24,6 +24,13 @@ help:
 	@echo "  make quality      - Run all quality checks"
 	@echo "  make pre-commit   - Setup pre-commit hooks"
 	@echo "  make clean        - Remove cache and build artifacts"
+	@echo ""
+	@echo "Evaluation targets:"
+	@echo "  make eval-datasets - Create evaluation datasets"
+	@echo "  make eval          - Run evaluation with default dataset"
+	@echo "  make eval-ci       - Run CI evaluation gate"
+	@echo "  make dashboard     - Generate evaluation dashboard"
+	@echo "  make eval-full     - Run full evaluation workflow"
 
 # Sync dependencies with uv
 sync:
@@ -108,3 +115,33 @@ test-cov: sync
 # Run all tests including slow ones
 test-all: sync
 	uv run python -m pytest $(TESTS_DIR) -v
+
+# Create evaluation datasets
+eval-datasets: sync
+	@echo "Creating evaluation datasets..."
+	uv run python scripts/create_eval_datasets.py
+
+# Create sample evaluation results for dashboard demo
+eval-samples: sync
+	@echo "Creating sample evaluation results..."
+	uv run python scripts/create_sample_results.py
+
+# Run evaluation with default dataset
+eval: sync
+	@echo "Running evaluation..."
+	uv run python scripts/ci_eval_gate.py --dataset data/eval/rag_default_eval.json
+
+# Run CI evaluation gate (quick test)
+eval-ci: sync
+	@echo "Running CI evaluation gate..."
+	uv run python scripts/ci_eval_gate.py --dataset data/eval/rag_test_small.json
+
+# Generate evaluation dashboard
+dashboard: sync
+	@echo "Generating evaluation dashboard..."
+	uv run python scripts/generate_dashboard.py
+	@echo "✅ Dashboard generated: results/dashboard.html"
+
+# Run full evaluation workflow
+eval-full: eval-datasets eval dashboard
+	@echo "✅ Full evaluation workflow completed!"

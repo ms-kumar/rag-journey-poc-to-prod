@@ -1,0 +1,50 @@
+{
+  "name": "demo_dataset",
+  "description": "Demo evaluation dataset",
+  "created_at": "2026-01-09T03:06:07.315795",
+  "metadata": {},
+  "examples": [
+    {
+      "query": "What is RAG?",
+      "relevant_doc_ids": [
+        "doc_rag_basics",
+        "doc_rag_intro"
+      ],
+      "query_id": "q_535177",
+      "metadata": {
+        "category": "basics",
+        "difficulty": "easy"
+      },
+      "expected_answer": "RAG is Retrieval-Augmented Generation",
+      "context_docs": []
+    },
+    {
+      "query": "How to implement embeddings?",
+      "relevant_doc_ids": [
+        "doc_embeddings",
+        "doc_implementation"
+      ],
+      "query_id": "q_439500",
+      "metadata": {
+        "category": "implementation",
+        "difficulty": "medium"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "Optimize RAG performance",
+      "relevant_doc_ids": [
+        "doc_performance",
+        "doc_optimization"
+      ],
+      "query_id": "q_913762",
+      "metadata": {
+        "category": "optimization",
+        "difficulty": "hard"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    }
+  ]
+}

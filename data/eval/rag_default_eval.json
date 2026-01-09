@@ -1,0 +1,302 @@
+{
+  "name": "rag_default_eval",
+  "description": "Default evaluation dataset for RAG system covering core topics",
+  "created_at": "2026-01-09T03:05:23.635554",
+  "metadata": {},
+  "examples": [
+    {
+      "query": "What is RAG?",
+      "relevant_doc_ids": [
+        "doc_rag_basics",
+        "doc_rag_intro"
+      ],
+      "query_id": "q_755243",
+      "metadata": {
+        "category": "rag_basics",
+        "difficulty": "easy"
+      },
+      "expected_answer": "RAG (Retrieval-Augmented Generation) is a technique that combines information retrieval with language model generation.",
+      "context_docs": []
+    },
+    {
+      "query": "How does retrieval augmented generation work?",
+      "relevant_doc_ids": [
+        "doc_rag_basics",
+        "doc_rag_architecture"
+      ],
+      "query_id": "q_027409",
+      "metadata": {
+        "category": "rag_basics",
+        "difficulty": "medium"
+      },
+      "expected_answer": "RAG works by first retrieving relevant documents using vector search, then using those documents as context for a language model to generate answers.",
+      "context_docs": []
+    },
+    {
+      "query": "What are vector embeddings?",
+      "relevant_doc_ids": [
+        "doc_embeddings",
+        "doc_vector_search"
+      ],
+      "query_id": "q_880165",
+      "metadata": {
+        "category": "embeddings",
+        "difficulty": "easy"
+      },
+      "expected_answer": "Vector embeddings are numerical representations of text that capture semantic meaning in high-dimensional space.",
+      "context_docs": []
+    },
+    {
+      "query": "How to create embeddings for text?",
+      "relevant_doc_ids": [
+        "doc_embeddings",
+        "doc_sentence_transformers"
+      ],
+      "query_id": "q_858105",
+      "metadata": {
+        "category": "embeddings",
+        "difficulty": "medium"
+      },
+      "expected_answer": "Text embeddings can be created using models like sentence-transformers, OpenAI embeddings, or Cohere embeddings.",
+      "context_docs": []
+    },
+    {
+      "query": "What is BM25?",
+      "relevant_doc_ids": [
+        "doc_bm25",
+        "doc_sparse_retrieval"
+      ],
+      "query_id": "q_614907",
+      "metadata": {
+        "category": "retrieval",
+        "difficulty": "medium"
+      },
+      "expected_answer": "BM25 is a probabilistic ranking function used in information retrieval for sparse keyword-based search.",
+      "context_docs": []
+    },
+    {
+      "query": "How to implement BM25 search?",
+      "relevant_doc_ids": [
+        "doc_bm25_implementation",
+        "doc_qdrant_sparse"
+      ],
+      "query_id": "q_000331",
+      "metadata": {
+        "category": "retrieval",
+        "difficulty": "hard"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "How to use Qdrant vector database?",
+      "relevant_doc_ids": [
+        "doc_qdrant_notes",
+        "doc_qdrant_basics"
+      ],
+      "query_id": "q_435766",
+      "metadata": {
+        "category": "vectordb",
+        "difficulty": "medium"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "What are Qdrant filters?",
+      "relevant_doc_ids": [
+        "doc_qdrant_filters",
+        "doc_metadata_filters"
+      ],
+      "query_id": "q_233725",
+      "metadata": {
+        "category": "vectordb",
+        "difficulty": "medium"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "How to build a REST API with FastAPI?",
+      "relevant_doc_ids": [
+        "doc_python_fastapi",
+        "doc_fastapi_basics"
+      ],
+      "query_id": "q_206581",
+      "metadata": {
+        "category": "api",
+        "difficulty": "medium"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "FastAPI async endpoints best practices",
+      "relevant_doc_ids": [
+        "doc_python_fastapi",
+        "doc_async_programming"
+      ],
+      "query_id": "q_226468",
+      "metadata": {
+        "category": "api",
+        "difficulty": "hard"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "What is machine learning?",
+      "relevant_doc_ids": [
+        "doc_ml_short",
+        "doc_ml_basics"
+      ],
+      "query_id": "q_987242",
+      "metadata": {
+        "category": "ml",
+        "difficulty": "easy"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "How to train a neural network?",
+      "relevant_doc_ids": [
+        "doc_ml_training",
+        "doc_pytorch_basics"
+      ],
+      "query_id": "q_243210",
+      "metadata": {
+        "category": "ml",
+        "difficulty": "hard"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "What is cross-encoder reranking?",
+      "relevant_doc_ids": [
+        "doc_reranking",
+        "doc_cross_encoder"
+      ],
+      "query_id": "q_064239",
+      "metadata": {
+        "category": "reranking",
+        "difficulty": "medium"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "How to improve retrieval with reranking?",
+      "relevant_doc_ids": [
+        "doc_reranking",
+        "doc_retrieval_optimization"
+      ],
+      "query_id": "q_007829",
+      "metadata": {
+        "category": "reranking",
+        "difficulty": "hard"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "What is query expansion?",
+      "relevant_doc_ids": [
+        "doc_query_understanding",
+        "doc_query_expansion"
+      ],
+      "query_id": "q_998117",
+      "metadata": {
+        "category": "query_processing",
+        "difficulty": "medium"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "How to handle misspellings in search queries?",
+      "relevant_doc_ids": [
+        "doc_query_understanding",
+        "doc_spell_correction"
+      ],
+      "query_id": "q_450437",
+      "metadata": {
+        "category": "query_processing",
+        "difficulty": "medium"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "What is text chunking?",
+      "relevant_doc_ids": [
+        "doc_chunking",
+        "doc_text_splitting"
+      ],
+      "query_id": "q_235138",
+      "metadata": {
+        "category": "preprocessing",
+        "difficulty": "easy"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "Best practices for chunking documents?",
+      "relevant_doc_ids": [
+        "doc_chunking_strategies",
+        "doc_overlap"
+      ],
+      "query_id": "q_837117",
+      "metadata": {
+        "category": "preprocessing",
+        "difficulty": "hard"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "How to cache embeddings?",
+      "relevant_doc_ids": [
+        "doc_embedding_cache",
+        "doc_caching"
+      ],
+      "query_id": "q_996702",
+      "metadata": {
+        "category": "optimization",
+        "difficulty": "medium"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "How to optimize RAG latency?",
+      "relevant_doc_ids": [
+        "doc_performance",
+        "doc_optimization"
+      ],
+      "query_id": "q_005146",
+      "metadata": {
+        "category": "performance",
+        "difficulty": "hard"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "What causes high retrieval latency?",
+      "relevant_doc_ids": [
+        "doc_performance",
+        "doc_latency_optimization"
+      ],
+      "query_id": "q_291725",
+      "metadata": {
+        "category": "performance",
+        "difficulty": "medium"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    }
+  ]
+}

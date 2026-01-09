@@ -1,0 +1,31 @@
+{
+  "description": "Evaluation thresholds for RAG system quality gates",
+  "version": "1.0",
+  "last_updated": "2026-01-09",
+  
+  "retrieval_thresholds": {
+    "min_precision_at_5": 0.6,
+    "min_recall_at_10": 0.7,
+    "min_mrr": 0.5,
+    "min_ndcg_at_10": 0.65,
+    "min_map": 0.6
+  },
+  
+  "generation_thresholds": {
+    "min_faithfulness": 0.8,
+    "min_relevance": 0.75,
+    "min_answer_quality": 0.7
+  },
+  
+  "performance_thresholds": {
+    "max_latency_p95": 2000.0,
+    "max_latency_p99": 3000.0
+  },
+  
+  "notes": [
+    "Thresholds should be adjusted based on baseline performance",
+    "Start conservative and gradually increase as system improves",
+    "Different thresholds may apply for different use cases",
+    "Review and update thresholds quarterly"
+  ]
+}

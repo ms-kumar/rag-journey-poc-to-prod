@@ -1,0 +1,68 @@
+{
+  "name": "rag_test_small",
+  "description": "Small test dataset for quick evaluation (5 queries)",
+  "created_at": "2026-01-09T03:05:23.638429",
+  "metadata": {},
+  "examples": [
+    {
+      "query": "What is RAG?",
+      "relevant_doc_ids": [
+        "doc_rag_basics"
+      ],
+      "query_id": "q_755243",
+      "metadata": {
+        "category": "rag_basics"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "How to use embeddings?",
+      "relevant_doc_ids": [
+        "doc_embeddings"
+      ],
+      "query_id": "q_510901",
+      "metadata": {
+        "category": "embeddings"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "What is BM25?",
+      "relevant_doc_ids": [
+        "doc_bm25"
+      ],
+      "query_id": "q_614907",
+      "metadata": {
+        "category": "retrieval"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "How to build FastAPI app?",
+      "relevant_doc_ids": [
+        "doc_python_fastapi"
+      ],
+      "query_id": "q_378518",
+      "metadata": {
+        "category": "api"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    },
+    {
+      "query": "Explain machine learning",
+      "relevant_doc_ids": [
+        "doc_ml_short"
+      ],
+      "query_id": "q_639127",
+      "metadata": {
+        "category": "ml"
+      },
+      "expected_answer": null,
+      "context_docs": []
+    }
+  ]
+}

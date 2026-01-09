@@ -1,0 +1,122 @@
+name: RAG Evaluation Gate
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras
+
+      - name: Create evaluation datasets
+        run: |
+          uv run python scripts/create_eval_datasets.py
+
+      - name: Ingest sample documents
+        run: |
+          # Wait for Qdrant to be ready
+          sleep 5
+          # Ingest documents (you may need to adjust this based on your setup)
+          # For now, we'll skip if ingestion requires external setup
+          echo "Skipping document ingestion in CI for now"
+
+      - name: Run evaluation gate
+        run: |
+          uv run python scripts/ci_eval_gate.py \
+            --dataset data/eval/rag_test_small.json \
+            --output results/eval_ci_result.json
+
+      - name: Upload evaluation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-results
+          path: results/eval_ci_result.json
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const resultsPath = 'results/eval_ci_result.json';
+              if (!fs.existsSync(resultsPath)) {
+                console.log('Results file not found');
+                return;
+              }
+              
+              const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+              const metrics = results.metrics;
+              
+              const passed = results.passed ? '✅ PASSED' : '❌ FAILED';
+              
+              let comment = `## RAG Evaluation Results ${passed}\n\n`;
+              comment += `**Duration:** ${results.duration_seconds.toFixed(2)}s\n\n`;
+              comment += `### Retrieval Metrics\n`;
+              comment += `- Precision@5: ${metrics.retrieval['precision@k']['5'].toFixed(3)}\n`;
+              comment += `- Recall@10: ${metrics.retrieval['recall@k']['10'].toFixed(3)}\n`;
+              comment += `- MRR: ${metrics.retrieval.mrr.toFixed(3)}\n`;
+              comment += `- NDCG@10: ${metrics.retrieval['ndcg@k']['10'].toFixed(3)}\n`;
+              comment += `- MAP: ${metrics.retrieval.map.toFixed(3)}\n\n`;
+              
+              comment += `### Performance\n`;
+              comment += `- Latency P50: ${metrics.performance.latency_p50_ms.toFixed(1)}ms\n`;
+              comment += `- Latency P95: ${metrics.performance.latency_p95_ms.toFixed(1)}ms\n`;
+              comment += `- Latency P99: ${metrics.performance.latency_p99_ms.toFixed(1)}ms\n\n`;
+              
+              if (results.failed_checks && results.failed_checks.length > 0) {
+                comment += `### Failed Checks\n`;
+                results.failed_checks.forEach(check => {
+                  comment += `- ${check}\n`;
+                });
+              }
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.error('Error posting comment:', error);
+            }
+
+      - name: Fail if evaluation failed
+        if: failure()
+        run: |
+          echo "❌ Evaluation gate failed - quality thresholds not met"
+          exit 1
