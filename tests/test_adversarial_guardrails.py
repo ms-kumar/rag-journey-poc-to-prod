@@ -321,8 +321,8 @@ class TestRefusalBehavior:
             recent_events = coordinator.audit_logger.get_recent_events(count=5)
             assert len(recent_events) > 0
 
-            # Should have logged the query
-            query_events = [e for e in recent_events if e.get("event_type") == "query"]
+            # Should have logged the query (event_type is "query_processed")
+            query_events = [e for e in recent_events if e.get("event_type") == "query_processed"]
             assert len(query_events) > 0
 
 

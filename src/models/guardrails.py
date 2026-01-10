@@ -98,6 +98,8 @@ class AuditEventType(str, Enum):
     PII_REDACTED = "pii_redacted"
     TOXICITY_DETECTED = "toxicity_detected"
     TOXICITY_FILTERED = "toxicity_filtered"
+    JAILBREAK_DETECTED = "jailbreak_detected"
+    PROMPT_INJECTION_DETECTED = "prompt_injection_detected"
     UNSAFE_QUERY = "unsafe_query"
     QUERY_PROCESSED = "query_processed"
     RESPONSE_GENERATED = "response_generated"

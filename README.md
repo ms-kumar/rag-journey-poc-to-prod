@@ -71,7 +71,9 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 🛡️ **Overflow Protection**: Automatic token limit enforcement prevents model API errors
 
-🛡️ **Guardrails & Safety**: Comprehensive PII detection/redaction, toxicity filtering, audit logging, and safe response templates
+🛡️ **Guardrails & Safety**: Comprehensive PII detection/redaction, toxicity filtering, jailbreak detection, prompt injection blocking, audit logging, and safe response templates
+
+🔴 **Adversarial Testing**: Red-team prompts, jailbreak tests, canary tests for CI, 0% violation rate on 26 attack vectors
 
 ### Project Structure
 
@@ -228,6 +230,18 @@ uv run pytest tests/test_embeddings.py -v
 
 # Run tests matching a pattern
 uv run pytest -k "test_embedding" -v
+
+# Run guardrails canary tests (quick smoke tests < 30s)
+make test-canary
+
+# Run adversarial/red-team tests
+make test-adversarial
+
+# Run all guardrails tests
+make test-guardrails
+
+# Verify violation threshold ≤ 0.1%
+make test-violation-threshold
 ```
 
 #### Development Workflow

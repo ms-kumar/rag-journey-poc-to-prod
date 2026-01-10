@@ -4,13 +4,17 @@ Guardrails Coordinator - Main interface for content safety checks.
 Coordinates all guardrail components:
 - PII detection and redaction
 - Toxicity filtering
+- Jailbreak and prompt injection detection
 - Safe response generation
 - Audit logging
 """
 
-from src.models.guardrails import GuardrailResult
+from datetime import UTC, datetime
+
+from src.models.guardrails import AuditEvent, AuditEventType, AuditSeverity, GuardrailResult
 
 from .audit_log import AuditLogger
+from .jailbreak_detector import JailbreakDetector
 from .pii_detector import PIIDetector, PIIRedactor
 from .safe_response import SafeResponseTemplate
 from .toxicity_filter import ToxicityFilter
@@ -24,13 +28,16 @@ class GuardrailsCoordinator:
         pii_detector: PIIDetector | None = None,
         pii_redactor: PIIRedactor | None = None,
         toxicity_filter: ToxicityFilter | None = None,
+        jailbreak_detector: JailbreakDetector | None = None,
         response_template: SafeResponseTemplate | None = None,
         audit_logger: AuditLogger | None = None,
         enable_pii_check: bool = True,
         enable_toxicity_check: bool = True,
+        enable_jailbreak_check: bool = True,
         enable_audit_logging: bool = True,
         auto_redact_pii: bool = True,
         block_on_toxicity: bool = True,
+        block_sensitive_pii: bool = True,
     ):
         """
         Initialize guardrails coordinator.
@@ -39,25 +46,34 @@ class GuardrailsCoordinator:
             pii_detector: PIIDetector instance.
             pii_redactor: PIIRedactor instance.
             toxicity_filter: ToxicityFilter instance.
+            jailbreak_detector: JailbreakDetector instance.
             response_template: SafeResponseTemplate instance.
             audit_logger: AuditLogger instance.
             enable_pii_check: Enable PII detection.
             enable_toxicity_check: Enable toxicity filtering.
+            enable_jailbreak_check: Enable jailbreak detection.
             enable_audit_logging: Enable audit logging.
             auto_redact_pii: Automatically redact PII.
             block_on_toxicity: Block requests with toxic content.
+            block_sensitive_pii: Block requests with sensitive PII (SSN, credit cards).
         """
         self.pii_detector = pii_detector or PIIDetector()
         self.pii_redactor = pii_redactor or PIIRedactor(detector=self.pii_detector)
         self.toxicity_filter = toxicity_filter or ToxicityFilter()
+        self.jailbreak_detector = jailbreak_detector or JailbreakDetector()
         self.response_template = response_template or SafeResponseTemplate()
         self.audit_logger = audit_logger or AuditLogger()
 
         self.enable_pii_check = enable_pii_check
         self.enable_toxicity_check = enable_toxicity_check
+        self.enable_jailbreak_check = enable_jailbreak_check
         self.enable_audit_logging = enable_audit_logging
         self.auto_redact_pii = auto_redact_pii
         self.block_on_toxicity = block_on_toxicity
+        self.block_sensitive_pii = block_sensitive_pii
+
+        # Sensitive PII types that should always be blocked
+        self.sensitive_pii_types = {"ssn", "credit_card", "passport", "drivers_license"}
 
     def check_input(
         self,
@@ -84,6 +100,32 @@ class GuardrailsCoordinator:
         toxicity_level = None
         toxicity_score = 0.0
         safe_response = None
+        jailbreak_detected = False
+        jailbreak_severity = None
+
+        # Jailbreak/Prompt Injection Check (highest priority)
+        if self.enable_jailbreak_check:
+            jailbreak_matches = self.jailbreak_detector.detect(text)
+            if jailbreak_matches:
+                jailbreak_detected = True
+                jailbreak_severity = self.jailbreak_detector.get_severity(text)
+                violations.append(f"Jailbreak attempt detected ({jailbreak_severity})")
+
+                if self.enable_audit_logging:
+                    event = AuditEvent(
+                        event_type=AuditEventType.JAILBREAK_DETECTED,
+                        severity=AuditSeverity.CRITICAL,
+                        timestamp=datetime.now(UTC),
+                        user_id=user_id,
+                        session_id=session_id,
+                        details={
+                            "severity": jailbreak_severity,
+                            "patterns": [m.pattern for m in jailbreak_matches],
+                            "matched_text": [m.matched_text for m in jailbreak_matches],
+                        },
+                        message=f"Jailbreak attempt detected: {jailbreak_severity}",
+                    )
+                    self.audit_logger.log_event(event)
 
         # PII Check
         if self.enable_pii_check:
@@ -125,10 +167,27 @@ class GuardrailsCoordinator:
 
         # Determine if content is safe
         is_safe = True
-        if pii_detected and not self.auto_redact_pii:
+
+        # Block jailbreak attempts (highest priority)
+        if jailbreak_detected:
+            is_safe = False
+            safe_response = self.response_template.get_fallback_response()
+        # Block sensitive PII (high priority)
+        elif self.block_sensitive_pii and pii_detected:
+            # Check if any detected PII is sensitive
+            has_sensitive_pii = any(
+                pii_type in self.sensitive_pii_types for pii_type in pii_types_list
+            )
+            if has_sensitive_pii:
+                is_safe = False
+                safe_response = self.response_template.get_pii_response(pii_types_list)
+        # Block if PII detected and auto-redact disabled
+        elif pii_detected and not self.auto_redact_pii:
             is_safe = False
             safe_response = self.response_template.get_pii_response(pii_types_list)
-        elif toxicity_detected and self.block_on_toxicity:
+
+        # Block toxic content (check separately, not as elif, so it runs even if non-sensitive PII was detected)
+        if is_safe and toxicity_detected and self.block_on_toxicity:
             is_safe = False
             safe_response = self.response_template.get_toxicity_response(
                 severity=toxicity_level,

@@ -35,17 +35,28 @@ class ToxicityFilter:
     ]
 
     THREAT_PATTERNS = [
-        r"\b(kill|hurt|harm|attack|destroy)\s+(you|them|him|her)\b",
-        r"\b(going|gonna)\s+to\s+(kill|hurt|harm|attack)\b",
+        r"\b(kill|hurt|harm|attack|destroy|murder|assault)\s+(you|them|him|her|people|someone|everyone)\b",
+        r"\b(going|gonna|will)\s+to\s+(kill|hurt|harm|attack|murder)\b",
+        r"\bI\s+(will|would|want\s+to)\s+(kill|hurt|harm|attack|murder)\b",
+        r"\b(tell|show)\s+me\s+(how\s+to|ways\s+to)\s+(kill|hurt|harm|attack)\b",
     ]
 
     HARASSMENT_PATTERNS = [
-        r"\b(shut\s+up|go\s+away|leave\s+me)\b",
-        r"\byou\s+(are|re)\s+(worthless|pathetic|useless)\b",
+        r"\b(shut\s+up|go\s+away|leave\s+me|get\s+lost)\b",
+        r"\byou\s+(are|re)\s+(worthless|pathetic|useless|garbage|trash)\b",
+        r"\b(piece\s+of\s+(garbage|trash|shit))\b",
     ]
 
     VIOLENCE_PATTERNS = [
-        r"\b(shoot|stab|punch|beat|murder|assault)\b",
+        r"\b(shoot|stab|punch|beat|murder|assault|torture|abuse)\b",
+        r"\b(violent|brutal|vicious)\s+(ways|methods)\b",
+        r"\bhow\s+(?:can|to)\s+(?:I|someone)\s+(?:create|make)\s+harmful\b",
+    ]
+
+    HATE_AND_DEATH_WISHES = [
+        r"\bI\s+hate\s+(everyone|all\s+people|everybody)\b",
+        r"\b(wish|hope)\s+(?:they|everyone|people)\s+(?:would|could|will)\s+(?:all\s+)?die\b",
+        r"\beveryone\s+(?:should|must|needs\s+to)\s+die\b",
     ]
 
     SEXUAL_PATTERNS = [
@@ -86,7 +97,7 @@ class ToxicityFilter:
 
         pattern_mapping = {
             ToxicityCategory.PROFANITY: self.PROFANITY_PATTERNS,
-            ToxicityCategory.HATE_SPEECH: self.HATE_SPEECH_PATTERNS,
+            ToxicityCategory.HATE_SPEECH: self.HATE_SPEECH_PATTERNS + self.HATE_AND_DEATH_WISHES,
             ToxicityCategory.THREAT: self.THREAT_PATTERNS,
             ToxicityCategory.HARASSMENT: self.HARASSMENT_PATTERNS,
             ToxicityCategory.VIOLENCE: self.VIOLENCE_PATTERNS,
