@@ -32,9 +32,7 @@ class TestCacheClient:
     @pytest.fixture
     def cache(self, mock_redis):
         """Create cache instance with mocked Redis."""
-        return CacheClient(
-            redis_client=mock_redis, ttl_hours=1, key_prefix="test:"
-        )
+        return CacheClient(redis_client=mock_redis, ttl_hours=1, key_prefix="test:")
 
     def test_initialization(self, mock_redis):
         """Test cache initialization."""

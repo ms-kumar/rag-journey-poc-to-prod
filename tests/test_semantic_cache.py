@@ -37,9 +37,7 @@ class TestSemanticCacheClient:
     @pytest.fixture
     def cache_client(self, mock_redis):
         """Create cache client."""
-        return CacheClient(
-            redis_client=mock_redis, ttl_hours=1, key_prefix="semantic:"
-        )
+        return CacheClient(redis_client=mock_redis, ttl_hours=1, key_prefix="semantic:")
 
     @pytest.fixture
     def semantic_cache(self, cache_client, mock_embed_client):
