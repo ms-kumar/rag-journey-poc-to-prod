@@ -71,6 +71,8 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 🛡️ **Overflow Protection**: Automatic token limit enforcement prevents model API errors
 
+🛡️ **Guardrails & Safety**: Comprehensive PII detection/redaction, toxicity filtering, audit logging, and safe response templates
+
 ### Project Structure
 
 ```
@@ -85,7 +87,9 @@ src/
 └── services/
     ├── chunking/           # Document chunking
     ├── embeddings/         # Text embeddings
+    ├── evaluation/         # Evaluation harness & metrics
     ├── generation/         # LLM generation
+    ├── guardrails/         # Safety (PII, toxicity, audit)
     ├── ingestion/          # Document loading
     ├── pipeline/           # RAG orchestration
     └── vectorstore/        # Qdrant integration
@@ -486,6 +490,48 @@ print(f"Vectors: {info['vectors_count']}, Indices: {info['payload_indices']}")
 - 🔄 **Score Normalization**: MinMax, Z-score, Sigmoid methods
 - 📏 **Quality Metrics**: MRR, Recall@k, Precision@k calculations
 
+#### Guardrails & Safety
+
+Comprehensive safety features to protect against PII leakage and toxic content:
+
+```python
+from src.services.guardrails.coordinator import GuardrailsCoordinator
+from src.services.guardrails.audit_log import AuditLogger
+
+# Initialize guardrails
+audit_logger = AuditLogger(log_file="audit.log")
+coordinator = GuardrailsCoordinator(
+    audit_logger=audit_logger,
+    enable_pii_check=True,
+    enable_toxicity_check=True,
+    auto_redact_pii=True,
+    block_on_toxicity=True
+)
+
+# Process user query
+user_query = "My SSN is 123-45-6789"
+is_safe, processed = coordinator.process_query(user_query, user_id="user123")
+
+if not is_safe:
+    return {"error": processed}  # Safe response template
+
+# Continue with RAG...
+rag_response = your_rag_function(processed)
+
+# Sanitize output
+final_response = coordinator.process_response(rag_response)
+return {"response": final_response}
+```
+
+**Safety Features:**
+- 🔒 **PII Detection**: Email, phone, SSN, credit cards, IP addresses
+- 🚫 **Toxicity Filter**: Profanity, threats, harassment, hate speech
+- 📝 **Audit Logging**: Structured JSON logs with severity levels
+- ✅ **Safe Responses**: Pre-configured templates for violations
+- ⚙️ **Configurable**: Enable/disable checks, auto-redaction, blocking
+
+See [docs/guardrails-implementation.md](docs/guardrails-implementation.md) for complete documentation.
+
 #### Embedding Providers
 
 The system supports multiple embedding providers:
@@ -525,12 +571,14 @@ Comprehensive guides for all major features:
 | [overflow-guards.md](docs/overflow-guards.md) | Automatic token limit enforcement to prevent API errors |
 | [bm25-filters.md](docs/bm25-filters.md) | BM25 keyword search and metadata filtering with query builders |
 | [index-mappings.md](docs/index-mappings.md) | Payload index optimization for 10-100x faster filtering |
+| [guardrails-implementation.md](docs/guardrails-implementation.md) | Comprehensive safety: PII detection, toxicity filtering, audit logging |
 
 **Development Progress:**
 - [Week 1](docs/week-plans/week-1.md): Naive RAG Pipeline
 - [Week 2](docs/week-plans/week-2.md): Production-Ready Enhancements (caching, providers, quality)
 - [Week 3](docs/week-plans/week-3.md): Hybrid Retrieval & Fusion (dense, sparse, RRF, weighted fusion)
 - [Week 4](docs/week-plans/week-4.md): Metadata Filtering (source, date, tag filters)
+- [Week 5](docs/week-plans/week-5.md): Evaluation Framework & Guardrails (metrics, safety, audit)
 
 ### Configuration
 
@@ -574,7 +622,7 @@ make test-cov
 open htmlcov/index.html
 ```
 
-**Test Coverage**: 405 tests | 71% coverage
+**Test Coverage**: 536 tests | 73% coverage (including 101 guardrails tests)
 
 Quality gates enforced:
 - ✅ Ruff formatting (100 char line length)
