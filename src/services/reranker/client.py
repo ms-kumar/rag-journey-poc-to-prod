@@ -21,6 +21,10 @@ import torch
 from langchain_core.documents import Document
 from sentence_transformers import CrossEncoder
 
+from src.exceptions import (
+    RerankerModelError,
+    RerankerTimeoutError,
+)
 from src.services.retry import RetryConfig, retry_with_backoff
 
 logger = logging.getLogger(__name__)
@@ -200,7 +204,7 @@ class CrossEncoderReranker:
         @retry_with_backoff(self.retry_config)
         def _score_batch() -> list[float]:
             if not self.model_loaded or self.model is None:
-                raise RuntimeError("Cross-encoder model not loaded")
+                raise RerankerModelError("Cross-encoder model not loaded")
 
             # Prepare query-document pairs
             pairs = [[query, doc.page_content] for doc in documents]
@@ -225,7 +229,7 @@ class CrossEncoderReranker:
     def _score_batch_with_timeout(self, batch: list[list[str]]) -> list[float]:
         """Score a batch of query-document pairs with timeout."""
         if not self.model:
-            raise RuntimeError("Model not available")
+            raise RerankerModelError("Model not available")
 
         # Use a simple timeout approach
         start_time = time.time()
@@ -235,7 +239,7 @@ class CrossEncoderReranker:
 
             # Check if we exceeded timeout
             if time.time() - start_time > self.config.timeout_seconds:
-                raise TimeoutError(
+                raise RerankerTimeoutError(
                     f"Batch scoring exceeded timeout ({self.config.timeout_seconds}s)"
                 )
 

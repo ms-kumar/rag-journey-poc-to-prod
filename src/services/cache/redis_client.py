@@ -11,6 +11,10 @@ from typing import Any
 import redis
 from pydantic import BaseModel, Field
 
+from src.exceptions import (
+    RedisConnectionError,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,7 +91,9 @@ class RedisCache:
                 )
             except redis.ConnectionError as e:
                 logger.error(f"Failed to connect to Redis: {e}")
-                raise
+                raise RedisConnectionError(
+                    f"Failed to connect to Redis at {self.config.host}:{self.config.port}"
+                ) from e
         return self._client
 
     def _make_key(self, key: str) -> str:

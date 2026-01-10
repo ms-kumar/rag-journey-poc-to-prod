@@ -10,6 +10,8 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from src.exceptions import QueryValidationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,9 +28,9 @@ class QueryRewriterConfig:
     def __post_init__(self) -> None:
         """Validate configuration."""
         if self.max_rewrites < 1:
-            raise ValueError("max_rewrites must be at least 1")
+            raise QueryValidationError("max_rewrites must be at least 1")
         if self.min_query_length < 1:
-            raise ValueError("min_query_length must be at least 1")
+            raise QueryValidationError("min_query_length must be at least 1")
 
     @classmethod
     def from_settings(cls, settings: Any) -> "QueryRewriterConfig":

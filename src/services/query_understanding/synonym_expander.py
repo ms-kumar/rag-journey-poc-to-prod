@@ -10,6 +10,8 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from src.exceptions import QueryValidationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,9 +26,9 @@ class SynonymExpanderConfig:
     def __post_init__(self) -> None:
         """Validate configuration."""
         if self.max_synonyms_per_term < 1:
-            raise ValueError("max_synonyms_per_term must be at least 1")
+            raise QueryValidationError("max_synonyms_per_term must be at least 1")
         if self.min_term_length < 1:
-            raise ValueError("min_term_length must be at least 1")
+            raise QueryValidationError("min_term_length must be at least 1")
 
     @classmethod
     def from_settings(cls, settings: Any) -> "SynonymExpanderConfig":

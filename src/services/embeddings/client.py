@@ -2,6 +2,8 @@ import hashlib
 import math
 from collections.abc import Sequence
 
+from src.exceptions import EmbeddingDimensionMismatch
+
 
 class EmbedClient:
     """
@@ -18,7 +20,7 @@ class EmbedClient:
         self.model_name = model_name
         self.dim = int(dim)
         if self.dim <= 0:
-            raise ValueError("dim must be a positive integer")
+            raise EmbeddingDimensionMismatch("dim must be a positive integer")
         self.normalize = bool(normalize)
 
     def _text_to_vector(self, text: str) -> list[float]:

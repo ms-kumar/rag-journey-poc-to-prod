@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING, Any
 
+from src.exceptions import EmbeddingProviderError
+
 from .adapter import LangChainEmbeddingsAdapter
 from .cached_client import CachedEmbeddingClient
 from .client import EmbedClient
@@ -84,7 +86,7 @@ def get_embed_client(
         base_provider = CohereEmbeddings(model=model, api_key=api_key, **kwargs)
 
     else:
-        raise ValueError(
+        raise EmbeddingProviderError(
             f"Unknown provider: {provider}. Supported: hash, e5, bge, huggingface, openai, cohere"
         )
 
