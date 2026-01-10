@@ -176,6 +176,45 @@ class RAGSettings(BaseConfigSettings):
     max_context_docs: int = 3  # Max documents in context
 
 
+class CacheSettings(BaseConfigSettings):
+    """Cache configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=[".env", str(ENV_FILE_PATH)],
+        env_prefix="CACHE__",
+        extra="ignore",
+        frozen=True,
+        case_sensitive=False,
+    )
+
+    # Redis settings
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_password: str | None = None
+    redis_max_connections: int = 10
+    redis_socket_timeout: int = 5
+    redis_decode_responses: bool = True
+
+    # Cache behavior
+    default_ttl: int = 3600  # Default TTL in seconds (1 hour)
+    key_prefix: str = "rag:"  # Prefix for all cache keys
+    enabled: bool = True  # Enable/disable caching globally
+
+    # Semantic cache settings
+    semantic_similarity_threshold: float = 0.95  # Cosine similarity threshold
+    semantic_embedding_dim: int = 384  # Embedding dimension
+    semantic_max_candidates: int = 100  # Max candidates to check
+
+    # Staleness monitoring
+    staleness_check_interval: int = 300  # Check interval in seconds (5 min)
+    staleness_threshold: int = 3600  # Staleness threshold in seconds (1 hour)
+    staleness_auto_invalidate: bool = False  # Auto-invalidate stale entries
+
+    # Performance targets
+    target_hit_rate: float = 0.6  # Target cache hit rate (60%)
+
+
 class Settings(BaseConfigSettings):
     """Aggregated settings for the entire application."""
 
@@ -188,6 +227,7 @@ class Settings(BaseConfigSettings):
     vectorstore: VectorStoreSettings = Field(default_factory=VectorStoreSettings)
     generation: GenerationSettings = Field(default_factory=GenerationSettings)
     rag: RAGSettings = Field(default_factory=RAGSettings)
+    cache: CacheSettings = Field(default_factory=CacheSettings)
 
 
 @lru_cache
