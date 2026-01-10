@@ -1,25 +1,31 @@
 """
 Caching services with Redis, semantic caching, and monitoring.
+
+Similar to Mother of AI's cache architecture with unified clients.
 """
 
+from src.services.cache.client import CacheClient
 from src.services.cache.factory import (
     create_cache_metrics,
-    create_redis_cache,
-    create_semantic_cache,
+    make_cache_client,
+    make_redis_client,
+    make_semantic_cache_client,
 )
 from src.services.cache.metrics import CacheMetrics, CacheStats, StalenessConfig
-from src.services.cache.redis_client import RedisCache, RedisCacheConfig
-from src.services.cache.semantic_cache import SemanticCache, SemanticCacheConfig
+from src.services.cache.semantic_cache import SemanticCacheClient
 
 __all__ = [
-    "RedisCache",
-    "RedisCacheConfig",
-    "SemanticCache",
-    "SemanticCacheConfig",
+    # Unified clients (Mother of AI pattern)
+    "CacheClient",
+    "SemanticCacheClient",
+    # Factory functions
+    "make_cache_client",
+    "make_redis_client",
+    "make_semantic_cache_client",
+    # Metrics
     "CacheMetrics",
     "CacheStats",
     "StalenessConfig",
-    "create_redis_cache",
-    "create_semantic_cache",
+    # Legacy factory
     "create_cache_metrics",
 ]

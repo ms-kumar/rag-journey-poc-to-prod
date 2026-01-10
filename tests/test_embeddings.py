@@ -6,6 +6,7 @@ import math
 
 import pytest
 
+from src.exceptions import EmbeddingDimensionMismatch
 from src.services.embeddings.adapter import LangChainEmbeddingsAdapter
 from src.services.embeddings.client import EmbedClient
 
@@ -27,12 +28,12 @@ class TestEmbedClient:
 
     def test_initialization_invalid_dim_zero(self):
         """Test initialization with zero dimension raises error."""
-        with pytest.raises(ValueError, match="dim must be a positive integer"):
+        with pytest.raises(EmbeddingDimensionMismatch, match="dim must be a positive integer"):
             EmbedClient(dim=0)
 
     def test_initialization_invalid_dim_negative(self):
         """Test initialization with negative dimension raises error."""
-        with pytest.raises(ValueError, match="dim must be a positive integer"):
+        with pytest.raises(EmbeddingDimensionMismatch, match="dim must be a positive integer"):
             EmbedClient(dim=-10)
 
     def test_embed_single_text(self):

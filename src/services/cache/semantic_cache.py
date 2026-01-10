@@ -1,5 +1,7 @@
 """
-Semantic cache for caching based on semantic similarity.
+Semantic cache client for caching based on semantic similarity.
+
+Similar to CacheClient but uses embedding similarity instead of exact matching.
 """
 
 import hashlib
@@ -8,46 +10,16 @@ import logging
 from typing import Any
 
 import numpy as np
-from pydantic import BaseModel, Field
 
-from src.services.cache.redis_client import RedisCache, RedisCacheConfig
+from src.services.cache.client import CacheClient
 from src.services.embeddings.client import EmbedClient
 
 logger = logging.getLogger(__name__)
 
 
-class SemanticCacheConfig(BaseModel):
-    """Configuration for semantic cache."""
-
-    similarity_threshold: float = Field(
-        default=0.95,
-        description="Cosine similarity threshold for cache hits (0.0-1.0)",
-    )
-    embedding_dim: int = Field(default=384, description="Embedding dimension")
-    max_candidates: int = Field(
-        default=100,
-        description="Maximum number of candidates to check for similarity",
-    )
-    redis_config: RedisCacheConfig = Field(
-        default_factory=RedisCacheConfig,
-        description="Redis cache configuration",
-    )
-
-    @classmethod
-    def from_settings(cls, settings: Any) -> "SemanticCacheConfig":
-        """Create config from application settings."""
-        cache_settings = settings.cache
-        return cls(
-            similarity_threshold=cache_settings.semantic_similarity_threshold,
-            embedding_dim=cache_settings.semantic_embedding_dim,
-            max_candidates=cache_settings.semantic_max_candidates,
-            redis_config=RedisCacheConfig.from_settings(settings),
-        )
-
-
-class SemanticCache:
+class SemanticCacheClient:
     """
-    Semantic cache that retrieves cached results based on semantic similarity.
+    Semantic cache client that retrieves cached results based on semantic similarity.
 
     Instead of exact key matching, this cache compares query embeddings
     and returns cached results if similarity exceeds threshold.
@@ -56,41 +28,51 @@ class SemanticCache:
     - Semantic similarity matching using embeddings
     - Configurable similarity threshold
     - Efficient candidate selection
-    - Backed by Redis for persistence
+    - Backed by CacheClient for persistence
+    - Context manager support
     """
 
     def __init__(
         self,
+        cache_client: CacheClient,
         embed_client: EmbedClient,
-        config: SemanticCacheConfig | None = None,
-        redis_cache: RedisCache | None = None,
+        similarity_threshold: float = 0.95,
+        embedding_dim: int = 384,
+        max_candidates: int = 100,
     ):
         """
-        Initialize semantic cache.
+        Initialize semantic cache client.
 
         Args:
+            cache_client: CacheClient instance for storage
             embed_client: Embedding client for generating query embeddings
-            config: Semantic cache configuration
-            redis_cache: Redis cache instance (or creates new one)
+            similarity_threshold: Cosine similarity threshold (0.0-1.0, default: 0.95)
+            embedding_dim: Embedding dimension (default: 384)
+            max_candidates: Max candidates to check for similarity (default: 100)
         """
-        self.config = config or SemanticCacheConfig()
+        self.cache = cache_client
         self.embed_client = embed_client
+        self.similarity_threshold = similarity_threshold
+        self.embedding_dim = embedding_dim
+        self.max_candidates = max_candidates
 
-        # Initialize Redis cache for storing embeddings and values
-        self.redis_cache = redis_cache or RedisCache(self.config.redis_config)
-
-        # Keys
-        self._embedding_key_prefix = "semantic:embedding:"
-        self._value_key_prefix = "semantic:value:"
+        # Key prefixes for organization
+        self._embedding_prefix = "semantic:emb:"
+        self._value_prefix = "semantic:val:"
         self._index_key = "semantic:index"
 
+        logger.info(
+            f"SemanticCacheClient initialized (threshold={similarity_threshold}, "
+            f"dim={embedding_dim})"
+        )
+
     def _make_embedding_key(self, query_hash: str) -> str:
-        """Create embedding key."""
-        return f"{self._embedding_key_prefix}{query_hash}"
+        """Create embedding storage key."""
+        return f"{self._embedding_prefix}{query_hash}"
 
     def _make_value_key(self, query_hash: str) -> str:
-        """Create value key."""
-        return f"{self._value_key_prefix}{query_hash}"
+        """Create value storage key."""
+        return f"{self._value_prefix}{query_hash}"
 
     def _hash_query(self, query: str) -> str:
         """Create hash of query."""
@@ -120,7 +102,7 @@ class SemanticCache:
         # Calculate cosine similarity
         return float(np.dot(arr1, arr2) / (norm1 * norm2))
 
-    def get(self, query: str) -> Any | None:
+    def get(self, query: str) -> dict[str, Any] | None:
         """
         Get cached value for semantically similar query.
 
@@ -128,36 +110,48 @@ class SemanticCache:
             query: Query string
 
         Returns:
-            Cached value if similar query found, None otherwise
+            Cached response dict if similar query found, None otherwise
         """
         try:
             # Generate embedding for query
             query_embedding = self.embed_client.embed([query])[0]
 
             # Get candidate hashes from index
-            candidate_hashes_raw = self.redis_cache.get(self._index_key)
+            candidate_hashes_raw = self.cache.get(self._index_key)
             if not candidate_hashes_raw:
+                logger.debug("Semantic cache: No index found")
                 return None
 
             candidate_hashes = (
                 candidate_hashes_raw
                 if isinstance(candidate_hashes_raw, list)
-                else json.loads(candidate_hashes_raw)
+                else json.loads(str(candidate_hashes_raw))
             )
 
-            # Limit candidates
-            candidates_to_check = candidate_hashes[: self.config.max_candidates]
+            # Limit candidates for performance
+            candidates_to_check = candidate_hashes[: self.max_candidates]
 
-            # Check similarity with each candidate
+            # Find best matching candidate
             best_similarity = 0.0
             best_hash = None
 
             for candidate_hash in candidates_to_check:
                 # Get cached embedding
                 embedding_key = self._make_embedding_key(candidate_hash)
-                cached_embedding = self.redis_cache.get(embedding_key)
+                cached_embedding_raw = self.cache.get(embedding_key)
 
-                if not cached_embedding:
+                if not cached_embedding_raw:
+                    continue
+
+                # Parse embedding (stored as JSON list)
+                try:
+                    cached_embedding: list[float] = (
+                        cached_embedding_raw
+                        if isinstance(cached_embedding_raw, list)
+                        else json.loads(str(cached_embedding_raw))
+                    )
+                except (json.JSONDecodeError, TypeError, ValueError):
+                    logger.warning(f"Invalid embedding format for {candidate_hash}")
                     continue
 
                 # Calculate similarity
@@ -168,34 +162,32 @@ class SemanticCache:
                     best_hash = candidate_hash
 
             # Check if best match exceeds threshold
-            if best_similarity >= self.config.similarity_threshold and best_hash:
+            if best_similarity >= self.similarity_threshold and best_hash:
                 # Get cached value
                 value_key = self._make_value_key(best_hash)
-                cached_value = self.redis_cache.get(value_key)
+                cached_value = self.cache.get(value_key)
 
                 if cached_value is not None:
-                    logger.debug(
-                        f"Semantic cache HIT (similarity={best_similarity:.3f}) for query: {query[:50]}"
+                    logger.info(
+                        f"Semantic cache HIT (similarity={best_similarity:.3f}) "
+                        f"for query: {query[:50]}..."
                     )
                     return cached_value
 
-            logger.debug(
-                f"Semantic cache MISS (best_similarity={best_similarity:.3f}) for query: {query[:50]}"
-            )
+            logger.debug(f"Semantic cache MISS (best={best_similarity:.3f}) for: {query[:50]}...")
             return None
 
         except Exception as e:
             logger.error(f"Error in semantic cache get: {e}")
             return None
 
-    def set(self, query: str, value: Any, ttl: int | None = None) -> bool:
+    def set(self, query: str, response: dict[str, Any]) -> bool:
         """
-        Cache value with semantic embedding.
+        Cache response with semantic embedding.
 
         Args:
             query: Query string
-            value: Value to cache
-            ttl: Time-to-live in seconds
+            response: Response dict to cache
 
         Returns:
             True if cached successfully
@@ -207,60 +199,73 @@ class SemanticCache:
             # Create hash for this query
             query_hash = self._hash_query(query)
 
-            # Store embedding
+            # Store embedding (direct key, no need for params)
             embedding_key = self._make_embedding_key(query_hash)
-            self.redis_cache.set(embedding_key, query_embedding, ttl=ttl)
+            self.cache.redis.set(embedding_key, json.dumps(query_embedding))
 
             # Store value
             value_key = self._make_value_key(query_hash)
-            self.redis_cache.set(value_key, value, ttl=ttl)
+            self.cache.redis.set(value_key, json.dumps(response))
 
             # Update index (list of all hashes)
-            current_index = self.redis_cache.get(self._index_key) or []
-            if not isinstance(current_index, list):
-                current_index = json.loads(current_index) if current_index else []
+            current_index_raw = self.cache.get(self._index_key)
+            current_index = []
+
+            if current_index_raw:
+                current_index = (
+                    current_index_raw
+                    if isinstance(current_index_raw, list)
+                    else json.loads(str(current_index_raw))
+                )
 
             # Add to front of index (most recent first)
             if query_hash not in current_index:
                 current_index.insert(0, query_hash)
+
                 # Keep index size manageable
-                if len(current_index) > self.config.max_candidates * 2:
-                    current_index = current_index[: self.config.max_candidates * 2]
+                max_index_size = self.max_candidates * 2
+                if len(current_index) > max_index_size:
+                    current_index = current_index[:max_index_size]
 
-                self.redis_cache.set(self._index_key, current_index, ttl=None)
+                self.cache.redis.set(self._index_key, json.dumps(current_index))
 
-            logger.debug(f"Semantic cache SET for query: {query[:50]}")
+            logger.info(f"Semantic cache SET for query: {query[:50]}...")
             return True
 
         except Exception as e:
             logger.error(f"Error in semantic cache set: {e}")
             return False
 
-    def invalidate(self, pattern: str = "*") -> int:
+    def clear(self, pattern: str = "*") -> int:
         """
-        Invalidate semantic cache entries matching pattern.
+        Clear semantic cache entries matching pattern.
 
         Args:
-            pattern: Pattern for keys to invalidate
+            pattern: Pattern for keys to clear (default: "*" for all)
 
         Returns:
-            Number of entries invalidated
+            Number of entries cleared
         """
         count = 0
 
-        # Invalidate embeddings
-        count += self.redis_cache.invalidate_pattern(f"{self._embedding_key_prefix}{pattern}")
+        try:
+            # Clear embeddings
+            count += self.cache.invalidate_pattern(f"{self._embedding_prefix}{pattern}")
 
-        # Invalidate values
-        count += self.redis_cache.invalidate_pattern(f"{self._value_key_prefix}{pattern}")
+            # Clear values
+            count += self.cache.invalidate_pattern(f"{self._value_prefix}{pattern}")
 
-        # Clear index if pattern matches all
-        if pattern == "*":
-            self.redis_cache.delete(self._index_key)
-            count += 1
+            # Clear index if pattern matches all
+            if pattern == "*":
+                self.cache.delete(self._index_key)
+                count += 1
 
-        logger.info(f"Invalidated {count} semantic cache entries")
-        return count
+            logger.info(f"Cleared {count} semantic cache entries")
+            return count
+
+        except Exception as e:
+            logger.error(f"Error clearing semantic cache: {e}")
+            return 0
 
     def flush(self) -> bool:
         """
@@ -270,13 +275,32 @@ class SemanticCache:
             True if flushed successfully
         """
         try:
-            # Clear all semantic cache keys
-            self.invalidate("*")
+            self.clear("*")
             logger.info("Flushed semantic cache")
             return True
         except Exception as e:
             logger.error(f"Error flushing semantic cache: {e}")
             return False
+
+    def ping(self) -> bool:
+        """
+        Check if semantic cache is operational.
+
+        Returns:
+            True if operational
+        """
+        return self.cache.ping()
+
+    def health_check(self) -> bool:
+        """
+        Check if semantic cache is healthy.
+
+        Alias for ping() for consistency.
+
+        Returns:
+            True if operational
+        """
+        return self.ping()
 
     def get_stats(self) -> dict[str, Any]:
         """
@@ -286,32 +310,53 @@ class SemanticCache:
             Dictionary with cache statistics
         """
         try:
-            index = self.redis_cache.get(self._index_key) or []
-            if not isinstance(index, list):
-                index = json.loads(index) if index else []
+            index_raw = self.cache.get(self._index_key)
+            index = []
+
+            if index_raw:
+                index = index_raw if isinstance(index_raw, list) else json.loads(str(index_raw))
 
             return {
                 "total_entries": len(index),
-                "max_candidates": self.config.max_candidates,
-                "similarity_threshold": self.config.similarity_threshold,
-                "embedding_dim": self.config.embedding_dim,
+                "max_candidates": self.max_candidates,
+                "similarity_threshold": self.similarity_threshold,
+                "embedding_dim": self.embedding_dim,
+                "connected": self.cache.ping(),
             }
         except Exception as e:
             logger.error(f"Error getting semantic cache stats: {e}")
-            return {}
+            return {
+                "total_entries": 0,
+                "max_candidates": self.max_candidates,
+                "similarity_threshold": self.similarity_threshold,
+                "embedding_dim": self.embedding_dim,
+                "connected": False,
+                "error": str(e),
+            }
 
-    def health_check(self) -> bool:
+    def close(self) -> None:
         """
-        Check if semantic cache is healthy.
+        Close underlying cache connection.
 
-        Returns:
-            True if operational
+        Should be called when semantic cache client is no longer needed.
         """
-        return self.redis_cache.health_check()
+        try:
+            self.cache.close()
+            logger.info("Closed semantic cache connection")
+        except Exception as e:
+            logger.error(f"Error closing semantic cache: {e}")
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.close()
 
     def __repr__(self) -> str:
         """String representation."""
         return (
-            f"SemanticCache(threshold={self.config.similarity_threshold}, "
-            f"dim={self.config.embedding_dim})"
+            f"SemanticCacheClient(threshold={self.similarity_threshold}, "
+            f"dim={self.embedding_dim}, max_candidates={self.max_candidates})"
         )

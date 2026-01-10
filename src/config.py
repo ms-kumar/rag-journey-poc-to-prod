@@ -226,6 +226,26 @@ class QueryUnderstandingSettings(BaseConfigSettings):
     enable_intent_classification: bool = False
 
 
+class RedisSettings(BaseConfigSettings):
+    """Redis connection settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=[".env", str(ENV_FILE_PATH)],
+        env_prefix="REDIS__",
+        extra="ignore",
+        frozen=True,
+        case_sensitive=False,
+    )
+
+    host: str = "localhost"
+    port: int = 6379
+    db: int = 0
+    password: str | None = None
+    max_connections: int = 10
+    socket_timeout: int = 5
+    decode_responses: bool = True
+
+
 class CacheSettings(BaseConfigSettings):
     """Cache configuration settings."""
 
@@ -237,14 +257,8 @@ class CacheSettings(BaseConfigSettings):
         case_sensitive=False,
     )
 
-    # Redis settings
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-    redis_db: int = 0
-    redis_password: str | None = None
-    redis_max_connections: int = 10
-    redis_socket_timeout: int = 5
-    redis_decode_responses: bool = True
+    # Redis connection (nested settings)
+    redis: RedisSettings = Field(default_factory=RedisSettings)
 
     # Cache behavior
     default_ttl: int = 3600  # Default TTL in seconds (1 hour)
@@ -284,7 +298,7 @@ class Settings(BaseConfigSettings):
     cache: CacheSettings = Field(default_factory=CacheSettings)
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """
     Get cached settings instance.

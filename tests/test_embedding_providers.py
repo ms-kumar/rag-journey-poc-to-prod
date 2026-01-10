@@ -4,6 +4,7 @@ Unit tests for embedding provider adapters (E5, BGE, OpenAI, Cohere).
 
 import pytest
 
+from src.exceptions import EmbeddingProviderError
 from src.services.embeddings.adapter import LangChainEmbeddingsAdapter
 from src.services.embeddings.factory import get_embed_client
 
@@ -248,7 +249,7 @@ class TestFactoryIntegration:
 
     def test_factory_unknown_provider(self):
         """Test factory with unknown provider."""
-        with pytest.raises(ValueError, match="Unknown provider"):
+        with pytest.raises(EmbeddingProviderError, match="Unknown provider"):
             get_embed_client(provider="unknown_provider")
 
     def test_factory_hash_provider(self):
@@ -451,5 +452,5 @@ class TestErrorHandling:
 
     def test_invalid_provider_params(self):
         """Test factory with invalid parameters."""
-        with pytest.raises(ValueError):
+        with pytest.raises(EmbeddingProviderError):
             get_embed_client(provider="invalid_provider_name")

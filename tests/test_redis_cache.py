@@ -1,85 +1,61 @@
 """
-Tests for Redis cache client.
+Tests for CacheClient (unified Redis cache client).
 """
 
-from unittest.mock import MagicMock, patch
+import json
+from unittest.mock import MagicMock
 
 import pytest
 
-from src.services.cache.redis_client import RedisCache, RedisCacheConfig
+from src.services.cache.client import CacheClient
 
 
-class TestRedisCacheConfig:
-    """Tests for Redis cache configuration."""
-
-    def test_default_config(self):
-        """Test default configuration values."""
-        config = RedisCacheConfig()
-
-        assert config.host == "localhost"
-        assert config.port == 6379
-        assert config.db == 0
-        assert config.default_ttl == 3600
-        assert config.key_prefix == "rag:"
-
-    def test_custom_config(self):
-        """Test custom configuration."""
-        config = RedisCacheConfig(
-            host="redis-server",
-            port=6380,
-            db=1,
-            default_ttl=7200,
-            key_prefix="test:",
-        )
-
-        assert config.host == "redis-server"
-        assert config.port == 6380
-        assert config.db == 1
-        assert config.default_ttl == 7200
-        assert config.key_prefix == "test:"
-
-
-class TestRedisCache:
-    """Tests for Redis cache."""
+class TestCacheClient:
+    """Tests for CacheClient."""
 
     @pytest.fixture
     def mock_redis(self):
         """Mock Redis client."""
-        with patch("src.services.cache.redis_client.redis.Redis") as mock:
-            redis_instance = MagicMock()
-            redis_instance.ping.return_value = True
-            mock.return_value = redis_instance
-            yield redis_instance
+        redis_instance = MagicMock()
+        redis_instance.ping.return_value = True
+        redis_instance.get.return_value = None
+        redis_instance.set.return_value = True
+        redis_instance.delete.return_value = 1
+        redis_instance.keys.return_value = []
+        redis_instance.exists.return_value = False
+        redis_instance.ttl.return_value = -1
+        redis_instance.expire.return_value = True
+        redis_instance.scan_iter.return_value = iter([])
+        redis_instance.info.return_value = {"used_memory": 1024}
+        return redis_instance
 
     @pytest.fixture
     def cache(self, mock_redis):
         """Create cache instance with mocked Redis."""
-        config = RedisCacheConfig()
-        cache = RedisCache(config)
-        cache._ensure_connected()
-        return cache
+        return CacheClient(
+            redis_client=mock_redis, ttl_hours=1, key_prefix="test:"
+        )
 
-    def test_initialization(self):
+    def test_initialization(self, mock_redis):
         """Test cache initialization."""
-        config = RedisCacheConfig(host="test-host", port=6380)
-        cache = RedisCache(config)
+        cache = CacheClient(redis_client=mock_redis, ttl_hours=6, key_prefix="rag:")
 
-        assert cache.config.host == "test-host"
-        assert cache.config.port == 6380
-        assert cache._client is None
+        assert cache.redis == mock_redis
+        assert cache.ttl.total_seconds() == 6 * 3600
+        assert cache.key_prefix == "rag:"
 
-    def test_ensure_connected(self, mock_redis):
-        """Test Redis connection."""
-        cache = RedisCache()
-        client = cache._ensure_connected()
+    def test_generate_cache_key(self, cache):
+        """Test cache key generation."""
+        key1 = cache._generate_cache_key("test query", model="llama", top_k=5)
+        key2 = cache._generate_cache_key("test query", model="llama", top_k=5)
+        key3 = cache._generate_cache_key("test query", model="llama", top_k=10)
 
-        assert client is not None
-        mock_redis.ping.assert_called_once()
-
-    def test_make_key(self, cache):
-        """Test key prefixing."""
-        key = cache._make_key("test_key")
-        assert key == "rag:test_key"
+        # Same parameters should generate same key
+        assert key1 == key2
+        # Different parameters should generate different key
+        assert key1 != key3
+        # Key should have prefix
+        assert key1.startswith("test:")
 
     def test_hash_key(self, cache):
         """Test key hashing."""
@@ -91,228 +67,137 @@ class TestRedisCache:
         assert hash1 != hash3
         assert len(hash1) == 16
 
-    def test_get_success(self, cache, mock_redis):
-        """Test successful cache get."""
-        mock_redis.get.return_value = '{"result": "value"}'
+    def test_get_cache_hit(self, cache, mock_redis):
+        """Test cache hit."""
+        mock_redis.get.return_value = json.dumps({"answer": "test"})
 
-        result = cache.get("test_key")
+        result = cache.get("test query", model="llama")
 
-        assert result == {"result": "value"}
-        mock_redis.get.assert_called_once_with("rag:test_key")
+        assert result == {"answer": "test"}
 
-    def test_get_miss(self, cache, mock_redis):
+    def test_get_cache_miss(self, cache, mock_redis):
         """Test cache miss."""
         mock_redis.get.return_value = None
 
-        result = cache.get("missing_key")
+        result = cache.get("test query", model="llama")
 
         assert result is None
 
-    def test_set_success(self, cache, mock_redis):
-        """Test successful cache set."""
+    def test_set_cache(self, cache, mock_redis):
+        """Test setting cache."""
         mock_redis.set.return_value = True
 
-        result = cache.set("test_key", {"data": "value"}, ttl=300)
+        result = cache.set("test query", {"answer": "test"}, model="llama")
 
         assert result is True
         mock_redis.set.assert_called_once()
-        call_args = mock_redis.set.call_args
-        assert call_args[0][0] == "rag:test_key"
-        assert call_args[1]["ex"] == 300
 
-    def test_set_with_default_ttl(self, cache, mock_redis):
-        """Test set with default TTL."""
-        mock_redis.set.return_value = True
-
-        cache.set("test_key", "value")
-
-        call_args = mock_redis.set.call_args
-        assert call_args[1]["ex"] == 3600  # default TTL
-
-    def test_set_with_nx_flag(self, cache, mock_redis):
-        """Test set with NX (only if not exists) flag."""
-        mock_redis.set.return_value = True
-
-        cache.set("test_key", "value", nx=True)
-
-        call_args = mock_redis.set.call_args
-        assert call_args[1]["nx"] is True
-
-    def test_delete_success(self, cache, mock_redis):
-        """Test successful delete."""
+    def test_delete(self, cache, mock_redis):
+        """Test deleting cache entry."""
         mock_redis.delete.return_value = 1
 
-        result = cache.delete("test_key")
+        result = cache.delete("test query", model="llama")
 
         assert result is True
-        mock_redis.delete.assert_called_once_with("rag:test_key")
+        mock_redis.delete.assert_called_once()
 
     def test_exists(self, cache, mock_redis):
-        """Test key existence check."""
-        mock_redis.exists.return_value = 1
+        """Test checking if entry exists."""
+        mock_redis.exists.return_value = True
 
-        result = cache.exists("test_key")
+        result = cache.exists("test query", model="llama")
 
         assert result is True
-        mock_redis.exists.assert_called_once_with("rag:test_key")
 
-    def test_ttl(self, cache, mock_redis):
-        """Test TTL retrieval."""
+    def test_get_ttl(self, cache, mock_redis):
+        """Test getting TTL."""
         mock_redis.ttl.return_value = 300
 
-        ttl = cache.ttl("test_key")
+        ttl = cache.get_ttl("test query", model="llama")
 
         assert ttl == 300
-        mock_redis.ttl.assert_called_once_with("rag:test_key")
 
-    def test_expire(self, cache, mock_redis):
-        """Test setting expiration."""
+    def test_set_ttl(self, cache, mock_redis):
+        """Test setting TTL."""
         mock_redis.expire.return_value = True
 
-        result = cache.expire("test_key", 600)
+        result = cache.set_ttl("test query", 600, model="llama")
 
         assert result is True
-        mock_redis.expire.assert_called_once_with("rag:test_key", 600)
 
     def test_invalidate_pattern(self, cache, mock_redis):
         """Test pattern invalidation."""
-        mock_redis.scan_iter.return_value = ["rag:test1", "rag:test2", "rag:test3"]
-        mock_redis.delete.return_value = 3
-
-        count = cache.invalidate_pattern("test*")
-
-        assert count == 3
-        mock_redis.scan_iter.assert_called_once()
-        mock_redis.delete.assert_called_once_with("rag:test1", "rag:test2", "rag:test3")
-
-    def test_flush(self, cache, mock_redis):
-        """Test cache flush."""
-        mock_redis.scan_iter.return_value = ["rag:key1", "rag:key2"]
+        mock_redis.scan_iter.return_value = iter(["test:key1", "test:key2"])
         mock_redis.delete.return_value = 2
 
-        result = cache.flush()
+        count = cache.invalidate_pattern("key*")
+
+        assert count == 2
+
+    def test_clear(self, cache, mock_redis):
+        """Test clearing cache."""
+        mock_redis.keys.return_value = ["test:key1", "test:key2"]
+        mock_redis.delete.return_value = 2
+
+        count = cache.clear()
+
+        assert count == 2
+
+    def test_ping(self, cache, mock_redis):
+        """Test ping."""
+        mock_redis.ping.return_value = True
+
+        result = cache.ping()
 
         assert result is True
-        mock_redis.scan_iter.assert_called_once()
 
-    def test_flush_with_hooks(self, cache, mock_redis):
-        """Test flush with registered hooks."""
-        mock_redis.scan_iter.return_value = []
-
-        hook_called = []
-
-        def flush_hook():
-            hook_called.append(True)
-
-        cache.register_flush_hook(flush_hook)
-        cache.flush()
-
-        assert len(hook_called) == 1
-
-    def test_register_flush_hook(self, cache):
-        """Test registering flush hook."""
-
-        def my_hook():
-            pass
-
-        cache.register_flush_hook(my_hook)
-
-        assert my_hook in cache._flush_hooks
-
-    def test_unregister_flush_hook(self, cache):
-        """Test unregistering flush hook."""
-
-        def my_hook():
-            pass
-
-        cache.register_flush_hook(my_hook)
-        result = cache.unregister_flush_hook(my_hook)
-
-        assert result is True
-        assert my_hook not in cache._flush_hooks
-
-    def test_health_check_success(self, cache, mock_redis):
-        """Test successful health check."""
+    def test_health_check(self, cache, mock_redis):
+        """Test health check."""
         mock_redis.ping.return_value = True
 
         result = cache.health_check()
 
         assert result is True
 
-    def test_health_check_failure(self, cache, mock_redis):
-        """Test failed health check."""
-        import redis as redis_module
+    def test_get_stats(self, cache, mock_redis):
+        """Test getting stats."""
+        mock_redis.keys.return_value = ["test:key1", "test:key2"]
+        mock_redis.info.return_value = {"used_memory": 2048}
 
-        mock_redis.ping.side_effect = redis_module.RedisError("Connection failed")
+        stats = cache.get_stats()
 
-        result = cache.health_check()
+        assert stats["keys_count"] == 2
+        assert stats["memory_used_mb"] >= 0
+        assert stats["connected"] is True
 
-        assert result is False
+    def test_context_manager(self, cache, mock_redis):
+        """Test context manager support."""
+        with cache as c:
+            assert c is cache
 
-    def test_get_info(self, cache, mock_redis):
-        """Test getting Redis info."""
-        mock_redis.info.return_value = {"redis_version": "6.0.0"}
+    def test_flush(self, cache, mock_redis):
+        """Test flushing cache."""
+        mock_redis.keys.return_value = ["test:key1"]
+        mock_redis.delete.return_value = 1
 
-        info = cache.get_info()
+        result = cache.flush()
 
-        assert "redis_version" in info
+        assert result is True
 
-    def test_context_manager(self, mock_redis):
-        """Test using cache as context manager."""
-        config = RedisCacheConfig()
+    def test_flush_hooks(self, cache):
+        """Test flush hooks."""
+        hook_called = []
 
-        with RedisCache(config) as cache:
-            assert cache._client is not None
+        def test_hook():
+            hook_called.append(True)
 
-        # Should close connection after context
-        mock_redis.close.assert_called_once()
+        cache.register_flush_hook(test_hook)
+        cache.flush()
+
+        assert len(hook_called) == 1
 
     def test_repr(self, cache):
         """Test string representation."""
         repr_str = repr(cache)
 
-        assert "RedisCache" in repr_str
-        assert "localhost" in repr_str
-        assert "6379" in repr_str
-
-
-class TestRedisCacheIntegration:
-    """Integration tests for Redis cache (require actual Redis)."""
-
-    @pytest.mark.integration
-    def test_full_workflow(self):
-        """Test complete cache workflow with actual Redis."""
-        pytest.importorskip("redis")
-
-        try:
-            config = RedisCacheConfig(key_prefix="test:")
-            cache = RedisCache(config)
-
-            # Test connection
-            if not cache.health_check():
-                pytest.skip("Redis not available")
-
-            # Set value
-            assert cache.set("test_key", {"data": "value"}, ttl=60)
-
-            # Get value
-            result = cache.get("test_key")
-            assert result == {"data": "value"}
-
-            # Check existence
-            assert cache.exists("test_key")
-
-            # Check TTL
-            ttl = cache.ttl("test_key")
-            assert 0 < ttl <= 60
-
-            # Delete
-            assert cache.delete("test_key")
-            assert not cache.exists("test_key")
-
-            # Cleanup
-            cache.flush()
-            cache.close()
-
-        except Exception as e:
-            pytest.skip(f"Redis integration test failed: {e}")
+        assert "CacheClient" in repr_str
