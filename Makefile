@@ -1,4 +1,4 @@
-.PHONY: clean format check lint run ingest test help sync install test-cov test-all type-check security quality pre-commit dev eval-datasets eval eval-ci dashboard eval-full
+.PHONY: clean format check lint run ingest test help sync install test-cov test-all type-check security quality pre-commit dev eval-datasets eval eval-ci dashboard eval-full test-canary test-adversarial test-guardrails test-violation-threshold guardrails-report guardrails-audit-review
 
 # Python and project settings
 PYTHON := uv run python
@@ -31,6 +31,14 @@ help:
 	@echo "  make eval-ci       - Run CI evaluation gate"
 	@echo "  make dashboard     - Generate evaluation dashboard"
 	@echo "  make eval-full     - Run full evaluation workflow"
+	@echo ""
+	@echo "Guardrails & Security targets:"
+	@echo "  make test-canary              - Run quick canary tests (CI)"
+	@echo "  make test-adversarial         - Run adversarial/red-team tests"
+	@echo "  make test-guardrails          - Run all guardrails tests"
+	@echo "  make test-violation-threshold - Verify violation rate ≤ 0.1%"
+	@echo "  make guardrails-report        - Generate compliance report"
+	@echo "  make guardrails-audit-review  - Review audit logs"
 
 # Sync dependencies with uv
 sync:
@@ -145,3 +153,46 @@ dashboard: sync
 # Run full evaluation workflow
 eval-full: eval-datasets eval dashboard
 	@echo "✅ Full evaluation workflow completed!"
+# Guardrails and adversarial testing targets
+# Run canary tests (quick smoke tests for CI)
+test-canary: sync
+	@echo "Running canary tests for guardrails..."
+	uv run python -m pytest -m canary $(TESTS_DIR)/test_adversarial_guardrails.py -v
+	@echo "✅ Canary tests passed!"
+
+# Run adversarial tests (red-team prompts, jailbreak tests)
+test-adversarial: sync
+	@echo "Running adversarial tests..."
+	uv run python -m pytest $(TESTS_DIR)/test_adversarial_guardrails.py -v
+	@echo "✅ Adversarial tests passed!"
+
+# Run all guardrails tests
+test-guardrails: sync
+	@echo "Running all guardrails tests..."
+	uv run python -m pytest $(TESTS_DIR)/test_guardrails*.py $(TESTS_DIR)/test_adversarial_guardrails.py -v
+	@echo "✅ All guardrails tests passed!"
+
+# Verify violation thresholds (critical test)
+test-violation-threshold: sync
+	@echo "Verifying violation rate ≤ 0.1%..."
+	uv run python -m pytest $(TESTS_DIR)/test_adversarial_guardrails.py::TestAdversarialGuardrails::test_overall_adversarial_violation_rate -v
+	@echo "✅ Violation threshold check passed!"
+
+# Generate guardrails compliance report
+guardrails-report: sync
+	@echo "Generating guardrails compliance report..."
+	@echo "Recent violations:"
+	@if [ -f logs/audit.log ]; then \
+		tail -n 100 logs/audit.log | grep -i "violation" || echo "No recent violations found"; \
+	else \
+		echo "Audit log not found"; \
+	fi
+
+# Review recent audit logs
+guardrails-audit-review: sync
+	@echo "Recent guardrails audit events:"
+	@if [ -f logs/audit.log ]; then \
+		tail -n 50 logs/audit.log; \
+	else \
+		echo "Audit log not found"; \
+	fi
