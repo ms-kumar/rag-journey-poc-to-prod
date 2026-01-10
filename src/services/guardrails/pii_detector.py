@@ -11,7 +11,6 @@ Detects and redacts various types of PII including:
 """
 
 import re
-from typing import List, Optional
 
 from src.models.guardrails import PIIMatch, PIIType
 
@@ -32,7 +31,7 @@ class PIIDetector:
 
     def __init__(
         self,
-        enabled_types: Optional[List[PIIType]] = None,
+        enabled_types: list[PIIType] | None = None,
         case_sensitive: bool = False,
     ):
         """
@@ -55,7 +54,7 @@ class PIIDetector:
             if pii_type in self.enabled_types
         }
 
-    def detect(self, text: str) -> List[PIIMatch]:
+    def detect(self, text: str) -> list[PIIMatch]:
         """
         Detect PII in the given text.
 
@@ -65,7 +64,7 @@ class PIIDetector:
         Returns:
             List of PIIMatch objects representing detected PII.
         """
-        matches: List[PIIMatch] = []
+        matches: list[PIIMatch] = []
 
         for pii_type, pattern in self.compiled_patterns.items():
             for match in pattern.finditer(text):
@@ -151,7 +150,7 @@ class PIIRedactor:
 
     def __init__(
         self,
-        detector: Optional[PIIDetector] = None,
+        detector: PIIDetector | None = None,
         redaction_char: str = "*",
         preserve_length: bool = True,
     ):
@@ -171,7 +170,7 @@ class PIIRedactor:
         self,
         text: str,
         min_confidence: float = 0.5,
-        custom_placeholder: Optional[dict[PIIType, str]] = None,
+        custom_placeholder: dict[PIIType, str] | None = None,
     ) -> str:
         """
         Redact PII from text.
@@ -185,10 +184,10 @@ class PIIRedactor:
             Text with PII redacted.
         """
         matches = self.detector.detect(text)
-        
+
         # Filter by confidence
         matches = [m for m in matches if m.confidence >= min_confidence]
-        
+
         if not matches:
             return text
 
@@ -205,7 +204,7 @@ class PIIRedactor:
     def _get_replacement(
         self,
         match: PIIMatch,
-        custom_placeholder: Optional[dict[PIIType, str]] = None,
+        custom_placeholder: dict[PIIType, str] | None = None,
     ) -> str:
         """
         Get replacement string for a PII match.
@@ -244,7 +243,7 @@ class PIIRedactor:
         self,
         text: str,
         min_confidence: float = 0.5,
-    ) -> tuple[str, List[PIIMatch]]:
+    ) -> tuple[str, list[PIIMatch]]:
         """
         Redact PII and return both redacted text and detected PII metadata.
 

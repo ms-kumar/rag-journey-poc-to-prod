@@ -2,8 +2,6 @@
 Unit tests for PII detection and redaction.
 """
 
-import pytest
-
 from src.services.guardrails.pii_detector import PIIDetector, PIIRedactor, PIIType
 
 
@@ -100,7 +98,7 @@ class TestPIIDetector:
     def test_luhn_algorithm_validation(self):
         """Test credit card validation with Luhn algorithm."""
         detector = PIIDetector()
-        
+
         # Valid credit card number (passes Luhn check)
         valid_card = "4532015112830366"
         matches = detector.detect(valid_card)

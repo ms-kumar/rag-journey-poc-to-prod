@@ -6,10 +6,9 @@ Centralized models for PII detection, toxicity filtering, audit logging, and saf
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ============================================================================
 # PII Models
@@ -123,11 +122,11 @@ class AuditEvent(BaseModel):
     event_type: AuditEventType
     severity: AuditSeverity
     timestamp: datetime
-    user_id: Optional[str] = None
-    session_id: Optional[str] = None
-    ip_address: Optional[str] = None
-    details: Optional[dict[str, Any]] = None
-    message: Optional[str] = None
+    user_id: str | None = None
+    session_id: str | None = None
+    ip_address: str | None = None
+    details: dict[str, Any] | None = None
+    message: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for compatibility."""
@@ -167,11 +166,11 @@ class GuardrailResult(BaseModel):
 
     is_safe: bool
     original_text: str
-    processed_text: Optional[str] = None
+    processed_text: str | None = None
     pii_detected: bool = False
     pii_types: list[str] = Field(default_factory=list)
     toxicity_detected: bool = False
-    toxicity_level: Optional[str] = None
+    toxicity_level: str | None = None
     toxicity_score: float = 0.0
-    safe_response: Optional[str] = None
+    safe_response: str | None = None
     violations: list[str] = Field(default_factory=list)

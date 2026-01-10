@@ -2,8 +2,6 @@
 Unit tests for safe response templates.
 """
 
-import pytest
-
 from src.services.guardrails.safe_response import (
     ResponseBuilder,
     ResponseType,
@@ -27,7 +25,11 @@ class TestSafeResponseTemplate:
         template = SafeResponseTemplate()
         response = template.get_response(ResponseType.TOXIC_CONTENT)
 
-        assert "content policy" in response.lower() or "toxic" in response.lower() or "language" in response.lower()
+        assert (
+            "content policy" in response.lower()
+            or "toxic" in response.lower()
+            or "language" in response.lower()
+        )
         assert len(response) > 0
 
     def test_get_unsafe_query_response(self):
@@ -55,9 +57,7 @@ class TestSafeResponseTemplate:
 
     def test_custom_templates(self):
         """Test custom template override."""
-        custom_templates = {
-            ResponseType.ERROR: "Custom error message: {error_code}"
-        }
+        custom_templates = {ResponseType.ERROR: "Custom error message: {error_code}"}
         template = SafeResponseTemplate(custom_templates=custom_templates)
 
         response = template.get_response(ResponseType.ERROR)
@@ -86,8 +86,7 @@ class TestSafeResponseTemplate:
         """Test getting toxicity response for severe content."""
         template = SafeResponseTemplate()
         response = template.get_toxicity_response(
-            severity="severe",
-            categories=["threat", "violence"]
+            severity="severe", categories=["threat", "violence"]
         )
 
         assert "harmful" in response.lower() or "cannot" in response.lower()
@@ -96,10 +95,7 @@ class TestSafeResponseTemplate:
     def test_get_toxicity_response_moderate(self):
         """Test getting toxicity response for moderate content."""
         template = SafeResponseTemplate()
-        response = template.get_toxicity_response(
-            severity="medium",
-            categories=["profanity"]
-        )
+        response = template.get_toxicity_response(severity="medium", categories=["profanity"])
 
         assert len(response) > 0
 
@@ -115,10 +111,7 @@ class TestSafeResponseTemplate:
         """Test adding helpful context to response."""
         template = SafeResponseTemplate()
         base_response = "Your request cannot be processed."
-        suggestions = [
-            "Try rephrasing your question",
-            "Remove personal information"
-        ]
+        suggestions = ["Try rephrasing your question", "Remove personal information"]
 
         enhanced = template.add_helpful_context(base_response, suggestions)
 
@@ -134,9 +127,7 @@ class TestSafeResponseTemplate:
         support_url = "https://support.example.com"
 
         formatted = template.format_with_support_info(
-            base_response,
-            support_email=support_email,
-            support_url=support_url
+            base_response, support_email=support_email, support_url=support_url
         )
 
         assert base_response in formatted
@@ -146,9 +137,7 @@ class TestSafeResponseTemplate:
     def test_response_interpolation(self):
         """Test response template interpolation."""
         custom_template = "Error code: {code}, Message: {message}"
-        template = SafeResponseTemplate(
-            custom_templates={ResponseType.ERROR: custom_template}
-        )
+        template = SafeResponseTemplate(custom_templates={ResponseType.ERROR: custom_template})
 
         context = {"code": "500", "message": "Internal error"}
         response = template.get_response(ResponseType.ERROR, context=context)
@@ -171,11 +160,7 @@ class TestResponseBuilder:
     def test_build_with_custom_message(self):
         """Test building response with custom message."""
         builder = ResponseBuilder()
-        response = (
-            builder
-            .add_custom_message("Custom error occurred.")
-            .build()
-        )
+        response = builder.add_custom_message("Custom error occurred.").build()
 
         assert "Custom error occurred." in response
 
@@ -183,8 +168,7 @@ class TestResponseBuilder:
         """Test building response with explanation."""
         builder = ResponseBuilder()
         response = (
-            builder
-            .add_base_message(ResponseType.ERROR)
+            builder.add_base_message(ResponseType.ERROR)
             .add_explanation("The server is temporarily unavailable.")
             .build()
         )
@@ -196,12 +180,7 @@ class TestResponseBuilder:
         """Test building response with suggestions."""
         builder = ResponseBuilder()
         suggestions = ["Try again later", "Contact support"]
-        response = (
-            builder
-            .add_base_message(ResponseType.ERROR)
-            .add_suggestions(suggestions)
-            .build()
-        )
+        response = builder.add_base_message(ResponseType.ERROR).add_suggestions(suggestions).build()
 
         assert "Suggestions:" in response
         assert "Try again later" in response
@@ -211,8 +190,7 @@ class TestResponseBuilder:
         """Test building complete response with all components."""
         builder = ResponseBuilder()
         response = (
-            builder
-            .add_base_message(ResponseType.ERROR)
+            builder.add_base_message(ResponseType.ERROR)
             .add_explanation("Network timeout occurred.")
             .add_suggestions(["Check your connection", "Retry the request"])
             .build()
@@ -229,19 +207,10 @@ class TestResponseBuilder:
         builder = ResponseBuilder()
 
         # Build first response
-        response1 = (
-            builder
-            .add_custom_message("First message")
-            .build()
-        )
+        response1 = builder.add_custom_message("First message").build()
 
         # Reset and build second response
-        response2 = (
-            builder
-            .reset()
-            .add_custom_message("Second message")
-            .build()
-        )
+        response2 = builder.reset().add_custom_message("Second message").build()
 
         assert "First message" in response1
         assert "First message" not in response2
@@ -251,10 +220,7 @@ class TestResponseBuilder:
         """Test adding multiple custom messages."""
         builder = ResponseBuilder()
         response = (
-            builder
-            .add_custom_message("First part.")
-            .add_custom_message("Second part.")
-            .build()
+            builder.add_custom_message("First part.").add_custom_message("Second part.").build()
         )
 
         assert "First part." in response
@@ -282,8 +248,7 @@ class TestResponseTemplateIntegration:
 
         # Moderate toxicity
         response = (
-            builder
-            .add_base_message(ResponseType.TOXIC_CONTENT)
+            builder.add_base_message(ResponseType.TOXIC_CONTENT)
             .add_suggestions(["Rephrase politely", "Follow community guidelines"])
             .build()
         )
@@ -297,9 +262,7 @@ class TestResponseTemplateIntegration:
         base_response = template.get_response(ResponseType.ERROR)
 
         response_with_support = template.format_with_support_info(
-            base_response,
-            support_email="help@example.com",
-            support_url="https://help.example.com"
+            base_response, support_email="help@example.com", support_url="https://help.example.com"
         )
 
         assert base_response in response_with_support

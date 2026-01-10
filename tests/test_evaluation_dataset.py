@@ -2,11 +2,6 @@
 Tests for evaluation dataset management.
 """
 
-import json
-from pathlib import Path
-
-import pytest
-
 from src.services.evaluation.dataset import DatasetBuilder, EvalDataset, EvalExample
 
 

@@ -20,10 +20,7 @@ class TestGuardrailsCoordinator:
         log_file = tmp_path / "audit.log"
         audit_logger = AuditLogger(log_file=log_file, log_to_console=False)
 
-        return GuardrailsCoordinator(
-            audit_logger=audit_logger,
-            enable_audit_logging=True
-        )
+        return GuardrailsCoordinator(audit_logger=audit_logger, enable_audit_logging=True)
 
     def test_check_input_clean(self, coordinator):
         """Test checking clean input."""
@@ -117,7 +114,7 @@ class TestGuardrailsCoordinator:
         log_file = tmp_path / "audit.log"
         coordinator = GuardrailsCoordinator(
             audit_logger=AuditLogger(log_file=log_file, log_to_console=False),
-            enable_pii_check=False
+            enable_pii_check=False,
         )
 
         text = "Email: test@example.com"
@@ -131,7 +128,7 @@ class TestGuardrailsCoordinator:
         log_file = tmp_path / "audit.log"
         coordinator = GuardrailsCoordinator(
             audit_logger=AuditLogger(log_file=log_file, log_to_console=False),
-            enable_toxicity_check=False
+            enable_toxicity_check=False,
         )
 
         text = "I will hurt you!"
@@ -145,7 +142,7 @@ class TestGuardrailsCoordinator:
         log_file = tmp_path / "audit.log"
         coordinator = GuardrailsCoordinator(
             audit_logger=AuditLogger(log_file=log_file, log_to_console=False),
-            enable_audit_logging=False
+            enable_audit_logging=False,
         )
 
         text = "Test message"
@@ -179,7 +176,7 @@ class TestGuardrailResult:
             original_text="Test text",
             processed_text="Test text",
             pii_detected=False,
-            toxicity_detected=False
+            toxicity_detected=False,
         )
 
         assert result.is_safe
@@ -197,7 +194,7 @@ class TestGuardrailResult:
             pii_types=["email", "phone"],
             toxicity_detected=True,
             toxicity_level="high",
-            violations=["PII detected", "Toxic content"]
+            violations=["PII detected", "Toxic content"],
         )
 
         assert not result.is_safe
@@ -207,10 +204,7 @@ class TestGuardrailResult:
 
     def test_result_defaults(self):
         """Test result with default values."""
-        result = GuardrailResult(
-            is_safe=True,
-            original_text="Test"
-        )
+        result = GuardrailResult(is_safe=True, original_text="Test")
 
         assert result.pii_types == []
         assert result.violations == []
@@ -235,7 +229,7 @@ class TestGuardrailsIntegration:
             enable_toxicity_check=True,
             enable_audit_logging=True,
             auto_redact_pii=True,
-            block_on_toxicity=True
+            block_on_toxicity=True,
         )
 
     def test_full_pipeline_clean_content(self, full_coordinator):
@@ -243,9 +237,7 @@ class TestGuardrailsIntegration:
         # Input check
         query = "What is machine learning?"
         is_safe, processed_query = full_coordinator.process_query(
-            query,
-            user_id="user123",
-            session_id="session456"
+            query, user_id="user123", session_id="session456"
         )
 
         assert is_safe
@@ -254,9 +246,7 @@ class TestGuardrailsIntegration:
         # Response check
         response = "Machine learning is a subset of AI."
         processed_response = full_coordinator.process_response(
-            response,
-            user_id="user123",
-            session_id="session456"
+            response, user_id="user123", session_id="session456"
         )
 
         assert processed_response == response
@@ -303,17 +293,11 @@ class TestGuardrailsIntegration:
         session_id = "session456"
 
         # Multiple queries in same session
-        queries = [
-            "What is AI?",
-            "How does it work?",
-            "Tell me more."
-        ]
+        queries = ["What is AI?", "How does it work?", "Tell me more."]
 
         for query in queries:
             is_safe, processed = full_coordinator.process_query(
-                query,
-                user_id=user_id,
-                session_id=session_id
+                query, user_id=user_id, session_id=session_id
             )
             assert is_safe
             assert processed == query

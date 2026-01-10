@@ -99,7 +99,7 @@ class EvalDataset:
             "examples": [ex.to_dict() for ex in self.examples],
         }
 
-        with open(filepath, "w") as f:
+        with filepath.open("w") as f:
             json.dump(data, f, indent=2)
 
         logger.info(f"Saved dataset with {len(self.examples)} examples to {filepath}")
@@ -119,7 +119,7 @@ class EvalDataset:
         if not filepath.exists():
             raise FileNotFoundError(f"Dataset file not found: {filepath}")
 
-        with open(filepath) as f:
+        with filepath.open() as f:
             data = json.load(f)
 
         examples = [EvalExample.from_dict(ex) for ex in data.get("examples", [])]
@@ -182,9 +182,7 @@ class EvalDataset:
             }
 
         num_relevant = [len(ex.relevant_doc_ids) for ex in self.examples]
-        queries_with_answers = sum(
-            1 for ex in self.examples if ex.expected_answer is not None
-        )
+        queries_with_answers = sum(1 for ex in self.examples if ex.expected_answer is not None)
 
         return {
             "num_examples": len(self.examples),

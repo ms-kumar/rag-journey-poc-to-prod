@@ -107,11 +107,11 @@ class RAGMetrics:
             f"  MRR: {self.mrr:.3f}",
             f"  NDCG@10: {self.ndcg_at_k.get(10, 0.0):.3f}",
             f"  MAP: {self.mean_average_precision:.3f}",
-            f"\nGeneration Metrics:",
+            "\nGeneration Metrics:",
             f"  Faithfulness: {self.faithfulness:.3f}",
             f"  Relevance: {self.relevance:.3f}",
             f"  Answer Quality: {self.answer_quality:.3f}",
-            f"\nPerformance:",
+            "\nPerformance:",
             f"  Latency P50: {self.latency_p50:.1f}ms",
             f"  Latency P95: {self.latency_p95:.1f}ms",
             f"  Latency P99: {self.latency_p99:.1f}ms",
@@ -123,9 +123,7 @@ class MetricsCalculator:
     """Calculate various RAG evaluation metrics."""
 
     @staticmethod
-    def precision_at_k(
-        retrieved_ids: list[str], relevant_ids: set[str], k: int
-    ) -> float:
+    def precision_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
         """
         Calculate Precision@k.
 
@@ -145,9 +143,7 @@ class MetricsCalculator:
         return relevant_retrieved / k
 
     @staticmethod
-    def recall_at_k(
-        retrieved_ids: list[str], relevant_ids: set[str], k: int
-    ) -> float:
+    def recall_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
         """
         Calculate Recall@k.
 
@@ -169,9 +165,7 @@ class MetricsCalculator:
         return relevant_retrieved / len(relevant_ids)
 
     @staticmethod
-    def mean_reciprocal_rank(
-        retrieved_ids: list[str], relevant_ids: set[str]
-    ) -> float:
+    def mean_reciprocal_rank(retrieved_ids: list[str], relevant_ids: set[str]) -> float:
         """
         Calculate Mean Reciprocal Rank (MRR).
 
@@ -188,9 +182,7 @@ class MetricsCalculator:
         return 0.0
 
     @staticmethod
-    def ndcg_at_k(
-        retrieved_ids: list[str], relevant_ids: set[str], k: int
-    ) -> float:
+    def ndcg_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
         """
         Calculate Normalized Discounted Cumulative Gain (NDCG@k).
 
@@ -225,9 +217,7 @@ class MetricsCalculator:
         return dcg / idcg
 
     @staticmethod
-    def average_precision(
-        retrieved_ids: list[str], relevant_ids: set[str]
-    ) -> float:
+    def average_precision(retrieved_ids: list[str], relevant_ids: set[str]) -> float:
         """
         Calculate Average Precision (AP).
 

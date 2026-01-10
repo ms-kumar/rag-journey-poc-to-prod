@@ -13,7 +13,7 @@ from typing import Any
 
 from langchain_core.documents import Document
 
-from .dataset import EvalDataset, EvalExample
+from .dataset import EvalDataset
 from .metrics import MetricsCalculator, RAGMetrics
 
 logger = logging.getLogger(__name__)
@@ -92,7 +92,8 @@ class EvaluationHarness:
     def __init__(
         self,
         retrieval_function: Any,  # Function that takes query and returns documents
-        generation_function: Any | None = None,  # Function that takes query + docs and returns answer
+        generation_function: Any
+        | None = None,  # Function that takes query + docs and returns answer
         thresholds: ThresholdConfig | None = None,
     ):
         """
@@ -131,9 +132,9 @@ class EvaluationHarness:
         logger.info(f"Starting evaluation on {len(dataset)} examples...")
 
         # Initialize metric accumulators
-        precision_sums = {k: 0.0 for k in k_values}
-        recall_sums = {k: 0.0 for k in k_values}
-        ndcg_sums = {k: 0.0 for k in k_values}
+        precision_sums = dict.fromkeys(k_values, 0.0)
+        recall_sums = dict.fromkeys(k_values, 0.0)
+        ndcg_sums = dict.fromkeys(k_values, 0.0)
         mrr_sum = 0.0
         ap_sum = 0.0
         latencies = []
@@ -144,7 +145,7 @@ class EvaluationHarness:
 
         # Evaluate each example
         for i, example in enumerate(dataset.examples):
-            logger.debug(f"Evaluating example {i+1}/{len(dataset)}: {example.query}")
+            logger.debug(f"Evaluating example {i + 1}/{len(dataset)}: {example.query}")
 
             # Time the retrieval
             query_start = time.perf_counter()
@@ -177,17 +178,11 @@ class EvaluationHarness:
             # Evaluate generation if requested
             if include_generation and self.generation_function:
                 try:
-                    generated_answer = self.generation_function(
-                        example.query, retrieved_docs
-                    )
+                    generated_answer = self.generation_function(example.query, retrieved_docs)
 
                     # Calculate generation metrics (simplified - in production use LLM-as-judge)
-                    faithfulness = self._evaluate_faithfulness(
-                        generated_answer, retrieved_docs
-                    )
-                    relevance = self._evaluate_relevance(
-                        example.query, generated_answer
-                    )
+                    faithfulness = self._evaluate_faithfulness(generated_answer, retrieved_docs)
+                    relevance = self._evaluate_relevance(example.query, generated_answer)
                     quality = self._evaluate_quality(generated_answer)
 
                     faithfulness_scores.append(faithfulness)
@@ -207,12 +202,8 @@ class EvaluationHarness:
             faithfulness=sum(faithfulness_scores) / len(faithfulness_scores)
             if faithfulness_scores
             else 0.0,
-            relevance=sum(relevance_scores) / len(relevance_scores)
-            if relevance_scores
-            else 0.0,
-            answer_quality=sum(quality_scores) / len(quality_scores)
-            if quality_scores
-            else 0.0,
+            relevance=sum(relevance_scores) / len(relevance_scores) if relevance_scores else 0.0,
+            answer_quality=sum(quality_scores) / len(quality_scores) if quality_scores else 0.0,
             num_queries=num_examples,
             timestamp=datetime.now().isoformat(),
         )
@@ -273,14 +264,11 @@ class EvaluationHarness:
             )
 
         if metrics.mrr < self.thresholds.min_mrr:
-            failed_checks.append(
-                f"MRR {metrics.mrr:.3f} < {self.thresholds.min_mrr}"
-            )
+            failed_checks.append(f"MRR {metrics.mrr:.3f} < {self.thresholds.min_mrr}")
 
         if metrics.ndcg_at_k.get(10, 0.0) < self.thresholds.min_ndcg_at_10:
             failed_checks.append(
-                f"NDCG@10 {metrics.ndcg_at_k.get(10, 0.0):.3f} "
-                f"< {self.thresholds.min_ndcg_at_10}"
+                f"NDCG@10 {metrics.ndcg_at_k.get(10, 0.0):.3f} < {self.thresholds.min_ndcg_at_10}"
             )
 
         if metrics.mean_average_precision < self.thresholds.min_map:
@@ -291,8 +279,7 @@ class EvaluationHarness:
         # Check generation thresholds
         if metrics.faithfulness > 0 and metrics.faithfulness < self.thresholds.min_faithfulness:
             failed_checks.append(
-                f"Faithfulness {metrics.faithfulness:.3f} "
-                f"< {self.thresholds.min_faithfulness}"
+                f"Faithfulness {metrics.faithfulness:.3f} < {self.thresholds.min_faithfulness}"
             )
 
         if metrics.relevance > 0 and metrics.relevance < self.thresholds.min_relevance:
@@ -300,7 +287,10 @@ class EvaluationHarness:
                 f"Relevance {metrics.relevance:.3f} < {self.thresholds.min_relevance}"
             )
 
-        if metrics.answer_quality > 0 and metrics.answer_quality < self.thresholds.min_answer_quality:
+        if (
+            metrics.answer_quality > 0
+            and metrics.answer_quality < self.thresholds.min_answer_quality
+        ):
             failed_checks.append(
                 f"Answer Quality {metrics.answer_quality:.3f} "
                 f"< {self.thresholds.min_answer_quality}"
@@ -309,16 +299,13 @@ class EvaluationHarness:
         # Check performance thresholds
         if metrics.latency_p95 > self.thresholds.max_latency_p95:
             failed_checks.append(
-                f"Latency P95 {metrics.latency_p95:.1f}ms "
-                f"> {self.thresholds.max_latency_p95}ms"
+                f"Latency P95 {metrics.latency_p95:.1f}ms > {self.thresholds.max_latency_p95}ms"
             )
 
         passed = len(failed_checks) == 0
         return passed, failed_checks
 
-    def _evaluate_faithfulness(
-        self, answer: str, context_docs: list[Document]
-    ) -> float:
+    def _evaluate_faithfulness(self, answer: str, context_docs: list[Document]) -> float:
         """
         Evaluate if answer is faithful to the context.
 
@@ -391,12 +378,11 @@ class EvaluationHarness:
         word_count = len(answer.split())
         if word_count < 5:
             return 0.3
-        elif word_count < 20:
+        if word_count < 20:
             return 0.6
-        elif word_count < 200:
+        if word_count < 200:
             return 0.85
-        else:
-            return 0.7  # Very long answers might be verbose
+        return 0.7  # Very long answers might be verbose
 
     def save_results(self, result: EvalResult, filepath: Path | str) -> None:
         """
@@ -411,7 +397,7 @@ class EvaluationHarness:
         filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(filepath, "w") as f:
+        with filepath.open("w") as f:
             json.dump(result.to_dict(), f, indent=2)
 
         logger.info(f"Saved evaluation results to {filepath}")
@@ -443,8 +429,7 @@ class EvaluationHarness:
                 "recall@10": {
                     "baseline": baseline.recall_at_k.get(10, 0.0),
                     "current": current.recall_at_k.get(10, 0.0),
-                    "delta": current.recall_at_k.get(10, 0.0)
-                    - baseline.recall_at_k.get(10, 0.0),
+                    "delta": current.recall_at_k.get(10, 0.0) - baseline.recall_at_k.get(10, 0.0),
                 },
                 "mrr": {
                     "baseline": baseline.mrr,

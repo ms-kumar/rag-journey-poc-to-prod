@@ -4,7 +4,6 @@ Unit tests for audit logging.
 
 import json
 from datetime import datetime
-from pathlib import Path
 
 import pytest
 
@@ -27,7 +26,7 @@ class TestAuditEvent:
             timestamp=datetime.now(),
             user_id="user123",
             session_id="session456",
-            message="PII detected in query"
+            message="PII detected in query",
         )
 
         assert event.event_type == AuditEventType.PII_DETECTED
@@ -41,7 +40,7 @@ class TestAuditEvent:
             event_type=AuditEventType.QUERY_PROCESSED,
             severity=AuditSeverity.INFO,
             timestamp=datetime.now(),
-            details={"query_length": 50}
+            details={"query_length": 50},
         )
 
         event_dict = event.to_dict()
@@ -58,7 +57,7 @@ class TestAuditEvent:
             event_type=AuditEventType.ERROR,
             severity=AuditSeverity.ERROR,
             timestamp=datetime.now(),
-            message="Test error"
+            message="Test error",
         )
 
         json_str = event.to_json()
@@ -79,11 +78,7 @@ class TestAuditLogger:
     @pytest.fixture
     def logger(self, temp_log_file):
         """Create audit logger with temporary file."""
-        return AuditLogger(
-            log_file=temp_log_file,
-            log_to_console=False,
-            structured_logs=True
-        )
+        return AuditLogger(log_file=temp_log_file, log_to_console=False, structured_logs=True)
 
     def test_log_event(self, logger, temp_log_file):
         """Test logging an event."""
@@ -91,7 +86,7 @@ class TestAuditLogger:
             event_type=AuditEventType.QUERY_PROCESSED,
             severity=AuditSeverity.INFO,
             timestamp=datetime.now(),
-            message="Test query processed"
+            message="Test query processed",
         )
 
         logger.log_event(event)
@@ -104,10 +99,7 @@ class TestAuditLogger:
     def test_log_pii_detection(self, logger, temp_log_file):
         """Test logging PII detection."""
         logger.log_pii_detection(
-            pii_types=["email", "phone"],
-            user_id="user123",
-            session_id="session456",
-            redacted=True
+            pii_types=["email", "phone"], user_id="user123", session_id="session456", redacted=True
         )
 
         content = temp_log_file.read_text()
@@ -121,7 +113,7 @@ class TestAuditLogger:
             categories=["threat", "harassment"],
             score=0.85,
             user_id="user123",
-            filtered=True
+            filtered=True,
         )
 
         content = temp_log_file.read_text()
@@ -130,33 +122,21 @@ class TestAuditLogger:
 
     def test_log_query(self, logger, temp_log_file):
         """Test logging query processing."""
-        logger.log_query(
-            query="Test query",
-            user_id="user123",
-            metadata={"source": "api"}
-        )
+        logger.log_query(query="Test query", user_id="user123", metadata={"source": "api"})
 
         content = temp_log_file.read_text()
         assert "query" in content.lower()
 
     def test_log_response(self, logger, temp_log_file):
         """Test logging response generation."""
-        logger.log_response(
-            response_length=150,
-            user_id="user123",
-            metadata={"tokens": 50}
-        )
+        logger.log_response(response_length=150, user_id="user123", metadata={"tokens": 50})
 
         content = temp_log_file.read_text()
         assert "response" in content.lower()
 
     def test_log_access_denied(self, logger, temp_log_file):
         """Test logging access denied."""
-        logger.log_access_denied(
-            reason="Unauthorized",
-            user_id="user123",
-            ip_address="192.168.1.1"
-        )
+        logger.log_access_denied(reason="Unauthorized", user_id="user123", ip_address="192.168.1.1")
 
         content = temp_log_file.read_text()
         assert "access" in content.lower() or "denied" in content.lower()
@@ -164,9 +144,7 @@ class TestAuditLogger:
     def test_log_error(self, logger, temp_log_file):
         """Test logging error."""
         logger.log_error(
-            error_message="Test error occurred",
-            error_type="ValueError",
-            user_id="user123"
+            error_message="Test error occurred", error_type="ValueError", user_id="user123"
         )
 
         content = temp_log_file.read_text()
@@ -179,7 +157,7 @@ class TestAuditLogger:
             AuditSeverity.INFO,
             AuditSeverity.WARNING,
             AuditSeverity.ERROR,
-            AuditSeverity.CRITICAL
+            AuditSeverity.CRITICAL,
         ]
 
         for severity in severities:
@@ -187,7 +165,7 @@ class TestAuditLogger:
                 event_type=AuditEventType.SYSTEM_EVENT,
                 severity=severity,
                 timestamp=datetime.now(),
-                message=f"Test {severity.value} event"
+                message=f"Test {severity.value} event",
             )
             logger.log_event(event)
 
@@ -201,14 +179,14 @@ class TestAuditLogger:
             event_type=AuditEventType.QUERY_PROCESSED,
             severity=AuditSeverity.INFO,
             timestamp=datetime.now(),
-            details={"key": "value"}
+            details={"key": "value"},
         )
 
         logger.log_event(event)
 
         content = temp_log_file.read_text()
         # Should be valid JSON
-        parsed = json.loads(content.strip().split('\n')[0])
+        parsed = json.loads(content.strip().split("\n")[0])
         assert parsed["details"]["key"] == "value"
 
     def test_get_recent_events(self, logger, temp_log_file):
@@ -219,7 +197,7 @@ class TestAuditLogger:
                 event_type=AuditEventType.QUERY_PROCESSED,
                 severity=AuditSeverity.INFO,
                 timestamp=datetime.now(),
-                message=f"Query {i}"
+                message=f"Query {i}",
             )
             logger.log_event(event)
 
@@ -235,16 +213,13 @@ class TestAuditLogger:
         logger.log_query("test query", user_id="user2")
 
         # Get only PII events
-        pii_events = logger.get_recent_events(
-            count=10,
-            event_type=AuditEventType.PII_DETECTED
-        )
+        pii_events = logger.get_recent_events(count=10, event_type=AuditEventType.PII_DETECTED)
 
         # Should only contain PII events
         for event in pii_events:
             assert event["event_type"] in [
                 AuditEventType.PII_DETECTED.value,
-                AuditEventType.PII_REDACTED.value
+                AuditEventType.PII_REDACTED.value,
             ]
 
 
@@ -267,31 +242,20 @@ class TestAuditLoggerIntegration:
         session_id = "session456"
 
         # User makes a query
-        logger.log_query(
-            query="Test query",
-            user_id=user_id,
-            session_id=session_id
-        )
+        logger.log_query(query="Test query", user_id=user_id, session_id=session_id)
 
         # PII detected
         logger.log_pii_detection(
-            pii_types=["email"],
-            user_id=user_id,
-            session_id=session_id,
-            redacted=True
+            pii_types=["email"], user_id=user_id, session_id=session_id, redacted=True
         )
 
         # Response generated
-        logger.log_response(
-            response_length=200,
-            user_id=user_id,
-            session_id=session_id
-        )
+        logger.log_response(response_length=200, user_id=user_id, session_id=session_id)
 
         # Verify log file contains all events
         content = log_file.read_text()
-        lines = content.strip().split('\n')
-        
+        lines = content.strip().split("\n")
+
         assert len(lines) >= 3
         assert any("query" in line.lower() for line in lines)
         assert any("pii" in line.lower() or "email" in line.lower() for line in lines)
@@ -304,11 +268,7 @@ class TestAuditLoggerIntegration:
 
         # Simulate multiple users
         for i in range(10):
-            logger.log_query(
-                query=f"Query {i}",
-                user_id=f"user{i}",
-                session_id=f"session{i}"
-            )
+            logger.log_query(query=f"Query {i}", user_id=f"user{i}", session_id=f"session{i}")
 
         # All events should be logged
         events = logger.get_recent_events(count=10)
@@ -323,7 +283,7 @@ class TestAuditLoggerIntegration:
             event_type=AuditEventType.SYSTEM_EVENT,
             severity=AuditSeverity.INFO,
             timestamp=datetime.now(),
-            message="Test"
+            message="Test",
         )
         logger.log_event(event)
 

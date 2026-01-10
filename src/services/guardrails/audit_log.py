@@ -12,7 +12,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from src.models.guardrails import AuditEvent, AuditEventType, AuditSeverity
 
@@ -22,7 +22,7 @@ class AuditLogger:
 
     def __init__(
         self,
-        log_file: Optional[Path] = None,
+        log_file: Path | None = None,
         log_to_console: bool = True,
         log_level: str = "INFO",
         structured_logs: bool = True,
@@ -58,9 +58,7 @@ class AuditLogger:
             )
         else:
             file_handler.setFormatter(
-                logging.Formatter(
-                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-                )
+                logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             )
 
         self.logger.addHandler(file_handler)
@@ -102,8 +100,8 @@ class AuditLogger:
     def log_pii_detection(
         self,
         pii_types: list[str],
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
         redacted: bool = False,
     ) -> None:
         """
@@ -115,9 +113,7 @@ class AuditLogger:
             session_id: Session identifier.
             redacted: Whether PII was redacted.
         """
-        event_type = (
-            AuditEventType.PII_REDACTED if redacted else AuditEventType.PII_DETECTED
-        )
+        event_type = AuditEventType.PII_REDACTED if redacted else AuditEventType.PII_DETECTED
 
         event = AuditEvent(
             event_type=event_type,
@@ -136,8 +132,8 @@ class AuditLogger:
         toxicity_level: str,
         categories: list[str],
         score: float,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
         filtered: bool = False,
     ) -> None:
         """
@@ -152,9 +148,7 @@ class AuditLogger:
             filtered: Whether content was filtered.
         """
         event_type = (
-            AuditEventType.TOXICITY_FILTERED
-            if filtered
-            else AuditEventType.TOXICITY_DETECTED
+            AuditEventType.TOXICITY_FILTERED if filtered else AuditEventType.TOXICITY_DETECTED
         )
 
         # Determine severity based on toxicity level
@@ -185,9 +179,9 @@ class AuditLogger:
     def log_query(
         self,
         query: str,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Log query processing.
@@ -216,9 +210,9 @@ class AuditLogger:
     def log_response(
         self,
         response_length: int,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Log response generation.
@@ -247,8 +241,8 @@ class AuditLogger:
     def log_access_denied(
         self,
         reason: str,
-        user_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        user_id: str | None = None,
+        ip_address: str | None = None,
     ) -> None:
         """
         Log access denied event.
@@ -273,10 +267,10 @@ class AuditLogger:
     def log_error(
         self,
         error_message: str,
-        error_type: Optional[str] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        stack_trace: Optional[str] = None,
+        error_type: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        stack_trace: str | None = None,
     ) -> None:
         """
         Log error event.
@@ -306,7 +300,7 @@ class AuditLogger:
     def get_recent_events(
         self,
         count: int = 100,
-        event_type: Optional[AuditEventType] = None,
+        event_type: AuditEventType | None = None,
     ) -> list[dict[str, Any]]:
         """
         Get recent audit events from log file.
@@ -321,7 +315,7 @@ class AuditLogger:
         events: list[dict[str, Any]] = []
 
         try:
-            with open(self.log_file, "r") as f:
+            with self.log_file.open() as f:
                 lines = f.readlines()
 
             # Get last N lines

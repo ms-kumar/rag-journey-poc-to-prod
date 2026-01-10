@@ -8,14 +8,12 @@ Coordinates all guardrail components:
 - Audit logging
 """
 
-from typing import Optional
-
 from src.models.guardrails import GuardrailResult
 
 from .audit_log import AuditLogger
-from .pii_detector import PIIDetector, PIIRedactor, PIIType
-from .safe_response import ResponseType, SafeResponseTemplate
-from .toxicity_filter import ToxicityFilter, ToxicityLevel
+from .pii_detector import PIIDetector, PIIRedactor
+from .safe_response import SafeResponseTemplate
+from .toxicity_filter import ToxicityFilter
 
 
 class GuardrailsCoordinator:
@@ -23,11 +21,11 @@ class GuardrailsCoordinator:
 
     def __init__(
         self,
-        pii_detector: Optional[PIIDetector] = None,
-        pii_redactor: Optional[PIIRedactor] = None,
-        toxicity_filter: Optional[ToxicityFilter] = None,
-        response_template: Optional[SafeResponseTemplate] = None,
-        audit_logger: Optional[AuditLogger] = None,
+        pii_detector: PIIDetector | None = None,
+        pii_redactor: PIIRedactor | None = None,
+        toxicity_filter: ToxicityFilter | None = None,
+        response_template: SafeResponseTemplate | None = None,
+        audit_logger: AuditLogger | None = None,
         enable_pii_check: bool = True,
         enable_toxicity_check: bool = True,
         enable_audit_logging: bool = True,
@@ -64,8 +62,8 @@ class GuardrailsCoordinator:
     def check_input(
         self,
         text: str,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
     ) -> GuardrailResult:
         """
         Check input text against all guardrails.
@@ -92,7 +90,7 @@ class GuardrailsCoordinator:
             pii_matches = self.pii_detector.detect(text)
             if pii_matches:
                 pii_detected = True
-                pii_types_list = list(set(m.pii_type.value for m in pii_matches))
+                pii_types_list = list({m.pii_type.value for m in pii_matches})
                 violations.append("PII detected")
 
                 if self.enable_audit_logging:
@@ -155,8 +153,8 @@ class GuardrailsCoordinator:
     def check_output(
         self,
         text: str,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
     ) -> GuardrailResult:
         """
         Check output text against guardrails (always auto-redact PII).
@@ -182,7 +180,7 @@ class GuardrailsCoordinator:
             pii_matches = self.pii_detector.detect(text)
             if pii_matches:
                 pii_detected = True
-                pii_types_list = list(set(m.pii_type.value for m in pii_matches))
+                pii_types_list = list({m.pii_type.value for m in pii_matches})
                 violations.append("PII detected in output")
 
                 if self.enable_audit_logging:
@@ -245,8 +243,8 @@ class GuardrailsCoordinator:
     def process_query(
         self,
         query: str,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
     ) -> tuple[bool, str]:
         """
         Process a query through guardrails.
@@ -275,13 +273,13 @@ class GuardrailsCoordinator:
         if not result.is_safe:
             return False, result.safe_response or self.response_template.get_fallback_response()
 
-        return True, result.processed_text
+        return True, result.processed_text or query
 
     def process_response(
         self,
         response: str,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
     ) -> str:
         """
         Process a response through output guardrails.
@@ -295,4 +293,4 @@ class GuardrailsCoordinator:
             Processed (safe) response.
         """
         result = self.check_output(response, user_id, session_id)
-        return result.processed_text
+        return result.processed_text or response

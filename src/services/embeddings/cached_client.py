@@ -149,6 +149,38 @@ class CachedEmbeddingClient:
         """Save cache to disk."""
         self.cache.save_to_disk()
 
+    def embed_query(self, text: str) -> list[float]:
+        """
+        Embed a single query text (delegates to provider if available).
+
+        Args:
+            text: Query text to embed
+
+        Returns:
+            Embedding vector
+        """
+        if hasattr(self.provider, "embed_query"):
+            # Use provider's specific method if available
+            return self.provider.embed_query(text)  # type: ignore[no-any-return]
+        # Fallback to regular embed
+        return self.embed([text])[0]
+
+    def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
+        """
+        Embed multiple documents (delegates to provider if available).
+
+        Args:
+            texts: Sequence of document texts to embed
+
+        Returns:
+            List of embedding vectors
+        """
+        if hasattr(self.provider, "embed_documents"):
+            # Use provider's specific method if available
+            return self.provider.embed_documents(texts)  # type: ignore[no-any-return]
+        # Fallback to regular embed
+        return self.embed(texts)
+
     @property
     def cache_stats(self) -> dict:
         """Get cache statistics."""

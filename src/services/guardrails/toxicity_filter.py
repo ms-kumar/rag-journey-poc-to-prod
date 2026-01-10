@@ -10,7 +10,6 @@ Detects and filters toxic, harmful, or inappropriate content including:
 """
 
 import re
-from typing import List, Optional, Set
 
 from src.models.guardrails import (
     ToxicityCategory,
@@ -59,10 +58,10 @@ class ToxicityFilter:
 
     def __init__(
         self,
-        enabled_categories: Optional[List[ToxicityCategory]] = None,
+        enabled_categories: list[ToxicityCategory] | None = None,
         sensitivity: float = 0.5,
         case_sensitive: bool = False,
-        custom_patterns: Optional[dict[ToxicityCategory, List[str]]] = None,
+        custom_patterns: dict[ToxicityCategory, list[str]] | None = None,
     ):
         """
         Initialize toxicity filter.
@@ -83,7 +82,7 @@ class ToxicityFilter:
         """Compile regex patterns for enabled categories."""
         flags = 0 if self.case_sensitive else re.IGNORECASE
 
-        self.compiled_patterns: dict[ToxicityCategory, List[re.Pattern]] = {}
+        self.compiled_patterns: dict[ToxicityCategory, list[re.Pattern]] = {}
 
         pattern_mapping = {
             ToxicityCategory.PROFANITY: self.PROFANITY_PATTERNS,
@@ -97,9 +96,7 @@ class ToxicityFilter:
 
         for category in self.enabled_categories:
             patterns = self.custom_patterns.get(category, pattern_mapping.get(category, []))
-            self.compiled_patterns[category] = [
-                re.compile(pattern, flags) for pattern in patterns
-            ]
+            self.compiled_patterns[category] = [re.compile(pattern, flags) for pattern in patterns]
 
     def check(self, text: str) -> ToxicityScore:
         """
@@ -111,7 +108,7 @@ class ToxicityFilter:
         Returns:
             ToxicityScore with detailed analysis.
         """
-        matches: List[ToxicityMatch] = []
+        matches: list[ToxicityMatch] = []
 
         for category, patterns in self.compiled_patterns.items():
             for pattern in patterns:
@@ -132,7 +129,7 @@ class ToxicityFilter:
         # Calculate overall score
         max_level = ToxicityLevel.NONE
         overall_score = 0.0
-        categories: Set[ToxicityCategory] = set()
+        categories: set[ToxicityCategory] = set()
 
         if matches:
             level_scores = {
@@ -144,9 +141,9 @@ class ToxicityFilter:
             }
 
             max_level = max(matches, key=lambda m: level_scores[m.level]).level
-            overall_score = sum(
-                level_scores[m.level] * m.confidence for m in matches
-            ) / len(matches)
+            overall_score = sum(level_scores[m.level] * m.confidence for m in matches) / len(
+                matches
+            )
             categories = {m.category for m in matches}
 
         is_toxic = overall_score >= self.sensitivity
@@ -159,9 +156,7 @@ class ToxicityFilter:
             categories=categories,
         )
 
-    def _determine_toxicity_level(
-        self, category: ToxicityCategory, text: str
-    ) -> ToxicityLevel:
+    def _determine_toxicity_level(self, category: ToxicityCategory, text: str) -> ToxicityLevel:
         """
         Determine toxicity level based on category and content.
 
@@ -193,9 +188,7 @@ class ToxicityFilter:
         # Default levels for other categories
         return ToxicityLevel.MEDIUM
 
-    def _calculate_confidence(
-        self, category: ToxicityCategory, text: str
-    ) -> float:
+    def _calculate_confidence(self, category: ToxicityCategory, text: str) -> float:
         """
         Calculate confidence for toxicity detection.
 
@@ -213,7 +206,7 @@ class ToxicityFilter:
         # Medium confidence for pattern-based detection
         return 0.7
 
-    def is_safe(self, text: str, threshold: Optional[float] = None) -> bool:
+    def is_safe(self, text: str, threshold: float | None = None) -> bool:
         """
         Check if text is safe (not toxic).
 
@@ -259,9 +252,9 @@ class ToxicityFilter:
 
     def get_safe_subset(
         self,
-        texts: List[str],
-        threshold: Optional[float] = None,
-    ) -> List[str]:
+        texts: list[str],
+        threshold: float | None = None,
+    ) -> list[str]:
         """
         Filter a list of texts to return only safe ones.
 

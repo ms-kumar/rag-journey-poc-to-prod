@@ -8,8 +8,6 @@ Provides pre-defined safe responses for various scenarios:
 - Error states
 """
 
-from typing import Optional
-
 from src.models.guardrails import ResponseType
 
 
@@ -34,8 +32,7 @@ class SafeResponseTemplate:
             "I'm here to help with other questions you may have."
         ),
         ResponseType.RATE_LIMIT: (
-            "You've reached the rate limit for requests. "
-            "Please wait a moment before trying again."
+            "You've reached the rate limit for requests. Please wait a moment before trying again."
         ),
         ResponseType.ERROR: (
             "I encountered an error while processing your request. "
@@ -51,7 +48,7 @@ class SafeResponseTemplate:
         ),
     }
 
-    def __init__(self, custom_templates: Optional[dict[ResponseType, str]] = None):
+    def __init__(self, custom_templates: dict[ResponseType, str] | None = None):
         """
         Initialize safe response template manager.
 
@@ -65,7 +62,7 @@ class SafeResponseTemplate:
     def get_response(
         self,
         response_type: ResponseType,
-        context: Optional[dict] = None,
+        context: dict | None = None,
     ) -> str:
         """
         Get a safe response for the given type.
@@ -98,7 +95,7 @@ class SafeResponseTemplate:
         """
         self.templates[response_type] = template
 
-    def get_pii_response(self, pii_types: Optional[list[str]] = None) -> str:
+    def get_pii_response(self, pii_types: list[str] | None = None) -> str:
         """
         Get a response for PII detection.
 
@@ -119,8 +116,8 @@ class SafeResponseTemplate:
 
     def get_toxicity_response(
         self,
-        severity: Optional[str] = None,
-        categories: Optional[list[str]] = None,
+        severity: str | None = None,
+        categories: list[str] | None = None,
     ) -> str:
         """
         Get a response for toxic content detection.
@@ -132,9 +129,9 @@ class SafeResponseTemplate:
         Returns:
             Safe response string.
         """
-        if severity == "severe" or (categories and any(
-            cat in ["threat", "self_harm", "violence"] for cat in categories
-        )):
+        if severity == "severe" or (
+            categories and any(cat in ["threat", "self_harm", "violence"] for cat in categories)
+        ):
             return (
                 "I cannot process this request as it contains content that may be harmful. "
                 "If you're in crisis or need help, please contact emergency services or "
@@ -157,7 +154,7 @@ class SafeResponseTemplate:
     def add_helpful_context(
         self,
         base_response: str,
-        suggestions: Optional[list[str]] = None,
+        suggestions: list[str] | None = None,
     ) -> str:
         """
         Add helpful suggestions to a base response.
@@ -180,8 +177,8 @@ class SafeResponseTemplate:
     def format_with_support_info(
         self,
         base_response: str,
-        support_email: Optional[str] = None,
-        support_url: Optional[str] = None,
+        support_email: str | None = None,
+        support_url: str | None = None,
     ) -> str:
         """
         Add support contact information to a response.
@@ -210,7 +207,7 @@ class SafeResponseTemplate:
 class ResponseBuilder:
     """Builder for constructing detailed safe responses."""
 
-    def __init__(self, template_manager: Optional[SafeResponseTemplate] = None):
+    def __init__(self, template_manager: SafeResponseTemplate | None = None):
         """
         Initialize response builder.
 
@@ -238,9 +235,7 @@ class ResponseBuilder:
     def add_suggestions(self, suggestions: list[str]) -> "ResponseBuilder":
         """Add suggestions."""
         if suggestions:
-            suggestions_text = "\n\nSuggestions:\n" + "\n".join(
-                f"- {s}" for s in suggestions
-            )
+            suggestions_text = "\n\nSuggestions:\n" + "\n".join(f"- {s}" for s in suggestions)
             self._response_parts.append(suggestions_text)
         return self
 
