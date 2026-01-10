@@ -2,9 +2,26 @@
 Factory for creating reranker clients.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .client import CrossEncoderReranker, RerankerConfig
+
+if TYPE_CHECKING:
+    from src.config import Settings
+
+
+def create_reranker(settings: "Settings") -> CrossEncoderReranker:
+    """
+    Create reranker from application settings.
+
+    Args:
+        settings: Application settings
+
+    Returns:
+        Configured CrossEncoderReranker instance
+    """
+    config = RerankerConfig.from_settings(settings)
+    return CrossEncoderReranker(config)
 
 
 def get_reranker(
@@ -16,7 +33,7 @@ def get_reranker(
     **kwargs: Any,
 ) -> CrossEncoderReranker:
     """
-    Create a cross-encoder reranker client.
+    Create a cross-encoder reranker client (legacy function).
 
     Args:
         model_name: HuggingFace cross-encoder model name
@@ -28,6 +45,9 @@ def get_reranker(
 
     Returns:
         Configured CrossEncoderReranker instance
+
+    Note:
+        For new code, prefer using create_reranker(settings) instead.
     """
     config = RerankerConfig(
         model_name=model_name,

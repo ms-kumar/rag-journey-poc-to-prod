@@ -23,6 +23,18 @@ class GenerationConfig:
     # Retry configuration
     retry_config: RetryConfig | None = None
 
+    @classmethod
+    def from_settings(cls, settings, **kwargs):
+        """Create config from application settings."""
+        gen_settings = settings.generation
+        return cls(
+            model_name=gen_settings.model,
+            device=gen_settings.device,
+            max_new_tokens=gen_settings.max_length,
+            temperature=gen_settings.temperature,
+            **kwargs,
+        )
+
 
 class DependencyMissingError(RuntimeError):
     pass

@@ -8,6 +8,7 @@ for semantic search and keyword matching.
 import logging
 import time
 from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,19 @@ class QueryRewriterConfig:
             raise ValueError("max_rewrites must be at least 1")
         if self.min_query_length < 1:
             raise ValueError("min_query_length must be at least 1")
+
+    @classmethod
+    def from_settings(cls, settings: Any) -> "QueryRewriterConfig":
+        """Create config from application settings."""
+
+        query_settings = settings.query_understanding
+        return cls(
+            expand_acronyms=query_settings.expand_acronyms,
+            fix_typos=query_settings.fix_typos,
+            add_context=query_settings.add_context,
+            max_rewrites=query_settings.max_rewrites,
+            min_query_length=query_settings.min_query_length,
+        )
 
 
 class QueryRewriter:

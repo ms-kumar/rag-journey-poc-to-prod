@@ -1,8 +1,11 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .adapter import LangChainEmbeddingsAdapter
 from .cached_client import CachedEmbeddingClient
 from .client import EmbedClient
+
+if TYPE_CHECKING:
+    from src.config import Settings
 
 
 def get_embed_client(
@@ -92,6 +95,23 @@ def get_embed_client(
         cache_max_size=cache_max_size,
         cache_dir=cache_dir,
         batch_size=batch_size,
+    )
+
+
+def create_from_settings(settings: "Settings", **overrides):
+    """Create embedding client from application settings."""
+    embed_settings = settings.embedding
+    return get_embed_client(
+        model_name=overrides.get("model_name", embed_settings.model),
+        dim=overrides.get("dim", embed_settings.dim),
+        normalize=overrides.get("normalize", embed_settings.normalize),
+        provider=overrides.get("provider", embed_settings.provider),
+        device=overrides.get("device", embed_settings.device),
+        api_key=overrides.get("api_key", embed_settings.api_key),
+        cache_enabled=overrides.get("cache_enabled", embed_settings.cache_enabled),
+        cache_max_size=overrides.get("cache_max_size", embed_settings.cache_max_size),
+        cache_dir=overrides.get("cache_dir", embed_settings.cache_dir),
+        batch_size=overrides.get("batch_size", embed_settings.batch_size),
     )
 
 

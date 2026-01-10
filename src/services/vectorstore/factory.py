@@ -1,4 +1,9 @@
+from typing import TYPE_CHECKING
+
 from .client import QdrantVectorStoreClient, VectorStoreConfig
+
+if TYPE_CHECKING:
+    from src.config import Settings
 
 
 def get_vectorstore_client(
@@ -32,5 +37,20 @@ def get_vectorstore_client(
         distance=distance,
         vector_size=vector_size,
         enable_bm25=enable_bm25,
+    )
+    return QdrantVectorStoreClient(embeddings=embeddings, config=config)
+
+
+def create_from_settings(
+    settings: "Settings",
+    embeddings,
+    vector_size: int | None = None,
+    **overrides,
+) -> QdrantVectorStoreClient:
+    """Create vectorstore client from application settings."""
+    config = VectorStoreConfig.from_settings(
+        settings,
+        vector_size=vector_size or settings.embedding.dim,
+        **overrides,
     )
     return QdrantVectorStoreClient(embeddings=embeddings, config=config)

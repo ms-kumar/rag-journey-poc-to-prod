@@ -1,6 +1,9 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .client import GenerationConfig, HFGenerator
+
+if TYPE_CHECKING:
+    from src.config import Settings
 
 
 def get_generator(
@@ -29,4 +32,10 @@ def get_generator(
         extra_kwargs=extra_kwargs,
     )
 
+    return HFGenerator(config=config)
+
+
+def create_from_settings(settings: "Settings", **overrides):
+    """Create generator from application settings."""
+    config = GenerationConfig.from_settings(settings, **overrides)
     return HFGenerator(config=config)

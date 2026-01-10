@@ -1,6 +1,35 @@
-from src.config import settings
+from typing import TYPE_CHECKING
 
 from .client import NaivePipeline, NaivePipelineConfig
+
+if TYPE_CHECKING:
+    from src.config import Settings
+
+
+def create_naive_pipeline(settings: "Settings") -> NaivePipeline:
+    """
+    Create naive pipeline from application settings.
+
+    Args:
+        settings: Application settings
+
+    Returns:
+        Configured NaivePipeline instance
+    """
+    config = NaivePipelineConfig(
+        ingestion_dir=settings.ingestion.dir,
+        chunk_size=settings.chunking.chunk_size,
+        embed_dim=settings.embedding.dim,
+        qdrant_url=settings.vectorstore.url,
+        collection_name=settings.vectorstore.collection_name,
+        generator_model=settings.generation.model,
+        generator_device=settings.generation.device,
+        enable_reranker=settings.reranker.fallback_enabled,
+        reranker_model=settings.reranker.model_name,
+        reranker_batch_size=settings.reranker.batch_size,
+        reranker_timeout=settings.reranker.timeout_seconds,
+    )
+    return NaivePipeline(config)
 
 
 def get_naive_pipeline(
@@ -13,7 +42,7 @@ def get_naive_pipeline(
     generator_device: int | None = None,
 ) -> NaivePipeline:
     """
-    Factory function to create a NaivePipeline instance.
+    Factory function to create a NaivePipeline instance (legacy function).
 
     Uses values from settings (loaded from .env) as defaults.
     Pass explicit values to override.
@@ -29,7 +58,12 @@ def get_naive_pipeline(
 
     Returns:
         Configured NaivePipeline instance.
+
+    Note:
+        For new code, prefer using create_naive_pipeline(settings) instead.
     """
+    from src.config import settings
+
     config = NaivePipelineConfig(
         ingestion_dir=ingestion_dir or settings.ingestion.dir,
         chunk_size=chunk_size or settings.chunking.chunk_size,
@@ -44,4 +78,4 @@ def get_naive_pipeline(
     return NaivePipeline(config)
 
 
-__all__ = ["get_naive_pipeline", "NaivePipeline", "NaivePipelineConfig"]
+__all__ = ["create_naive_pipeline", "get_naive_pipeline", "NaivePipeline", "NaivePipelineConfig"]

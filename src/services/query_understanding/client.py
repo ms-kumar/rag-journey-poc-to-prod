@@ -8,7 +8,7 @@ classification to preprocess queries before retrieval.
 import logging
 import time
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from src.services.query_understanding.rewriter import QueryRewriter, QueryRewriterConfig
 from src.services.query_understanding.synonym_expander import (
@@ -30,6 +30,27 @@ class QueryUnderstandingConfig:
     enable_intent_classification: bool = False
     rewriter_config: QueryRewriterConfig | None = None
     expander_config: SynonymExpanderConfig | None = None
+
+    @classmethod
+    def from_settings(cls, settings: Any) -> "QueryUnderstandingConfig":
+        """Create config from application settings."""
+
+        query_settings = settings.query_understanding
+        return cls(
+            enable_rewriting=query_settings.enable_rewriting,
+            enable_synonyms=query_settings.enable_synonyms,
+            enable_intent_classification=query_settings.enable_intent_classification,
+            rewriter_config=(
+                QueryRewriterConfig.from_settings(settings)
+                if query_settings.enable_rewriting
+                else None
+            ),
+            expander_config=(
+                SynonymExpanderConfig.from_settings(settings)
+                if query_settings.enable_synonyms
+                else None
+            ),
+        )
 
 
 class QueryUnderstanding:

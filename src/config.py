@@ -176,6 +176,56 @@ class RAGSettings(BaseConfigSettings):
     max_context_docs: int = 3  # Max documents in context
 
 
+class RerankerSettings(BaseConfigSettings):
+    """Reranker configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=[".env", str(ENV_FILE_PATH)],
+        env_prefix="RERANKER__",
+        extra="ignore",
+        frozen=True,
+        case_sensitive=False,
+    )
+
+    model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    max_length: int = 512
+    batch_size: int = 32
+    timeout_seconds: float = 30.0
+    device: str | None = None
+    fallback_enabled: bool = True
+    fallback_strategy: str = "original_order"  # "original_order" or "score_descending"
+    use_fp16: bool = True
+
+
+class QueryUnderstandingSettings(BaseConfigSettings):
+    """Query understanding configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=[".env", str(ENV_FILE_PATH)],
+        env_prefix="QUERY__",
+        extra="ignore",
+        frozen=True,
+        case_sensitive=False,
+    )
+
+    # Query rewriting settings
+    enable_rewriting: bool = True
+    expand_acronyms: bool = True
+    fix_typos: bool = True
+    add_context: bool = True
+    max_rewrites: int = 3
+    min_query_length: int = 3
+
+    # Synonym expansion settings
+    enable_synonyms: bool = True
+    max_synonyms_per_term: int = 3
+    min_term_length: int = 3
+    expand_all_terms: bool = False
+
+    # Intent classification settings
+    enable_intent_classification: bool = False
+
+
 class CacheSettings(BaseConfigSettings):
     """Cache configuration settings."""
 
@@ -227,6 +277,10 @@ class Settings(BaseConfigSettings):
     vectorstore: VectorStoreSettings = Field(default_factory=VectorStoreSettings)
     generation: GenerationSettings = Field(default_factory=GenerationSettings)
     rag: RAGSettings = Field(default_factory=RAGSettings)
+    reranker: RerankerSettings = Field(default_factory=RerankerSettings)
+    query_understanding: QueryUnderstandingSettings = Field(
+        default_factory=QueryUnderstandingSettings
+    )
     cache: CacheSettings = Field(default_factory=CacheSettings)
 
 

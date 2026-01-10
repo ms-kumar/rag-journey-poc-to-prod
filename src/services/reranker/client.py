@@ -46,6 +46,21 @@ class RerankerConfig:
         if self.device is None:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
+    @classmethod
+    def from_settings(cls, settings: Any) -> "RerankerConfig":
+        """Create config from application settings."""
+        reranker_settings = settings.reranker
+        return cls(
+            model_name=reranker_settings.model_name,
+            max_length=reranker_settings.max_length,
+            batch_size=reranker_settings.batch_size,
+            timeout_seconds=reranker_settings.timeout_seconds,
+            device=reranker_settings.device,
+            fallback_enabled=reranker_settings.fallback_enabled,
+            fallback_strategy=reranker_settings.fallback_strategy,
+            use_fp16=reranker_settings.use_fp16,
+        )
+
 
 @dataclass
 class RerankResult:

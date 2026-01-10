@@ -45,6 +45,21 @@ class VectorStoreConfig:
     enable_sparse: bool = False  # Enable sparse vector storage
     sparse_vector_name: str = "sparse"  # Name for sparse vector field
 
+    @classmethod
+    def from_settings(cls, settings, vector_size: int = 64, **kwargs):
+        """Create config from application settings."""
+
+        vs_settings = settings.vectorstore
+        return cls(
+            qdrant_url=vs_settings.url,
+            api_key=vs_settings.api_key,
+            prefer_grpc=vs_settings.prefer_grpc,
+            collection_name=vs_settings.collection_name,
+            vector_size=vector_size,
+            enable_bm25=vs_settings.enable_bm25,
+            **kwargs,
+        )
+
 
 class DependencyMissingError(RuntimeError):
     pass

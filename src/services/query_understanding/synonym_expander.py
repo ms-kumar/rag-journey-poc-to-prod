@@ -8,6 +8,7 @@ semantically similar terms.
 import logging
 import time
 from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,17 @@ class SynonymExpanderConfig:
             raise ValueError("max_synonyms_per_term must be at least 1")
         if self.min_term_length < 1:
             raise ValueError("min_term_length must be at least 1")
+
+    @classmethod
+    def from_settings(cls, settings: Any) -> "SynonymExpanderConfig":
+        """Create config from application settings."""
+
+        query_settings = settings.query_understanding
+        return cls(
+            max_synonyms_per_term=query_settings.max_synonyms_per_term,
+            min_term_length=query_settings.min_term_length,
+            expand_all_terms=query_settings.expand_all_terms,
+        )
 
 
 class SynonymExpander:
