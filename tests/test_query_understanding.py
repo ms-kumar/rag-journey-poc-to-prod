@@ -2,12 +2,12 @@
 
 import pytest
 
+from src.config import settings
 from src.exceptions import QueryValidationError
 from src.services.query_understanding import (
     QueryRewriter,
     QueryRewriterConfig,
     QueryUnderstandingClient,
-    QueryUnderstandingConfig,
     SynonymExpander,
     SynonymExpanderConfig,
 )
@@ -229,23 +229,30 @@ class TestQueryUnderstandingClient:
 
     def test_qu_init_default(self):
         """Test initialization with default config."""
-        qu = QueryUnderstandingClient()
-        assert qu.config.enable_rewriting is True
-        assert qu.config.enable_synonyms is True
-        assert qu.config.enable_intent_classification is False
+        qu = QueryUnderstandingClient(settings)
+        assert qu.query_settings.enable_rewriting is True
+        assert qu.query_settings.enable_synonyms is True
+        assert qu.query_settings.enable_intent_classification is False
         assert qu.rewriter is not None
         assert qu.expander is not None
 
     def test_qu_init_custom(self):
         """Test initialization with custom config."""
-        config = QueryUnderstandingConfig(enable_rewriting=False, enable_synonyms=True)
-        qu = QueryUnderstandingClient(config)
+        from unittest.mock import MagicMock
+
+        mock_settings = MagicMock()
+        mock_settings.query_understanding.enable_rewriting = False
+        mock_settings.query_understanding.enable_synonyms = True
+        mock_settings.query_understanding.max_synonyms_per_term = 3
+        mock_settings.query_understanding.min_term_length = 3
+        mock_settings.query_understanding.expand_all_terms = False
+        qu = QueryUnderstandingClient(mock_settings)
         assert qu.rewriter is None
         assert qu.expander is not None
 
     def test_process_full_pipeline(self):
         """Test full processing pipeline."""
-        qu = QueryUnderstandingClient()
+        qu = QueryUnderstandingClient(settings)
         result = qu.process("what is ML?")
 
         assert result["original_query"] == "what is ML?"
@@ -257,8 +264,17 @@ class TestQueryUnderstandingClient:
 
     def test_process_only_rewriting(self):
         """Test processing with only rewriting enabled."""
-        config = QueryUnderstandingConfig(enable_rewriting=True, enable_synonyms=False)
-        qu = QueryUnderstandingClient(config)
+        from unittest.mock import MagicMock
+
+        mock_settings = MagicMock()
+        mock_settings.query_understanding.enable_rewriting = True
+        mock_settings.query_understanding.enable_synonyms = False
+        mock_settings.query_understanding.expand_acronyms = True
+        mock_settings.query_understanding.fix_typos = True
+        mock_settings.query_understanding.add_context = True
+        mock_settings.query_understanding.max_rewrites = 3
+        mock_settings.query_understanding.min_query_length = 3
+        qu = QueryUnderstandingClient(mock_settings)
         result = qu.process("what is ML?")
 
         assert result["rewritten_query"] is not None
@@ -267,8 +283,15 @@ class TestQueryUnderstandingClient:
 
     def test_process_only_synonyms(self):
         """Test processing with only synonyms enabled."""
-        config = QueryUnderstandingConfig(enable_rewriting=False, enable_synonyms=True)
-        qu = QueryUnderstandingClient(config)
+        from unittest.mock import MagicMock
+
+        mock_settings = MagicMock()
+        mock_settings.query_understanding.enable_rewriting = False
+        mock_settings.query_understanding.enable_synonyms = True
+        mock_settings.query_understanding.max_synonyms_per_term = 3
+        mock_settings.query_understanding.min_term_length = 3
+        mock_settings.query_understanding.expand_all_terms = False
+        qu = QueryUnderstandingClient(mock_settings)
         result = qu.process("machine learning model")
 
         assert result["rewritten_query"] is None
@@ -277,8 +300,21 @@ class TestQueryUnderstandingClient:
 
     def test_intent_classification_howto(self):
         """Test intent classification for how-to queries."""
-        config = QueryUnderstandingConfig(enable_intent_classification=True)
-        qu = QueryUnderstandingClient(config)
+        from unittest.mock import MagicMock
+
+        mock_settings = MagicMock()
+        mock_settings.query_understanding.enable_rewriting = True
+        mock_settings.query_understanding.enable_synonyms = True
+        mock_settings.query_understanding.enable_intent_classification = True
+        mock_settings.query_understanding.expand_acronyms = True
+        mock_settings.query_understanding.fix_typos = True
+        mock_settings.query_understanding.add_context = True
+        mock_settings.query_understanding.max_rewrites = 3
+        mock_settings.query_understanding.min_query_length = 3
+        mock_settings.query_understanding.max_synonyms_per_term = 3
+        mock_settings.query_understanding.min_term_length = 3
+        mock_settings.query_understanding.expand_all_terms = False
+        qu = QueryUnderstandingClient(mock_settings)
         result = qu.process("how to train a model?")
 
         assert result["intent"] == "howto"
@@ -286,39 +322,91 @@ class TestQueryUnderstandingClient:
 
     def test_intent_classification_factual(self):
         """Test intent classification for factual queries."""
-        config = QueryUnderstandingConfig(enable_intent_classification=True)
-        qu = QueryUnderstandingClient(config)
+        from unittest.mock import MagicMock
+
+        mock_settings = MagicMock()
+        mock_settings.query_understanding.enable_intent_classification = True
+        mock_settings.query_understanding.enable_rewriting = True
+        mock_settings.query_understanding.enable_synonyms = True
+        mock_settings.query_understanding.expand_acronyms = True
+        mock_settings.query_understanding.fix_typos = True
+        mock_settings.query_understanding.add_context = True
+        mock_settings.query_understanding.max_rewrites = 3
+        mock_settings.query_understanding.min_query_length = 3
+        mock_settings.query_understanding.max_synonyms_per_term = 3
+        mock_settings.query_understanding.min_term_length = 3
+        mock_settings.query_understanding.expand_all_terms = False
+        qu = QueryUnderstandingClient(mock_settings)
         result = qu.process("what is machine learning?")
 
         assert result["intent"] == "factual"
 
     def test_intent_classification_comparison(self):
         """Test intent classification for comparison queries."""
-        config = QueryUnderstandingConfig(enable_intent_classification=True)
-        qu = QueryUnderstandingClient(config)
+        from unittest.mock import MagicMock
+
+        mock_settings = MagicMock()
+        mock_settings.query_understanding.enable_intent_classification = True
+        mock_settings.query_understanding.enable_rewriting = True
+        mock_settings.query_understanding.enable_synonyms = True
+        mock_settings.query_understanding.expand_acronyms = True
+        mock_settings.query_understanding.fix_typos = True
+        mock_settings.query_understanding.add_context = True
+        mock_settings.query_understanding.max_rewrites = 3
+        mock_settings.query_understanding.min_query_length = 3
+        mock_settings.query_understanding.max_synonyms_per_term = 3
+        mock_settings.query_understanding.min_term_length = 3
+        mock_settings.query_understanding.expand_all_terms = False
+        qu = QueryUnderstandingClient(mock_settings)
         result = qu.process("Python vs Java")
 
         assert result["intent"] == "comparison"
 
     def test_intent_classification_troubleshooting(self):
         """Test intent classification for troubleshooting queries."""
-        config = QueryUnderstandingConfig(enable_intent_classification=True)
-        qu = QueryUnderstandingClient(config)
+        from unittest.mock import MagicMock
+
+        mock_settings = MagicMock()
+        mock_settings.query_understanding.enable_intent_classification = True
+        mock_settings.query_understanding.enable_rewriting = True
+        mock_settings.query_understanding.enable_synonyms = True
+        mock_settings.query_understanding.expand_acronyms = True
+        mock_settings.query_understanding.fix_typos = True
+        mock_settings.query_understanding.add_context = True
+        mock_settings.query_understanding.max_rewrites = 3
+        mock_settings.query_understanding.min_query_length = 3
+        mock_settings.query_understanding.max_synonyms_per_term = 3
+        mock_settings.query_understanding.min_term_length = 3
+        mock_settings.query_understanding.expand_all_terms = False
+        qu = QueryUnderstandingClient(mock_settings)
         result = qu.process("error in code not working")
 
         assert result["intent"] == "troubleshooting"
 
     def test_intent_classification_exploratory(self):
         """Test intent classification for exploratory queries."""
-        config = QueryUnderstandingConfig(enable_intent_classification=True)
-        qu = QueryUnderstandingClient(config)
+        from unittest.mock import MagicMock
+
+        mock_settings = MagicMock()
+        mock_settings.query_understanding.enable_intent_classification = True
+        mock_settings.query_understanding.enable_rewriting = True
+        mock_settings.query_understanding.enable_synonyms = True
+        mock_settings.query_understanding.expand_acronyms = True
+        mock_settings.query_understanding.fix_typos = True
+        mock_settings.query_understanding.add_context = True
+        mock_settings.query_understanding.max_rewrites = 3
+        mock_settings.query_understanding.min_query_length = 3
+        mock_settings.query_understanding.max_synonyms_per_term = 3
+        mock_settings.query_understanding.min_term_length = 3
+        mock_settings.query_understanding.expand_all_terms = False
+        qu = QueryUnderstandingClient(mock_settings)
         result = qu.process("tell me about deep learning")
 
         assert result["intent"] == "exploratory"
 
     def test_get_all_variations(self):
         """Test generation of all query variations."""
-        qu = QueryUnderstandingClient()
+        qu = QueryUnderstandingClient(settings)
         variations = qu.get_all_variations("what is ML?")
 
         assert len(variations) >= 2
@@ -327,7 +415,7 @@ class TestQueryUnderstandingClient:
 
     def test_variations_no_duplicates(self):
         """Test that variations don't contain duplicates."""
-        qu = QueryUnderstandingClient()
+        qu = QueryUnderstandingClient(settings)
         variations = qu.get_all_variations("machine learning")
 
         # Check for uniqueness
@@ -335,7 +423,7 @@ class TestQueryUnderstandingClient:
 
     def test_metadata_tracking(self):
         """Test that all metadata is properly tracked."""
-        qu = QueryUnderstandingClient()
+        qu = QueryUnderstandingClient(settings)
         result = qu.process("what is ML?")
 
         metadata = result["metadata"]
@@ -346,7 +434,7 @@ class TestQueryUnderstandingClient:
 
     def test_original_query_preserved(self):
         """Test that original query is always preserved."""
-        qu = QueryUnderstandingClient()
+        qu = QueryUnderstandingClient(settings)
         original = "what is ML?"
         result = qu.process(original)
 
@@ -359,7 +447,7 @@ class TestIntegration:
 
     def test_full_pipeline_complex_query(self):
         """Test full pipeline with complex query."""
-        qu = QueryUnderstandingClient()
+        qu = QueryUnderstandingClient(settings)
         result = qu.process("how to fix machien learing error in py?")
 
         # Should have:
@@ -375,7 +463,7 @@ class TestIntegration:
 
     def test_pipeline_latency_reasonable(self):
         """Test that pipeline latency is reasonable (< 10ms typical)."""
-        qu = QueryUnderstandingClient()
+        qu = QueryUnderstandingClient(settings)
         result = qu.process("what is machine learning?")
 
         # Should be very fast (< 10ms for rule-based processing)
@@ -383,7 +471,7 @@ class TestIntegration:
 
     def test_multiple_queries_consistent(self):
         """Test that processing multiple queries is consistent."""
-        qu = QueryUnderstandingClient()
+        qu = QueryUnderstandingClient(settings)
 
         # Process same query twice
         result1 = qu.process("what is ML?")
@@ -394,7 +482,7 @@ class TestIntegration:
 
     def test_empty_query_handling(self):
         """Test handling of empty or whitespace queries."""
-        qu = QueryUnderstandingClient()
+        qu = QueryUnderstandingClient(settings)
         result = qu.process("")
 
         assert result["processed_query"] == ""
@@ -402,7 +490,7 @@ class TestIntegration:
 
     def test_special_characters_preserved(self):
         """Test that special characters are preserved."""
-        qu = QueryUnderstandingClient()
+        qu = QueryUnderstandingClient(settings)
         result = qu.process("what is C++?")
 
         assert "++" in result["processed_query"]

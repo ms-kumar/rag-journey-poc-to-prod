@@ -7,8 +7,7 @@ classification to preprocess queries before retrieval.
 
 import logging
 import time
-from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 from src.services.query_understanding.rewriter import QueryRewriter, QueryRewriterConfig
 from src.services.query_understanding.synonym_expander import (
@@ -16,41 +15,12 @@ from src.services.query_understanding.synonym_expander import (
     SynonymExpanderConfig,
 )
 
+if TYPE_CHECKING:
+    from src.config import Settings
+
 logger = logging.getLogger(__name__)
 
 IntentType = Literal["factual", "howto", "comparison", "troubleshooting", "exploratory"]
-
-
-@dataclass
-class QueryUnderstandingConfig:
-    """Configuration for query understanding."""
-
-    enable_rewriting: bool = True
-    enable_synonyms: bool = True
-    enable_intent_classification: bool = False
-    rewriter_config: QueryRewriterConfig | None = None
-    expander_config: SynonymExpanderConfig | None = None
-
-    @classmethod
-    def from_settings(cls, settings: Any) -> "QueryUnderstandingConfig":
-        """Create config from application settings."""
-
-        query_settings = settings.query_understanding
-        return cls(
-            enable_rewriting=query_settings.enable_rewriting,
-            enable_synonyms=query_settings.enable_synonyms,
-            enable_intent_classification=query_settings.enable_intent_classification,
-            rewriter_config=(
-                QueryRewriterConfig.from_settings(settings)
-                if query_settings.enable_rewriting
-                else None
-            ),
-            expander_config=(
-                SynonymExpanderConfig.from_settings(settings)
-                if query_settings.enable_synonyms
-                else None
-            ),
-        )
 
 
 class QueryUnderstandingClient:
@@ -63,25 +33,26 @@ class QueryUnderstandingClient:
     3. Intent classification (optional)
     """
 
-    def __init__(self, config: QueryUnderstandingConfig | None = None):
+    def __init__(self, settings: "Settings"):
         """
         Initialize query understanding.
 
         Args:
-            config: Configuration for query understanding
+            settings: Application settings containing query understanding configuration
         """
-        self.config = config or QueryUnderstandingConfig()
+        self.settings = settings
+        self.query_settings = settings.query_understanding
 
         # Initialize components
         self.rewriter = None
         self.expander = None
 
-        if self.config.enable_rewriting:
-            rewriter_config = self.config.rewriter_config or QueryRewriterConfig()
+        if self.query_settings.enable_rewriting:
+            rewriter_config = QueryRewriterConfig.from_settings(settings)
             self.rewriter = QueryRewriter(rewriter_config)
 
-        if self.config.enable_synonyms:
-            expander_config = self.config.expander_config or SynonymExpanderConfig()
+        if self.query_settings.enable_synonyms:
+            expander_config = SynonymExpanderConfig.from_settings(settings)
             self.expander = SynonymExpander(expander_config)
 
     def process(self, query: str) -> dict:
@@ -129,7 +100,7 @@ class QueryUnderstandingClient:
         current_query = query
 
         # Stage 1: Rewrite query
-        if self.config.enable_rewriting and self.rewriter:
+        if self.query_settings.enable_rewriting and self.rewriter:
             rewritten, rewrite_meta = self.rewriter.rewrite(current_query)
             result["rewritten_query"] = rewritten
             metadata["rewrite_latency_ms"] = rewrite_meta["latency_ms"]
@@ -137,7 +108,7 @@ class QueryUnderstandingClient:
             current_query = rewritten
 
         # Stage 2: Expand with synonyms
-        if self.config.enable_synonyms and self.expander:
+        if self.query_settings.enable_synonyms and self.expander:
             expanded, expand_meta = self.expander.expand(current_query)
             result["expanded_query"] = expanded
             metadata["expansion_latency_ms"] = expand_meta["latency_ms"]
@@ -146,7 +117,7 @@ class QueryUnderstandingClient:
             current_query = expanded
 
         # Stage 3: Classify intent (optional)
-        if self.config.enable_intent_classification:
+        if self.query_settings.enable_intent_classification:
             intent_start = time.perf_counter()
             intent = self._classify_intent(query)
             intent_latency = (time.perf_counter() - intent_start) * 1000
