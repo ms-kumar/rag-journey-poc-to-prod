@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException
 from src.api.router.health_router import router as health_router
 from src.api.router.ingestion_router import router as ingestion_router
 from src.api.router.rag_router import router as rag_router
-from src.models.ask import AskRequest, AskResponse
+from src.schemas.api.ask import AskRequest, AskResponse
 from src.services.pipeline.naive_pipeline.factory import get_naive_pipeline
 
 logger = logging.getLogger(__name__)

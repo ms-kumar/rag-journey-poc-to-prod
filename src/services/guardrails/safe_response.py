@@ -8,7 +8,7 @@ Provides pre-defined safe responses for various scenarios:
 - Error states
 """
 
-from src.models.guardrails import ResponseType
+from src.schemas.services.guardrails import ResponseType
 
 
 class SafeResponseTemplate:

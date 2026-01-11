@@ -11,7 +11,7 @@ Detects and filters toxic, harmful, or inappropriate content including:
 
 import re
 
-from src.models.guardrails import (
+from src.schemas.services.guardrails import (
     ToxicityCategory,
     ToxicityLevel,
     ToxicityMatch,

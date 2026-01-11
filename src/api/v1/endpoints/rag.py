@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
-from src.models.rag_request import GenerateRequest, GenerateResponse
+from src.schemas.api.rag_request import GenerateRequest, GenerateResponse
 from src.services.pipeline.naive_pipeline.factory import get_naive_pipeline
 
 logger = logging.getLogger(__name__)

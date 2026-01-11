@@ -11,7 +11,12 @@ Coordinates all guardrail components:
 
 from datetime import UTC, datetime
 
-from src.models.guardrails import AuditEvent, AuditEventType, AuditSeverity, GuardrailResult
+from src.schemas.services.guardrails import (
+    AuditEvent,
+    AuditEventType,
+    AuditSeverity,
+    GuardrailResult,
+)
 
 from .audit_log import AuditLogger
 from .jailbreak_detector import JailbreakDetector

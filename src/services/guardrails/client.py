@@ -9,7 +9,12 @@ Provides a clean client interface for all guardrail operations:
 - Audit logging
 """
 
-from src.models.guardrails import AuditEvent, AuditEventType, AuditSeverity, GuardrailResult
+from src.schemas.services.guardrails import (
+    AuditEvent,
+    AuditEventType,
+    AuditSeverity,
+    GuardrailResult,
+)
 
 from .audit_log import AuditLogger
 from .coordinator import GuardrailsCoordinator

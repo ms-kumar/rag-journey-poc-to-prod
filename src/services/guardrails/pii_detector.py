@@ -12,7 +12,7 @@ Detects and redacts various types of PII including:
 
 import re
 
-from src.models.guardrails import PIIMatch, PIIType
+from src.schemas.services.guardrails import PIIMatch, PIIType
 
 
 class PIIDetector:

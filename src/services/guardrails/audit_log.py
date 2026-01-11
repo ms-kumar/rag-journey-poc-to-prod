@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from src.models.guardrails import AuditEvent, AuditEventType, AuditSeverity
+from src.schemas.services.guardrails import AuditEvent, AuditEventType, AuditSeverity
 
 
 class AuditLogger:

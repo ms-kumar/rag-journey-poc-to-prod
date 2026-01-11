@@ -11,7 +11,7 @@ import platform
 import time
 from typing import Any
 
-from src.models.health import ComponentHealth, ServiceStatus
+from src.schemas.api.health import ComponentHealth, ServiceStatus
 
 logger = logging.getLogger(__name__)
 

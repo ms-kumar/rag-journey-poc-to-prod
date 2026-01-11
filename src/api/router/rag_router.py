@@ -4,7 +4,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
-from src.models.rag_request import GenerateRequest, GenerateResponse
+from src.schemas.api.rag_request import GenerateRequest, GenerateResponse
 from src.services.pipeline.naive_pipeline.factory import get_naive_pipeline
 
 logger = logging.getLogger(__name__)
@@ -108,11 +108,6 @@ async def generate(request: GenerateRequest):
         answer=answer,
         context=context,
         sources=sources,
-        metadata={
-            "num_retrieved": len(retrieved),
-            "search_type": request.search_type,
-            "reranking_enabled": request.enable_reranking,
-        },
     )
 
 

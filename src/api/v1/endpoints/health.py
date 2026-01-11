@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Query
 
 from src.config import settings
-from src.models.health import DetailedHealthResponse, HealthCheckResponse, ServiceStatus
+from src.schemas.api.health import DetailedHealthResponse, HealthCheckResponse, ServiceStatus
 from src.services.health_check import (
     check_all_components,
     determine_overall_status,

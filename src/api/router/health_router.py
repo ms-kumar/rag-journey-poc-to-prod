@@ -2,11 +2,12 @@
 
 import logging
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Query
 
 from src.config import settings
-from src.models.health import DetailedHealthResponse, HealthCheckResponse, ServiceStatus
+from src.schemas.api.health import DetailedHealthResponse, HealthCheckResponse, ServiceStatus
 from src.services.health_check import (
     check_all_components,
     determine_overall_status,
@@ -71,11 +72,12 @@ async def detailed_health_check(
     )
 
     # Get basic health info
-    health_data = {
+    health_data: dict[str, Any] = {
         "status": ServiceStatus.HEALTHY,
         "version": settings.app.version,
         "timestamp": datetime.now(UTC).isoformat(),
         "uptime_seconds": round(get_uptime(), 2),
+        "components": [],
     }
 
     # Add system info if requested

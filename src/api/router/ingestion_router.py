@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from src.models.ingestion import IngestRequest, IngestResponse
+from src.schemas.api.ingestion import IngestRequest, IngestResponse
 from src.services.ingestion.factory import get_ingestion_client
 
 logger = logging.getLogger(__name__)
@@ -32,9 +32,7 @@ async def ingest_documents(request: IngestRequest):
         # Validate directory exists
         directory_path = Path(request.directory)
         if not directory_path.exists():
-            raise HTTPException(
-                status_code=404, detail=f"Directory not found: {request.directory}"
-            )
+            raise HTTPException(status_code=404, detail=f"Directory not found: {request.directory}")
 
         if not directory_path.is_dir():
             raise HTTPException(

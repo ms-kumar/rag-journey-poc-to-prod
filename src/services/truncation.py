@@ -6,7 +6,11 @@ Provides strategies for truncating text to fit within model token budgets.
 
 from enum import Enum
 
-from src.models.token_budgets import TokenBudget, get_embedding_budget, get_generation_budget
+from src.schemas.services.token_budgets import (
+    TokenBudget,
+    get_embedding_budget,
+    get_generation_budget,
+)
 
 
 class TruncationStrategy(str, Enum):

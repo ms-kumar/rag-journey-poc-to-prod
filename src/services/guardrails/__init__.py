@@ -9,7 +9,7 @@ This module provides:
 - Coordinated guardrail checks
 """
 
-from src.models.guardrails import (
+from src.schemas.services.guardrails import (
     AuditEvent,
     AuditEventType,
     AuditSeverity,
