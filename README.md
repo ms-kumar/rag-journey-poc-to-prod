@@ -51,6 +51,8 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 📈 **Retrieval Metrics**: Track p50/p95/p99 latencies, cache hit rates, and per-search-type performance
 
+⚡ **Performance Profiling**: Complete profiling system with timers, percentile tracking, throughput tests, SLA monitoring, and multi-format reports
+
 💾 **Index Persistence**: Snapshot and restore capabilities for backup and disaster recovery
 
 🧠 **Neural Sparse Retrieval**: SPLADE encoder for efficient learned sparse representations
@@ -579,6 +581,7 @@ Comprehensive guides for all major features:
 |----------|-------------|
 | [retry-backoff.md](docs/retry-backoff.md) | Exponential backoff retry system with jitter for resilient service calls |
 | [health-check.md](docs/health-check.md) | Health monitoring with Kubernetes-ready readiness/liveness probes |
+| [performance-profiling.md](docs/performance-profiling.md) | Performance profiling with timers, percentile tracking, throughput tests, and SLA monitoring |
 | [embedding-cache.md](docs/embedding-cache.md) | LRU embedding cache with 83x speedup and disk persistence |
 | [token-budgets.md](docs/token-budgets.md) | Token limits and cost estimation for all embedding/generation models |
 | [truncation.md](docs/truncation.md) | Text truncation strategies (HEAD/TAIL/MIDDLE) with word boundaries |
