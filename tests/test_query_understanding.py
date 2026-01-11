@@ -6,7 +6,7 @@ from src.exceptions import QueryValidationError
 from src.services.query_understanding import (
     QueryRewriter,
     QueryRewriterConfig,
-    QueryUnderstanding,
+    QueryUnderstandingClient,
     QueryUnderstandingConfig,
     SynonymExpander,
     SynonymExpanderConfig,
@@ -224,12 +224,12 @@ class TestSynonymExpander:
         assert expanded == "the is a"
 
 
-class TestQueryUnderstanding:
-    """Tests for QueryUnderstanding orchestrator."""
+class TestQueryUnderstandingClient:
+    """Tests for QueryUnderstandingClient orchestrator."""
 
     def test_qu_init_default(self):
         """Test initialization with default config."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
         assert qu.config.enable_rewriting is True
         assert qu.config.enable_synonyms is True
         assert qu.config.enable_intent_classification is False
@@ -239,13 +239,13 @@ class TestQueryUnderstanding:
     def test_qu_init_custom(self):
         """Test initialization with custom config."""
         config = QueryUnderstandingConfig(enable_rewriting=False, enable_synonyms=True)
-        qu = QueryUnderstanding(config)
+        qu = QueryUnderstandingClient(config)
         assert qu.rewriter is None
         assert qu.expander is not None
 
     def test_process_full_pipeline(self):
         """Test full processing pipeline."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
         result = qu.process("what is ML?")
 
         assert result["original_query"] == "what is ML?"
@@ -258,7 +258,7 @@ class TestQueryUnderstanding:
     def test_process_only_rewriting(self):
         """Test processing with only rewriting enabled."""
         config = QueryUnderstandingConfig(enable_rewriting=True, enable_synonyms=False)
-        qu = QueryUnderstanding(config)
+        qu = QueryUnderstandingClient(config)
         result = qu.process("what is ML?")
 
         assert result["rewritten_query"] is not None
@@ -268,7 +268,7 @@ class TestQueryUnderstanding:
     def test_process_only_synonyms(self):
         """Test processing with only synonyms enabled."""
         config = QueryUnderstandingConfig(enable_rewriting=False, enable_synonyms=True)
-        qu = QueryUnderstanding(config)
+        qu = QueryUnderstandingClient(config)
         result = qu.process("machine learning model")
 
         assert result["rewritten_query"] is None
@@ -278,7 +278,7 @@ class TestQueryUnderstanding:
     def test_intent_classification_howto(self):
         """Test intent classification for how-to queries."""
         config = QueryUnderstandingConfig(enable_intent_classification=True)
-        qu = QueryUnderstanding(config)
+        qu = QueryUnderstandingClient(config)
         result = qu.process("how to train a model?")
 
         assert result["intent"] == "howto"
@@ -287,7 +287,7 @@ class TestQueryUnderstanding:
     def test_intent_classification_factual(self):
         """Test intent classification for factual queries."""
         config = QueryUnderstandingConfig(enable_intent_classification=True)
-        qu = QueryUnderstanding(config)
+        qu = QueryUnderstandingClient(config)
         result = qu.process("what is machine learning?")
 
         assert result["intent"] == "factual"
@@ -295,7 +295,7 @@ class TestQueryUnderstanding:
     def test_intent_classification_comparison(self):
         """Test intent classification for comparison queries."""
         config = QueryUnderstandingConfig(enable_intent_classification=True)
-        qu = QueryUnderstanding(config)
+        qu = QueryUnderstandingClient(config)
         result = qu.process("Python vs Java")
 
         assert result["intent"] == "comparison"
@@ -303,7 +303,7 @@ class TestQueryUnderstanding:
     def test_intent_classification_troubleshooting(self):
         """Test intent classification for troubleshooting queries."""
         config = QueryUnderstandingConfig(enable_intent_classification=True)
-        qu = QueryUnderstanding(config)
+        qu = QueryUnderstandingClient(config)
         result = qu.process("error in code not working")
 
         assert result["intent"] == "troubleshooting"
@@ -311,14 +311,14 @@ class TestQueryUnderstanding:
     def test_intent_classification_exploratory(self):
         """Test intent classification for exploratory queries."""
         config = QueryUnderstandingConfig(enable_intent_classification=True)
-        qu = QueryUnderstanding(config)
+        qu = QueryUnderstandingClient(config)
         result = qu.process("tell me about deep learning")
 
         assert result["intent"] == "exploratory"
 
     def test_get_all_variations(self):
         """Test generation of all query variations."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
         variations = qu.get_all_variations("what is ML?")
 
         assert len(variations) >= 2
@@ -327,7 +327,7 @@ class TestQueryUnderstanding:
 
     def test_variations_no_duplicates(self):
         """Test that variations don't contain duplicates."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
         variations = qu.get_all_variations("machine learning")
 
         # Check for uniqueness
@@ -335,7 +335,7 @@ class TestQueryUnderstanding:
 
     def test_metadata_tracking(self):
         """Test that all metadata is properly tracked."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
         result = qu.process("what is ML?")
 
         metadata = result["metadata"]
@@ -346,7 +346,7 @@ class TestQueryUnderstanding:
 
     def test_original_query_preserved(self):
         """Test that original query is always preserved."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
         original = "what is ML?"
         result = qu.process(original)
 
@@ -359,7 +359,7 @@ class TestIntegration:
 
     def test_full_pipeline_complex_query(self):
         """Test full pipeline with complex query."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
         result = qu.process("how to fix machien learing error in py?")
 
         # Should have:
@@ -375,7 +375,7 @@ class TestIntegration:
 
     def test_pipeline_latency_reasonable(self):
         """Test that pipeline latency is reasonable (< 10ms typical)."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
         result = qu.process("what is machine learning?")
 
         # Should be very fast (< 10ms for rule-based processing)
@@ -383,7 +383,7 @@ class TestIntegration:
 
     def test_multiple_queries_consistent(self):
         """Test that processing multiple queries is consistent."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
 
         # Process same query twice
         result1 = qu.process("what is ML?")
@@ -394,7 +394,7 @@ class TestIntegration:
 
     def test_empty_query_handling(self):
         """Test handling of empty or whitespace queries."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
         result = qu.process("")
 
         assert result["processed_query"] == ""
@@ -402,7 +402,7 @@ class TestIntegration:
 
     def test_special_characters_preserved(self):
         """Test that special characters are preserved."""
-        qu = QueryUnderstanding()
+        qu = QueryUnderstandingClient()
         result = qu.process("what is C++?")
 
         assert "++" in result["processed_query"]

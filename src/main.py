@@ -5,6 +5,13 @@ from fastapi import FastAPI
 
 from src.api.v1.endpoints import health, rag
 from src.config import settings
+from src.services.cache.factory import make_cache_client
+from src.services.embeddings.factory import get_langchain_embeddings_adapter, make_embedding_client
+from src.services.generation.factory import make_generation_client
+from src.services.guardrails.factory import make_guardrails_client
+from src.services.query_understanding.factory import make_query_understanding_client
+from src.services.reranker.factory import make_reranker_client
+from src.services.vectorstore.factory import make_vectorstore_client
 
 # Configure logging
 logging.basicConfig(
@@ -16,12 +23,61 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Application lifespan manager - initializes services once at startup."""
     # Startup
     logger.info(f"Starting {settings.app.name} v{settings.app.version}")
     logger.info(f"Debug mode: {settings.app.debug}")
     logger.info(f"Log level: {settings.app.log_level}")
+
+    # Initialize settings
+    app.state.settings = settings
+    logger.info("Settings initialized")
+
+    # Initialize core services and store in app.state
+    try:
+        logger.info("Initializing embedding service...")
+        app.state.embedding_service = make_embedding_client(settings.embedding)
+        logger.info("✓ Embedding service initialized")
+
+        logger.info("Initializing cache service...")
+        app.state.cache_service = make_cache_client(settings.cache)
+        logger.info("✓ Cache service initialized")
+
+        logger.info("Initializing vector store service...")
+        embeddings = get_langchain_embeddings_adapter(settings.embedding)
+        vector_size = settings.embedding.dim
+        app.state.vector_store_service = make_vectorstore_client(
+            settings.vectorstore,
+            embeddings=embeddings,
+            vector_size=vector_size,
+        )
+        logger.info("✓ Vector store service initialized")
+
+        logger.info("Initializing reranker service...")
+        app.state.reranker_service = make_reranker_client(settings.reranker)
+        logger.info("✓ Reranker service initialized")
+
+        logger.info("Initializing generation service...")
+        app.state.generation_service = make_generation_client(settings.generation)
+        logger.info("✓ Generation service initialized")
+
+        logger.info("Initializing query understanding service...")
+        app.state.query_understanding_service = make_query_understanding_client(settings)
+        logger.info("✓ Query understanding service initialized")
+
+        logger.info("Initializing guardrails service...")
+        app.state.guardrails_service = make_guardrails_client(settings)
+        logger.info("✓ Guardrails service initialized")
+
+        logger.info("All services initialized successfully")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize services: {e}")
+        raise
+
     yield
-    # Shutdown (if needed)
+
+    # Shutdown
     logger.info(f"Shutting down {settings.app.name}")
 
 

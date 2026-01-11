@@ -9,7 +9,7 @@ import time
 from typing import Any
 
 from src.services.query_understanding import (
-    QueryUnderstanding,
+    QueryUnderstandingClient,
     QueryUnderstandingConfig,
 )
 
@@ -72,7 +72,7 @@ def run_ablation_study(test_queries: list[str]) -> dict[str, Any]:
         print(f"Configuration: {config_name.upper()}")
         print(f"{'=' * 80}")
 
-        qu = QueryUnderstanding(config)
+        qu = QueryUnderstandingClient(config)
         latencies = []
         query_lengths = []
         expansion_ratios = []

@@ -6,46 +6,47 @@ import logging
 from typing import TYPE_CHECKING
 
 from src.services.query_understanding.client import (
-    QueryUnderstanding,
+    QueryUnderstandingClient,
     QueryUnderstandingConfig,
 )
 
 if TYPE_CHECKING:
-    from src.config import QueryUnderstandingSettings
+    from src.config import Settings
 
 logger = logging.getLogger(__name__)
 
 
 def make_query_understanding_client(
-    settings: "QueryUnderstandingSettings",
-) -> QueryUnderstanding:
+    settings: "Settings",
+) -> QueryUnderstandingClient:
     """
     Create query understanding client from application settings.
 
     Args:
-        settings: Query understanding settings
+        settings: Full application settings object
 
     Returns:
-        Configured QueryUnderstanding instance
+        Configured QueryUnderstandingClient instance
     """
     config = QueryUnderstandingConfig.from_settings(settings)
+    query_settings = settings.query_understanding
     logger.info(
-        f"Query understanding client created (rewriting={settings.enable_rewriting}, synonyms={settings.enable_synonyms})"
+        f"Query understanding client created (rewriting={query_settings.enable_rewriting}, synonyms={query_settings.enable_synonyms})"
     )
-    return QueryUnderstanding(config)
+    return QueryUnderstandingClient(config)
 
 
-def create_query_understanding(settings: "QueryUnderstandingSettings") -> QueryUnderstanding:
+def create_query_understanding(settings: "Settings") -> QueryUnderstandingClient:
     """
     Create query understanding client from application settings.
 
     Deprecated: Use make_query_understanding_client() instead.
 
     Args:
-        settings: Query understanding settings
+        settings: Full application settings object
 
     Returns:
-        Configured QueryUnderstanding instance
+        Configured QueryUnderstandingClient instance
     """
     return make_query_understanding_client(settings)
 
@@ -54,7 +55,7 @@ def get_query_understanding_client(
     enable_rewriting: bool = True,
     enable_synonyms: bool = True,
     enable_intent: bool = False,
-) -> QueryUnderstanding:
+) -> QueryUnderstandingClient:
     """
     Create a query understanding client (legacy function).
 
@@ -64,7 +65,7 @@ def get_query_understanding_client(
         enable_intent: Whether to enable intent classification
 
     Returns:
-        Configured QueryUnderstanding instance
+        Configured QueryUnderstandingClient instance
 
     Note:
         For new code, prefer using create_query_understanding(settings) instead.
@@ -74,4 +75,4 @@ def get_query_understanding_client(
         enable_synonyms=enable_synonyms,
         enable_intent_classification=enable_intent,
     )
-    return QueryUnderstanding(config)
+    return QueryUnderstandingClient(config)

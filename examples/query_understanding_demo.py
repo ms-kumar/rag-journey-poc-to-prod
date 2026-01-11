@@ -85,7 +85,7 @@ def demo_full_pipeline():
         enable_synonyms=True,
         enable_intent_classification=True,
     )
-    qu = QueryUnderstanding(config)
+    qu = QueryUnderstandingClient(config)
 
     test_cases = [
         "what is ML?",
@@ -143,7 +143,7 @@ def demo_configuration_options():
         enable_rewriting=True,
         enable_synonyms=False,
     )
-    qu1 = QueryUnderstanding(config1)
+    qu1 = QueryUnderstandingClient(config1)
     result1 = qu1.process(query)
 
     print("\nConfig 1: Rewriting only")
@@ -155,7 +155,7 @@ def demo_configuration_options():
         enable_rewriting=False,
         enable_synonyms=True,
     )
-    qu2 = QueryUnderstanding(config2)
+    qu2 = QueryUnderstandingClient(config2)
     result2 = qu2.process(query)
 
     print("\nConfig 2: Synonyms only")

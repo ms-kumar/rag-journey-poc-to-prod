@@ -53,7 +53,7 @@ class QueryUnderstandingConfig:
         )
 
 
-class QueryUnderstanding:
+class QueryUnderstandingClient:
     """
     Query understanding orchestrator.
 
@@ -101,7 +101,7 @@ class QueryUnderstanding:
                 - metadata: Latency and stage info
 
         Example:
-            >>> qu = QueryUnderstanding()
+            >>> qu = QueryUnderstandingClient()
             >>> result = qu.process("what is ML?")
             >>> print(result["processed_query"])
             "what is machine learning? ml statistical learning"
@@ -234,7 +234,7 @@ class QueryUnderstanding:
             List of query variations (original + rewrites + expansions)
 
         Example:
-            >>> qu = QueryUnderstanding()
+            >>> qu = QueryUnderstandingClient()
             >>> variations = qu.get_all_variations("what is ML?")
             >>> for v in variations:
             ...     print(v)
