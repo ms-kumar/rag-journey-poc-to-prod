@@ -6,9 +6,9 @@ This script demonstrates the various search types and filtering capabilities.
 
 import logging
 
-from src.config import get_settings
+from src.config import get_settings, VectorStoreSettings
 from src.services.embeddings.factory import get_embed_client, get_langchain_embeddings_adapter
-from src.services.vectorstore.client import QdrantVectorStoreClient, VectorStoreConfig
+from src.services.vectorstore.client import QdrantVectorStoreClient
 from src.services.vectorstore.filters import FilterBuilder, build_filter_from_dict
 
 # Setup logging
@@ -25,14 +25,14 @@ def setup_vectorstore(enable_bm25: bool = True) -> QdrantVectorStoreClient:
     embeddings = get_langchain_embeddings_adapter(embed_client)
 
     # Configure vectorstore with BM25
-    config = VectorStoreConfig(
-        qdrant_url=settings.vectorstore.url or "http://localhost:6333",
+    vectorstore_settings = VectorStoreSettings(
+        url=settings.vectorstore.url or "http://localhost:6333",
         collection_name="demo_collection",
         vector_size=settings.embedding.dim,
         enable_bm25=enable_bm25,
     )
 
-    return QdrantVectorStoreClient(embeddings, config)
+    return QdrantVectorStoreClient(embeddings, vectorstore_settings)
 
 
 def example_1_basic_vector_search():

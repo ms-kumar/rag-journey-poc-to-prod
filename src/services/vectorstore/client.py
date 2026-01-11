@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from dataclasses import dataclass
 from uuid import uuid4
 
 from langchain_core.documents import Document
@@ -27,40 +26,6 @@ from .retrieval_metrics import (
 )
 
 
-@dataclass
-class VectorStoreConfig:
-    qdrant_url: str | None = None
-    api_key: str | None = None
-    prefer_grpc: bool = True
-    collection_name: str = "default"
-    distance: str = "Cosine"  # or "Dot", "Euclid"
-    vector_size: int = 64  # Default embedding dimension
-    enable_bm25: bool = False  # Enable BM25 indexing on page_content
-    # Retry configuration
-    retry_config: RetryConfig | None = None
-    # Metrics tracking
-    enable_metrics: bool = False  # Track retrieval metrics
-    normalize_scores: bool = False  # Normalize scores to [0, 1]
-    # Sparse vectors (SPLADE)
-    enable_sparse: bool = False  # Enable sparse vector storage
-    sparse_vector_name: str = "sparse"  # Name for sparse vector field
-
-    @classmethod
-    def from_settings(cls, settings, vector_size: int = 64, **kwargs):
-        """Create config from application settings."""
-
-        vs_settings = settings.vectorstore
-        return cls(
-            qdrant_url=vs_settings.url,
-            api_key=vs_settings.api_key,
-            prefer_grpc=vs_settings.prefer_grpc,
-            collection_name=vs_settings.collection_name,
-            vector_size=vector_size,
-            enable_bm25=vs_settings.enable_bm25,
-            **kwargs,
-        )
-
-
 class DependencyMissingError(RuntimeError):
     pass
 
@@ -73,7 +38,7 @@ class QdrantVectorStoreClient:
     - Uses `qdrant-client.QdrantClient` for connection.
     """
 
-    def __init__(self, embeddings, config: VectorStoreConfig, sparse_encoder=None):
+    def __init__(self, embeddings, config, sparse_encoder=None, retry_config=None):
         if QdrantClient is None:
             raise DependencyMissingError(
                 "qdrant-client is required. Install with: pip install 'qdrant-client'"
@@ -84,7 +49,7 @@ class QdrantVectorStoreClient:
         self.embeddings = embeddings
         self.config = config
         self.sparse_encoder = sparse_encoder
-        self.retry_config = config.retry_config or RetryConfig(
+        self.retry_config = retry_config or RetryConfig(
             max_retries=3,
             initial_delay=1.0,
             max_delay=30.0,
@@ -97,13 +62,13 @@ class QdrantVectorStoreClient:
 
         # Create Qdrant client
         client_kwargs = {}
-        if config.qdrant_url:
-            client_kwargs["url"] = config.qdrant_url
+        if config.url:
+            client_kwargs["url"] = config.url
         if config.api_key:
             client_kwargs["api_key"] = config.api_key
         client_kwargs["prefer_grpc"] = str(config.prefer_grpc)
 
-        self.qdrant_client = QdrantClient(**client_kwargs)  # type: ignore[arg-type]
+        self.qdrant_client = QdrantClient(**client_kwargs)
 
         # Ensure collection exists
         self._ensure_collection_exists()

@@ -60,11 +60,16 @@ class NaivePipeline:
         self.lc_embeddings = get_langchain_embeddings_adapter(self.embed_client)
 
         # Vectorstore (Qdrant via LangChain wrapper)
-        self.vectorstore = get_vectorstore_client(
-            embeddings=self.lc_embeddings,
-            qdrant_url=self.config.qdrant_url,
+        from src.config import VectorStoreSettings
+
+        vectorstore_settings = VectorStoreSettings(
+            url=self.config.qdrant_url,
             collection_name=self.config.collection_name,
             vector_size=self.config.embed_dim,
+        )
+        self.vectorstore = get_vectorstore_client(
+            embeddings=self.lc_embeddings,
+            settings=vectorstore_settings,
         )
 
         # Generator (HuggingFace pipeline or fallback)

@@ -141,7 +141,15 @@ class VectorStoreSettings(BaseConfigSettings):
     api_key: str | None = None
     collection_name: str = "naive_collection"
     prefer_grpc: bool = True
+    distance: str = "Cosine"  # Cosine, Dot, or Euclid
+    vector_size: int = 64  # Default embedding dimension
     enable_bm25: bool = False  # Enable BM25 indexing for hybrid search
+
+    # Advanced features
+    enable_metrics: bool = False  # Track retrieval metrics
+    normalize_scores: bool = False  # Normalize scores to [0, 1]
+    enable_sparse: bool = False  # Enable sparse vector storage (SPLADE)
+    sparse_vector_name: str = "sparse"  # Name for sparse vector field
 
 
 class GenerationSettings(BaseConfigSettings):

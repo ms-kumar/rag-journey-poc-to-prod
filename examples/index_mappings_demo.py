@@ -6,9 +6,9 @@ Shows how to create and manage payload indices for optimized filtering.
 
 import logging
 
-from src.config import get_settings
+from src.config import get_settings, VectorStoreSettings
 from src.services.embeddings.factory import get_embed_client, get_langchain_embeddings_adapter
-from src.services.vectorstore.client import QdrantVectorStoreClient, VectorStoreConfig
+from src.services.vectorstore.client import QdrantVectorStoreClient
 from src.services.vectorstore.index_mappings import IndexMappingBuilder, get_preset_mappings
 
 # Setup logging
@@ -25,14 +25,14 @@ def setup_vectorstore(collection_name: str = "demo_indices") -> QdrantVectorStor
     embeddings = get_langchain_embeddings_adapter(embed_client)
 
     # Configure vectorstore
-    config = VectorStoreConfig(
-        qdrant_url=settings.vectorstore.url or "http://localhost:6333",
+    vectorstore_settings = VectorStoreSettings(
+        url=settings.vectorstore.url or "http://localhost:6333",
         collection_name=collection_name,
         vector_size=settings.embedding.dim,
         enable_bm25=True,
     )
 
-    return QdrantVectorStoreClient(embeddings, config)
+    return QdrantVectorStoreClient(embeddings, vectorstore_settings)
 
 
 def example_1_basic_indices():

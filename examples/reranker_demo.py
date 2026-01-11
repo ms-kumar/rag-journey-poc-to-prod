@@ -16,7 +16,7 @@ from src.services.embeddings.factory import get_embed_client, get_langchain_embe
 from src.services.reranker.client import RerankerConfig
 from src.services.reranker.evaluation import RerankingEvaluator, print_benchmark_results
 from src.services.reranker.factory import get_reranker
-from src.services.vectorstore.client import QdrantVectorStoreClient, VectorStoreConfig
+from src.services.vectorstore.client import QdrantVectorStoreClient
 from langchain_core.documents import Document
 
 # Setup logging

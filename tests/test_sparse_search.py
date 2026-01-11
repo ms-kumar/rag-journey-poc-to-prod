@@ -195,12 +195,10 @@ def mock_sparse_encoder():
 @pytest.fixture
 def vectorstore_with_sparse(sample_embeddings, mock_sparse_encoder):
     """Vectorstore with sparse vectors enabled."""
-    from src.services.vectorstore.client import (
-        QdrantVectorStoreClient,
-        VectorStoreConfig,
-    )
+    from src.config import VectorStoreSettings
+    from src.services.vectorstore.client import QdrantVectorStoreClient
 
-    config = VectorStoreConfig(
+    settings = VectorStoreSettings(
         collection_name="test_sparse",
         vector_size=64,
         enable_sparse=True,
@@ -208,7 +206,7 @@ def vectorstore_with_sparse(sample_embeddings, mock_sparse_encoder):
     )
     return QdrantVectorStoreClient(
         embeddings=sample_embeddings,
-        config=config,
+        config=settings,
         sparse_encoder=mock_sparse_encoder,
     )
 
@@ -216,38 +214,34 @@ def vectorstore_with_sparse(sample_embeddings, mock_sparse_encoder):
 @pytest.fixture
 def vectorstore_no_sparse(sample_embeddings):
     """Vectorstore without sparse vectors."""
-    from src.services.vectorstore.client import (
-        QdrantVectorStoreClient,
-        VectorStoreConfig,
-    )
+    from src.config import VectorStoreSettings
+    from src.services.vectorstore.client import QdrantVectorStoreClient
 
-    config = VectorStoreConfig(
+    settings = VectorStoreSettings(
         collection_name="test_no_sparse",
         vector_size=64,
         enable_sparse=False,
     )
     return QdrantVectorStoreClient(
         embeddings=sample_embeddings,
-        config=config,
+        config=settings,
     )
 
 
 @pytest.fixture
 def vectorstore_sparse_no_encoder(sample_embeddings):
     """Vectorstore with sparse enabled but no encoder."""
-    from src.services.vectorstore.client import (
-        QdrantVectorStoreClient,
-        VectorStoreConfig,
-    )
+    from src.config import VectorStoreSettings
+    from src.services.vectorstore.client import QdrantVectorStoreClient
 
-    config = VectorStoreConfig(
+    settings = VectorStoreSettings(
         collection_name="test_sparse_no_encoder",
         vector_size=64,
         enable_sparse=True,
     )
     return QdrantVectorStoreClient(
         embeddings=sample_embeddings,
-        config=config,
+        config=settings,
         sparse_encoder=None,
     )
 
@@ -279,12 +273,10 @@ def vectorstore_with_data_sparse(vectorstore_with_sparse):
 @pytest.fixture
 def vectorstore_with_data_sparse_metrics(sample_embeddings, mock_sparse_encoder):
     """Vectorstore with sparse vectors, data, and metrics enabled."""
-    from src.services.vectorstore.client import (
-        QdrantVectorStoreClient,
-        VectorStoreConfig,
-    )
+    from src.config import VectorStoreSettings
+    from src.services.vectorstore.client import QdrantVectorStoreClient
 
-    config = VectorStoreConfig(
+    settings = VectorStoreSettings(
         collection_name="test_sparse_metrics",
         vector_size=64,
         enable_sparse=True,
@@ -295,7 +287,7 @@ def vectorstore_with_data_sparse_metrics(sample_embeddings, mock_sparse_encoder)
 
     vs = QdrantVectorStoreClient(
         embeddings=sample_embeddings,
-        config=config,
+        config=settings,
         sparse_encoder=mock_sparse_encoder,
     )
 
