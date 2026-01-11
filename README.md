@@ -61,6 +61,8 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 🔀 **Fusion Orchestration**: Combine multiple search methods using RRF or weighted fusion for 33%+ recall uplift
 
+📦 **Schema-First Architecture**: Centralized Pydantic schemas with domain separation (api/ vs services/) for type safety and validation
+
 🧪 **Comprehensive Tests**: 435+ tests with high coverage across all components
 
 🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
@@ -88,6 +90,12 @@ src/
 │       └── rag.py          # RAG endpoints (ingest, generate)
 ├── models/
 │   └── rag_request.py      # Pydantic models
+├── schemas/                # Centralized Pydantic schemas
+│   ├── api/               # API request/response models
+│   └── services/          # Service-level data structures
+│       ├── reranker.py    # Reranker schemas
+│       ├── vectorstore.py # Vector store schemas
+│       └── query_understanding.py  # Query understanding schemas
 └── services/
     ├── chunking/           # Document chunking
     ├── embeddings/         # Text embeddings
@@ -96,7 +104,8 @@ src/
     ├── guardrails/         # Safety (PII, toxicity, audit)
     ├── ingestion/          # Document loading
     ├── pipeline/           # RAG orchestration
-    └── vectorstore/        # Qdrant integration
+    ├── query_understanding/  # Query rewriting & expansion
+    └── vectorstore/        # Qdrant integration & search
 ```
 
 ### Quick Start
@@ -596,6 +605,7 @@ Comprehensive guides for all major features:
 - [Week 3](docs/week-plans/week-3.md): Hybrid Retrieval & Fusion (dense, sparse, RRF, weighted fusion)
 - [Week 4](docs/week-plans/week-4.md): Metadata Filtering (source, date, tag filters)
 - [Week 5](docs/week-plans/week-5.md): Evaluation Framework & Guardrails (metrics, safety, audit)
+- [Week 6](docs/week-plans/week-6.md): Schema Consolidation & Architectural Refinement
 
 ### Configuration
 
@@ -639,7 +649,7 @@ make test-cov
 open htmlcov/index.html
 ```
 
-**Test Coverage**: 536 tests | 73% coverage (including 101 guardrails tests)
+**Test Coverage**: 913 tests | 79% coverage
 
 Quality gates enforced:
 - ✅ Ruff formatting (100 char line length)
