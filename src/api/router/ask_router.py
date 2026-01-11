@@ -1,32 +1,26 @@
+"""Main API router that aggregates all endpoint routers."""
+
 import logging
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
 
-from src.api.v1.endpoints import rag
+from src.api.router.health_router import router as health_router
+from src.api.router.ingestion_router import router as ingestion_router
+from src.api.router.rag_router import router as rag_router
+from src.models.ask import AskRequest, AskResponse
 from src.services.pipeline.naive_pipeline.factory import get_naive_pipeline
 
 logger = logging.getLogger(__name__)
 
 api_router = APIRouter()
 
-# Include the v1 rag router
-api_router.include_router(rag.router, prefix="/rag", tags=["rag"])
+# Include all routers
+api_router.include_router(health_router, prefix="", tags=["health"])
+api_router.include_router(rag_router, prefix="/rag", tags=["rag"])
+api_router.include_router(ingestion_router, prefix="/data", tags=["ingestion"])
 
 
 # --- Direct /ask endpoint using NaivePipeline ---
-
-
-class AskRequest(BaseModel):
-    question: str = Field(..., description="The question to ask")
-    top_k: int | None = Field(5, description="Number of documents to retrieve")
-
-
-class AskResponse(BaseModel):
-    question: str
-    answer: str
-    context: str | None = Field(None, description="Combined context from retrieved documents")
-    sources: list[str] | None = Field(None, description="List of retrieved document texts")
 
 
 # Lazy singleton pipeline
