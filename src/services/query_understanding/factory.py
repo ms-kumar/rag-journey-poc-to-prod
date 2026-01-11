@@ -1,27 +1,53 @@
 """
-Factory for creating query understanding clients.
+Factory for creating query understanding clients from application settings.
 """
 
+import logging
 from typing import TYPE_CHECKING
 
-from .client import QueryUnderstanding, QueryUnderstandingConfig
+from src.services.query_understanding.client import (
+    QueryUnderstanding,
+    QueryUnderstandingConfig,
+)
 
 if TYPE_CHECKING:
-    from src.config import Settings
+    from src.config import QueryUnderstandingSettings
+
+logger = logging.getLogger(__name__)
 
 
-def create_query_understanding(settings: "Settings") -> QueryUnderstanding:
+def make_query_understanding_client(
+    settings: "QueryUnderstandingSettings",
+) -> QueryUnderstanding:
     """
     Create query understanding client from application settings.
 
     Args:
-        settings: Application settings
+        settings: Query understanding settings
 
     Returns:
         Configured QueryUnderstanding instance
     """
     config = QueryUnderstandingConfig.from_settings(settings)
+    logger.info(
+        f"Query understanding client created (rewriting={settings.enable_rewriting}, synonyms={settings.enable_synonyms})"
+    )
     return QueryUnderstanding(config)
+
+
+def create_query_understanding(settings: "QueryUnderstandingSettings") -> QueryUnderstanding:
+    """
+    Create query understanding client from application settings.
+
+    Deprecated: Use make_query_understanding_client() instead.
+
+    Args:
+        settings: Query understanding settings
+
+    Returns:
+        Configured QueryUnderstanding instance
+    """
+    return make_query_understanding_client(settings)
 
 
 def get_query_understanding_client(

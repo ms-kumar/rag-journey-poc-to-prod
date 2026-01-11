@@ -1,9 +1,16 @@
+"""
+Factory for creating vectorstore clients from application settings.
+"""
+
+import logging
 from typing import TYPE_CHECKING
 
-from .client import QdrantVectorStoreClient, VectorStoreConfig
+from src.services.vectorstore.client import QdrantVectorStoreClient, VectorStoreConfig
 
 if TYPE_CHECKING:
-    from src.config import Settings
+    from src.config import VectorStoreSettings
+
+logger = logging.getLogger(__name__)
 
 
 def get_vectorstore_client(
@@ -38,19 +45,53 @@ def get_vectorstore_client(
         vector_size=vector_size,
         enable_bm25=enable_bm25,
     )
+    logger.info(f"Created QdrantVectorStoreClient with collection={collection_name}")
+    return QdrantVectorStoreClient(embeddings=embeddings, config=config)
+
+
+def make_vectorstore_client(
+    settings: "VectorStoreSettings",
+    embeddings,
+    vector_size: int,
+) -> QdrantVectorStoreClient:
+    """
+    Create vectorstore client from application settings.
+
+    Args:
+        settings: Vectorstore settings
+        embeddings: LangChain-compatible embeddings object
+        vector_size: Dimension of the embedding vectors
+
+    Returns:
+        Configured QdrantVectorStoreClient instance
+    """
+    config = VectorStoreConfig(
+        qdrant_url=settings.url,
+        api_key=settings.api_key,
+        prefer_grpc=settings.prefer_grpc,
+        collection_name=settings.collection_name,
+        distance="Cosine",
+        vector_size=vector_size,
+        enable_bm25=settings.enable_bm25,
+    )
+    logger.info(f"Vectorstore client created with collection={settings.collection_name}")
     return QdrantVectorStoreClient(embeddings=embeddings, config=config)
 
 
 def create_from_settings(
-    settings: "Settings",
+    settings: "VectorStoreSettings",
     embeddings,
     vector_size: int | None = None,
     **overrides,
 ) -> QdrantVectorStoreClient:
-    """Create vectorstore client from application settings."""
+    """
+    Create vectorstore client from application settings with optional overrides.
+
+    Deprecated: Use make_vectorstore_client() instead.
+    """
     config = VectorStoreConfig.from_settings(
         settings,
-        vector_size=vector_size or settings.embedding.dim,
+        vector_size=vector_size or 64,  # Default dimension
         **overrides,
     )
     return QdrantVectorStoreClient(embeddings=embeddings, config=config)

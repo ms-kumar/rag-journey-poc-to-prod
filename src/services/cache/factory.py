@@ -9,31 +9,28 @@ import redis
 
 from src.exceptions import CacheException, RedisConnectionError
 from src.services.cache.client import CacheClient
-from src.services.cache.metrics import CacheMetrics, StalenessConfig
+from src.services.cache.metrics import CacheMetrics
 from src.services.cache.semantic_cache import SemanticCacheClient
 from src.services.embeddings.client import EmbedClient
 
 if TYPE_CHECKING:
-    from src.config import Settings
+    from src.config import CacheSettings, RedisSettings
 
 logger = logging.getLogger(__name__)
 
 
-def make_redis_client(settings: "Settings") -> redis.Redis:
+def make_redis_client(redis_settings: "RedisSettings") -> redis.Redis:
     """
     Create Redis client with connection pooling.
 
     Args:
-        settings: Application settings
-
+        redis_settings: Redis settings
     Returns:
         Connected Redis client instance
 
     Raises:
         RedisConnectionError: If connection fails
     """
-    cache_settings = settings.cache
-    redis_settings = cache_settings.redis
 
     try:
         client = redis.Redis(
@@ -64,7 +61,7 @@ def make_redis_client(settings: "Settings") -> redis.Redis:
         raise CacheException(f"Failed to create Redis client: {e}") from e
 
 
-def make_cache_client(settings: "Settings") -> CacheClient | None:
+def make_cache_client(settings: "CacheSettings") -> CacheClient | None:
     """
     Create unified cache client (exact match + semantic caching).
 
@@ -77,11 +74,11 @@ def make_cache_client(settings: "Settings") -> CacheClient | None:
         CacheClient instance or None if Redis unavailable
     """
     try:
-        redis_client = make_redis_client(settings)
+        redis_client = make_redis_client(settings.redis)
         cache_client = CacheClient(
             redis_client=redis_client,
-            ttl_hours=settings.cache.default_ttl // 3600,  # Convert seconds to hours
-            key_prefix=settings.cache.key_prefix,
+            ttl_hours=settings.default_ttl // 3600,  # Convert seconds to hours
+            key_prefix=settings.key_prefix,
         )
         logger.info("Cache client created successfully")
         return cache_client
@@ -95,7 +92,7 @@ def make_cache_client(settings: "Settings") -> CacheClient | None:
 
 
 def make_semantic_cache_client(
-    settings: "Settings",
+    settings: "CacheSettings",
     cache_client: CacheClient | None = None,
     embed_client: EmbedClient | None = None,
 ) -> SemanticCacheClient | None:
@@ -122,7 +119,7 @@ def make_semantic_cache_client(
         # Create embedding client if not provided
         if embed_client is None:
             embed_client = EmbedClient(
-                dim=settings.cache.semantic_embedding_dim,
+                dim=settings.semantic_embedding_dim,
                 normalize=True,
             )
 
@@ -130,9 +127,9 @@ def make_semantic_cache_client(
         semantic_cache = SemanticCacheClient(
             cache_client=cache_client,
             embed_client=embed_client,
-            similarity_threshold=settings.cache.semantic_similarity_threshold,
-            embedding_dim=settings.cache.semantic_embedding_dim,
-            max_candidates=settings.cache.semantic_max_candidates,
+            similarity_threshold=settings.semantic_similarity_threshold,
+            embedding_dim=settings.semantic_embedding_dim,
+            max_candidates=settings.semantic_max_candidates,
         )
 
         logger.info("Semantic cache client created successfully")
@@ -143,23 +140,15 @@ def make_semantic_cache_client(
         return None
 
 
-def create_cache_metrics(
-    settings: "Settings",
-    cache: CacheClient | None = None,
-) -> CacheMetrics:
+def create_cache_metrics(settings: "CacheSettings") -> CacheMetrics:
     """
     Create cache metrics from application settings.
 
     Args:
         settings: Application settings
-        cache: Optional cache client instance (creates new one if not provided)
 
     Returns:
         Configured cache metrics instance
     """
-    # Create staleness config
-    staleness_config = StalenessConfig.from_settings(settings)
 
-    return CacheMetrics(
-        staleness_config=staleness_config,
-    )
+    return CacheMetrics(staleness_config=settings)

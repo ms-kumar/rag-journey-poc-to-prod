@@ -1,13 +1,19 @@
+"""
+Factory for creating embedding clients from application settings.
+"""
+
+import logging
 from typing import TYPE_CHECKING, Any
 
 from src.exceptions import EmbeddingProviderError
-
-from .adapter import LangChainEmbeddingsAdapter
-from .cached_client import CachedEmbeddingClient
-from .client import EmbedClient
+from src.services.embeddings.adapter import LangChainEmbeddingsAdapter
+from src.services.embeddings.cached_client import CachedEmbeddingClient
+from src.services.embeddings.client import EmbedClient
 
 if TYPE_CHECKING:
-    from src.config import Settings
+    from src.config import EmbeddingSettings
+
+logger = logging.getLogger(__name__)
 
 
 def get_embed_client(
@@ -91,29 +97,58 @@ def get_embed_client(
         )
 
     # Wrap with caching layer
-    return CachedEmbeddingClient(
+    cached_client = CachedEmbeddingClient(
         provider=base_provider,
         cache_enabled=cache_enabled,
         cache_max_size=cache_max_size,
         cache_dir=cache_dir,
         batch_size=batch_size,
     )
+    logger.info(f"Created embedding client with provider={provider}, cache_enabled={cache_enabled}")
+    return cached_client
 
 
-def create_from_settings(settings: "Settings", **overrides):
-    """Create embedding client from application settings."""
-    embed_settings = settings.embedding
+def make_embedding_client(settings: "EmbeddingSettings") -> CachedEmbeddingClient:
+    """
+    Create embedding client from application settings.
+
+    Args:
+        settings: Embedding settings
+
+    Returns:
+        Configured embedding client with caching
+    """
+    return get_embed_client(  # type: ignore[no-any-return]
+        model_name=settings.model,
+        dim=settings.dim,
+        normalize=settings.normalize,
+        provider=settings.provider,
+        device=settings.device,
+        api_key=settings.api_key,
+        cache_enabled=settings.cache_enabled,
+        cache_max_size=settings.cache_max_size,
+        cache_dir=settings.cache_dir,
+        batch_size=settings.batch_size,
+    )
+
+
+def create_from_settings(settings: "EmbeddingSettings", **overrides):
+    """
+    Create embedding client from application settings with optional overrides.
+
+    Deprecated: Use make_embedding_client() instead.
+    """
     return get_embed_client(
-        model_name=overrides.get("model_name", embed_settings.model),
-        dim=overrides.get("dim", embed_settings.dim),
-        normalize=overrides.get("normalize", embed_settings.normalize),
-        provider=overrides.get("provider", embed_settings.provider),
-        device=overrides.get("device", embed_settings.device),
-        api_key=overrides.get("api_key", embed_settings.api_key),
-        cache_enabled=overrides.get("cache_enabled", embed_settings.cache_enabled),
-        cache_max_size=overrides.get("cache_max_size", embed_settings.cache_max_size),
-        cache_dir=overrides.get("cache_dir", embed_settings.cache_dir),
-        batch_size=overrides.get("batch_size", embed_settings.batch_size),
+        model_name=overrides.get("model_name", settings.model),
+        dim=overrides.get("dim", settings.dim),
+        normalize=overrides.get("normalize", settings.normalize),
+        provider=overrides.get("provider", settings.provider),
+        device=overrides.get("device", settings.device),
+        api_key=overrides.get("api_key", settings.api_key),
+        cache_enabled=overrides.get("cache_enabled", settings.cache_enabled),
+        cache_max_size=overrides.get("cache_max_size", settings.cache_max_size),
+        cache_dir=overrides.get("cache_dir", settings.cache_dir),
+        batch_size=overrides.get("batch_size", settings.batch_size),
     )
 
 

@@ -1,9 +1,16 @@
+"""
+Factory for creating generation clients from application settings.
+"""
+
+import logging
 from typing import TYPE_CHECKING, Any
 
-from .client import GenerationConfig, HFGenerator
+from src.services.generation.client import GenerationConfig, HFGenerator
 
 if TYPE_CHECKING:
-    from src.config import Settings
+    from src.config import GenerationSettings
+
+logger = logging.getLogger(__name__)
 
 
 def get_generator(
@@ -32,10 +39,40 @@ def get_generator(
         extra_kwargs=extra_kwargs,
     )
 
+    logger.info(f"Created HFGenerator with model={model_name}")
     return HFGenerator(config=config)
 
 
-def create_from_settings(settings: "Settings", **overrides):
-    """Create generator from application settings."""
+def make_generation_client(settings: "GenerationSettings") -> HFGenerator:
+    """
+    Create generation client from application settings.
+
+    Args:
+        settings: Generation settings
+
+    Returns:
+        Configured HFGenerator instance
+    """
+    config = GenerationConfig(
+        model_name=settings.model,
+        device=settings.device,
+        max_new_tokens=settings.max_length,
+        do_sample=True,
+        temperature=settings.temperature,
+        top_k=50,
+        top_p=0.95,
+        num_return_sequences=1,
+        extra_kwargs=None,
+    )
+    logger.info(f"Generation client created with model={settings.model}")
+    return HFGenerator(config=config)
+
+
+def create_from_settings(settings: "GenerationSettings", **overrides):
+    """
+    Create generator from application settings with optional overrides.
+
+    Deprecated: Use make_generation_client() instead.
+    """
     config = GenerationConfig.from_settings(settings, **overrides)
     return HFGenerator(config=config)

@@ -1,12 +1,19 @@
+"""
+Factory for creating naive pipeline from application settings.
+"""
+
+import logging
 from typing import TYPE_CHECKING
 
-from .client import NaivePipeline, NaivePipelineConfig
+from src.services.pipeline.naive_pipeline.client import NaivePipeline, NaivePipelineConfig
 
 if TYPE_CHECKING:
     from src.config import Settings
 
+logger = logging.getLogger(__name__)
 
-def create_naive_pipeline(settings: "Settings") -> NaivePipeline:
+
+def make_naive_pipeline(settings: "Settings") -> NaivePipeline:
     """
     Create naive pipeline from application settings.
 
@@ -29,7 +36,23 @@ def create_naive_pipeline(settings: "Settings") -> NaivePipeline:
         reranker_batch_size=settings.reranker.batch_size,
         reranker_timeout=settings.reranker.timeout_seconds,
     )
+    logger.info(f"Naive pipeline created with collection={settings.vectorstore.collection_name}")
     return NaivePipeline(config)
+
+
+def create_naive_pipeline(settings: "Settings") -> NaivePipeline:
+    """
+    Create naive pipeline from application settings.
+
+    Deprecated: Use make_naive_pipeline() instead.
+
+    Args:
+        settings: Application settings
+
+    Returns:
+        Configured NaivePipeline instance
+    """
+    return make_naive_pipeline(settings)
 
 
 def get_naive_pipeline(

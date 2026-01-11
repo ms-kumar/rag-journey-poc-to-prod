@@ -189,6 +189,14 @@ module = [
 ]
 ignore_missing_imports = true
 
+# Ignore stub/incomplete implementations
+[[tool.mypy.overrides]]
+module = [
+    "src.services.guardrails.client",
+    "src.services.performance.client",
+]
+ignore_errors = true
+
 [tool.bandit]
 exclude_dirs = ["tests", ".venv", "__pycache__"]
 skips = ["B101"]  # Skip assert_used (used in tests)

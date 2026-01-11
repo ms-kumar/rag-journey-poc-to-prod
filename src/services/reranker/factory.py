@@ -1,27 +1,46 @@
 """
-Factory for creating reranker clients.
+Factory for creating reranker clients from application settings.
 """
 
+import logging
 from typing import TYPE_CHECKING, Any
 
-from .client import CrossEncoderReranker, RerankerConfig
+from src.services.reranker.client import CrossEncoderReranker, RerankerConfig
 
 if TYPE_CHECKING:
-    from src.config import Settings
+    from src.config import RerankerSettings
+
+logger = logging.getLogger(__name__)
 
 
-def create_reranker(settings: "Settings") -> CrossEncoderReranker:
+def make_reranker_client(settings: "RerankerSettings") -> CrossEncoderReranker:
     """
-    Create reranker from application settings.
+    Create reranker client from application settings.
 
     Args:
-        settings: Application settings
+        settings: Reranker settings
 
     Returns:
         Configured CrossEncoderReranker instance
     """
     config = RerankerConfig.from_settings(settings)
+    logger.info(f"Reranker client created with model={settings.model_name}")
     return CrossEncoderReranker(config)
+
+
+def create_reranker(settings: "RerankerSettings") -> CrossEncoderReranker:
+    """
+    Create reranker from application settings.
+
+    Deprecated: Use make_reranker_client() instead.
+
+    Args:
+        settings: Reranker settings
+
+    Returns:
+        Configured CrossEncoderReranker instance
+    """
+    return make_reranker_client(settings)
 
 
 def get_reranker(

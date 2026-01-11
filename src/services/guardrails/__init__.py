@@ -24,12 +24,31 @@ from src.models.guardrails import (
 )
 
 from .audit_log import AuditLogger
+from .client import GuardrailsClient
 from .coordinator import GuardrailsCoordinator
+from .factory import (
+    make_audit_logger,
+    make_guardrails_client,
+    make_jailbreak_detector,
+    make_pii_detector,
+    make_pii_redactor,
+    make_toxicity_filter,
+)
 from .pii_detector import PIIDetector, PIIRedactor
 from .safe_response import ResponseBuilder, SafeResponseTemplate
 from .toxicity_filter import ToxicityFilter
 
 __all__ = [
+    # Client & Factory
+    "GuardrailsClient",
+    "make_guardrails_client",
+    "make_pii_detector",
+    "make_pii_redactor",
+    "make_toxicity_filter",
+    "make_jailbreak_detector",
+    "make_audit_logger",
+    # Legacy (for backward compatibility)
+    "GuardrailsCoordinator",
     # PII
     "PIIDetector",
     "PIIRedactor",

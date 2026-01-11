@@ -11,7 +11,7 @@ from src.services.cache.factory import (
     make_redis_client,
     make_semantic_cache_client,
 )
-from src.services.cache.metrics import CacheMetrics, CacheStats, StalenessConfig
+from src.services.cache.metrics import CacheMetrics, CacheStats
 from src.services.cache.semantic_cache import SemanticCacheClient
 
 __all__ = [
@@ -25,7 +25,6 @@ __all__ = [
     # Metrics
     "CacheMetrics",
     "CacheStats",
-    "StalenessConfig",
     # Legacy factory
     "create_cache_metrics",
 ]

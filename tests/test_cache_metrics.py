@@ -6,12 +6,8 @@ import time
 
 import pytest
 
-from src.services.cache.metrics import (
-    CacheMetrics,
-    CacheStats,
-    CacheTimer,
-    StalenessConfig,
-)
+from src.config import CacheSettings
+from src.services.cache.metrics import CacheMetrics, CacheStats, CacheTimer
 
 
 class TestCacheStats:
@@ -75,23 +71,23 @@ class TestStalenessConfig:
 
     def test_defaults(self):
         """Test default configuration."""
-        config = StalenessConfig()
+        config = CacheSettings()
 
-        assert config.check_interval == 300
+        assert config.staleness_check_interval == 300
         assert config.staleness_threshold == 3600
-        assert config.auto_invalidate_stale is False
+        assert config.staleness_auto_invalidate is False
 
     def test_custom_config(self):
         """Test custom configuration."""
-        config = StalenessConfig(
-            check_interval=600,
+        config = CacheSettings(
+            staleness_check_interval=600,
             staleness_threshold=7200,
-            auto_invalidate_stale=True,
+            staleness_auto_invalidate=True,
         )
 
-        assert config.check_interval == 600
+        assert config.staleness_check_interval == 600
         assert config.staleness_threshold == 7200
-        assert config.auto_invalidate_stale is True
+        assert config.staleness_auto_invalidate is True
 
 
 class TestCacheMetrics:
@@ -100,7 +96,7 @@ class TestCacheMetrics:
     @pytest.fixture
     def metrics(self):
         """Create metrics instance."""
-        config = StalenessConfig(check_interval=1, staleness_threshold=2)
+        config = CacheSettings(staleness_check_interval=1, staleness_threshold=2)
         return CacheMetrics(config)
 
     def test_initialization(self, metrics):

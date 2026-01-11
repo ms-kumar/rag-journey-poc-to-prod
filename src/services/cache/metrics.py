@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
-from pydantic import BaseModel, Field
+from src.config import CacheSettings
 
 logger = logging.getLogger(__name__)
 
@@ -60,33 +60,6 @@ class CacheStats:
         }
 
 
-class StalenessConfig(BaseModel):
-    """Configuration for staleness monitoring."""
-
-    check_interval: int = Field(
-        default=300,
-        description="Interval between staleness checks in seconds (5 minutes)",
-    )
-    staleness_threshold: int = Field(
-        default=3600,
-        description="Time threshold for considering entry stale (1 hour)",
-    )
-    auto_invalidate_stale: bool = Field(
-        default=False,
-        description="Automatically invalidate stale entries",
-    )
-
-    @classmethod
-    def from_settings(cls, settings: Any) -> "StalenessConfig":
-        """Create config from application settings."""
-        cache_settings = settings.cache
-        return cls(
-            check_interval=cache_settings.staleness_check_interval,
-            staleness_threshold=cache_settings.staleness_threshold,
-            auto_invalidate_stale=cache_settings.staleness_auto_invalidate,
-        )
-
-
 class CacheMetrics:
     """
     Cache metrics tracker with staleness monitoring.
@@ -100,7 +73,7 @@ class CacheMetrics:
 
     def __init__(
         self,
-        staleness_config: StalenessConfig | None = None,
+        staleness_config: CacheSettings | None = None,
     ):
         """
         Initialize cache metrics.
@@ -108,7 +81,7 @@ class CacheMetrics:
         Args:
             staleness_config: Configuration for staleness monitoring
         """
-        self.staleness_config = staleness_config or StalenessConfig()
+        self.staleness_config = staleness_config
 
         # Global stats
         self._global_stats = CacheStats()
@@ -223,10 +196,13 @@ class CacheMetrics:
 
         # Check if interval elapsed
         elapsed = (now - self._last_staleness_check).total_seconds()
-        if not force and elapsed < self.staleness_config.check_interval:
+        if self.staleness_config is None:
+            return {"checked": False, "error": "No staleness config"}
+
+        if not force and elapsed < self.staleness_config.staleness_check_interval:
             return {
                 "checked": False,
-                "next_check_in": int(self.staleness_config.check_interval - elapsed),
+                "next_check_in": int(self.staleness_config.staleness_check_interval - elapsed),
             }
 
         # Check for stale entries
