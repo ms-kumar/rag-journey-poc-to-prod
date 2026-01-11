@@ -4,6 +4,39 @@ This directory contains example scripts demonstrating RAG system features and be
 
 ## Scripts
 
+### `cost_tracking_demo.py`
+**NEW** Comprehensive demo of cost tracking, tiered model selection, and autoscaling.
+
+**Features:**
+- Cost tracking per model with quality metrics
+- Cost per 1k queries calculation
+- Quality/latency/cost comparison matrix
+- Tiered model selection (Budget/Balanced/Premium/Ultra)
+- Multiple selection strategies (minimize cost, latency, maximize quality, balanced, adaptive)
+- Budget-aware model selection
+- Autoscaling based on CPU, queue size, and latency
+- Integrated system simulation
+
+**Usage:**
+```bash
+uv run python examples/cost_tracking_demo.py
+```
+
+**Output includes:**
+- Cost tracking summary with per-model breakdown
+- Efficiency rankings (quality/cost ratio)
+- Model comparison matrix with all tiers
+- Selection scenarios for different strategies
+- Autoscaling simulation with load patterns
+- Integrated system with 500 requests
+
+**Key Capabilities:**
+- Track $0.05-$30.00/1k cost range
+- Quality scores from 0.60-0.98
+- Latency from 30ms-2000ms
+- Efficiency scores from 0.03-12.00
+- Autoscaling from 1-10 instances
+
 ### `cache_demo.py`
 Demonstrates the embedding cache performance with side-by-side comparison.
 
