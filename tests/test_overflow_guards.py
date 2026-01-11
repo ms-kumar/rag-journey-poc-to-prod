@@ -101,7 +101,7 @@ class TestOverflowGuardIntegration:
     def test_embedding_overflow_with_known_model(self):
         """Test overflow guard uses correct limits for known models."""
         # text-embedding-3-small has 8191 token limit
-        from src.models.token_budgets import get_embedding_budget
+        from src.schemas.services.token_budgets import get_embedding_budget
 
         budget = get_embedding_budget("text-embedding-3-small")
         assert budget.max_input_tokens == 8191
@@ -113,7 +113,7 @@ class TestOverflowGuardIntegration:
 
     def test_generation_overflow_with_known_model(self):
         """Test overflow guard uses correct limits for known models."""
-        from src.models.token_budgets import get_generation_budget
+        from src.schemas.services.token_budgets import get_generation_budget
 
         budget = get_generation_budget("gpt2")
         assert budget.max_input_tokens == 1024

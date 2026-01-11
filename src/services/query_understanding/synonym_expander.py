@@ -7,39 +7,10 @@ semantically similar terms.
 
 import logging
 import time
-from dataclasses import dataclass
-from typing import Any
 
-from src.exceptions import QueryValidationError
+from src.schemas.services.query_understanding import SynonymExpanderConfig
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class SynonymExpanderConfig:
-    """Configuration for synonym expander."""
-
-    max_synonyms_per_term: int = 3
-    min_term_length: int = 3
-    expand_all_terms: bool = False  # If False, only expand key terms
-
-    def __post_init__(self) -> None:
-        """Validate configuration."""
-        if self.max_synonyms_per_term < 1:
-            raise QueryValidationError("max_synonyms_per_term must be at least 1")
-        if self.min_term_length < 1:
-            raise QueryValidationError("min_term_length must be at least 1")
-
-    @classmethod
-    def from_settings(cls, settings: Any) -> "SynonymExpanderConfig":
-        """Create config from application settings."""
-
-        query_settings = settings.query_understanding
-        return cls(
-            max_synonyms_per_term=query_settings.max_synonyms_per_term,
-            min_term_length=query_settings.min_term_length,
-            expand_all_terms=query_settings.expand_all_terms,
-        )
 
 
 class SynonymExpander:

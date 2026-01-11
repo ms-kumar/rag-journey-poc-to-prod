@@ -206,9 +206,10 @@ class TestGetQdrantFieldSchema:
 
     def test_unsupported_type_raises_error(self):
         """Test that unsupported field type raises error."""
-        mapping = IndexMapping(field_name="test", field_type="invalid")  # type: ignore
-        with pytest.raises(ValueError, match="Unsupported field type"):
-            get_qdrant_field_schema(mapping)
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            IndexMapping(field_name="test", field_type="invalid")  # type: ignore
 
 
 class TestPresetMappings:

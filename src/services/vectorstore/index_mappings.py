@@ -4,9 +4,6 @@ Index mapping utilities for Qdrant payload fields.
 Provides helpers to create and manage indices on metadata fields for faster filtering.
 """
 
-from dataclasses import dataclass
-from typing import Literal
-
 from qdrant_client.models import (
     DatetimeIndexParams,
     IntegerIndexParams,
@@ -16,21 +13,7 @@ from qdrant_client.models import (
     TokenizerType,
 )
 
-
-@dataclass
-class IndexMapping:
-    """Configuration for a single field index."""
-
-    field_name: str
-    field_type: Literal["keyword", "integer", "float", "text", "datetime", "bool", "geo"]
-    # Text-specific options
-    tokenizer: TokenizerType | None = None
-    min_token_len: int | None = None
-    max_token_len: int | None = None
-    lowercase: bool | None = None
-    # Numeric-specific options
-    range: bool = False  # Enable range queries for numeric fields
-    lookup: bool = True  # Enable exact match lookups
+from src.schemas.services.vectorstore import IndexMapping
 
 
 class IndexMappingBuilder:

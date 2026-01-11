@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import pytest
 from langchain_core.documents import Document
 
-from src.models.rag_request import GenerateRequest
+from src.schemas.api.rag_request import GenerateRequest
 from src.services.pipeline.naive_pipeline.client import NaivePipeline, NaivePipelineConfig
 
 

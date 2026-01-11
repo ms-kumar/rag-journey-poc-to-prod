@@ -7,22 +7,12 @@ for combining results from vector, BM25, sparse, and hybrid searches.
 
 import logging
 from collections import defaultdict
-from dataclasses import dataclass
 
 from langchain_core.documents import Document
 
+from src.schemas.services.vectorstore import FusionConfig
+
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class FusionConfig:
-    """Configuration for result fusion."""
-
-    method: str = "rrf"  # "rrf" or "weighted"
-    rrf_k: int = 60  # RRF constant
-    weights: dict[str, float] | None = None  # Weights for each search type
-    normalize_scores: bool = True  # Normalize scores before fusion
-    tie_break_strategy: str = "score"  # "score", "rank", or "stable"
 
 
 class FusionResult:

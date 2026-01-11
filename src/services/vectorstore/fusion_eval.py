@@ -6,35 +6,20 @@ fusion methods against individual search strategies.
 """
 
 import logging
-from dataclasses import dataclass
 
 from langchain_core.documents import Document
 
+from src.schemas.services.vectorstore import (
+    EvaluationMetrics as VectorstoreEvaluationMetrics,
+)
+from src.schemas.services.vectorstore import (
+    UpliftMetrics,
+)
+
 logger = logging.getLogger(__name__)
 
-
-@dataclass
-class EvaluationMetrics:
-    """Metrics for retrieval evaluation."""
-
-    recall_at_k: dict[int, float]
-    precision_at_k: dict[int, float]
-    mrr: float  # Mean Reciprocal Rank
-    map: float  # Mean Average Precision
-    ndcg: float  # Normalized Discounted Cumulative Gain
-    total_relevant: int
-    total_retrieved: int
-
-
-@dataclass
-class UpliftMetrics:
-    """Uplift metrics comparing fusion to baselines."""
-
-    fusion_recall: dict[int, float]
-    baseline_recalls: dict[str, dict[int, float]]
-    recall_uplift: dict[str, dict[int, float]]  # % improvement over baseline
-    best_baseline_recall: dict[int, float]
-    uplift_over_best: dict[int, float]
+# Alias for backward compatibility
+EvaluationMetrics = VectorstoreEvaluationMetrics
 
 
 def calculate_recall_at_k(

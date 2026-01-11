@@ -7,43 +7,10 @@ for semantic search and keyword matching.
 
 import logging
 import time
-from dataclasses import dataclass
-from typing import Any
 
-from src.exceptions import QueryValidationError
+from src.schemas.services.query_understanding import QueryRewriterConfig
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class QueryRewriterConfig:
-    """Configuration for query rewriter."""
-
-    expand_acronyms: bool = True
-    fix_typos: bool = True
-    add_context: bool = True
-    max_rewrites: int = 3
-    min_query_length: int = 3
-
-    def __post_init__(self) -> None:
-        """Validate configuration."""
-        if self.max_rewrites < 1:
-            raise QueryValidationError("max_rewrites must be at least 1")
-        if self.min_query_length < 1:
-            raise QueryValidationError("min_query_length must be at least 1")
-
-    @classmethod
-    def from_settings(cls, settings: Any) -> "QueryRewriterConfig":
-        """Create config from application settings."""
-
-        query_settings = settings.query_understanding
-        return cls(
-            expand_acronyms=query_settings.expand_acronyms,
-            fix_typos=query_settings.fix_typos,
-            add_context=query_settings.add_context,
-            max_rewrites=query_settings.max_rewrites,
-            min_query_length=query_settings.min_query_length,
-        )
 
 
 class QueryRewriter:

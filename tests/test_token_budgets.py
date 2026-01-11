@@ -4,7 +4,7 @@ Tests for token budget definitions and cost estimation.
 
 import pytest
 
-from src.models.token_budgets import (
+from src.schemas.services.token_budgets import (
     EMBEDDING_MODEL_BUDGETS,
     GENERATION_MODEL_BUDGETS,
     EmbeddingModelBudgets,

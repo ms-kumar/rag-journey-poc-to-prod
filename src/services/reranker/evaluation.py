@@ -5,37 +5,19 @@ Provides precision@k metrics, benchmarking tools, and comparison utilities.
 """
 
 import logging
-from dataclasses import dataclass, field
 from typing import Any
 
 from langchain_core.documents import Document
 
-from .client import CrossEncoderReranker, PrecisionMetrics
+from src.schemas.services.reranker import (
+    BenchmarkConfig,
+    ComparisonResult,
+    PrecisionMetrics,
+)
+
+from .client import CrossEncoderReranker
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class ComparisonResult:
-    """Result from comparing baseline vs reranked results."""
-
-    baseline_metrics: PrecisionMetrics
-    reranked_metrics: PrecisionMetrics
-    improvement: dict[int, float]
-    statistical_significance: dict[int, bool] = field(default_factory=dict)
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class BenchmarkConfig:
-    """Configuration for re-ranking benchmarks."""
-
-    k_values: list[int] = field(default_factory=lambda: [1, 3, 5, 10, 20])
-    num_queries: int = 100
-    timeout_per_query: float = 30.0
-    include_latency: bool = True
-    include_precision: bool = True
-    include_recall: bool = False
 
 
 class RerankingEvaluator:

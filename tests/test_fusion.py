@@ -236,10 +236,10 @@ class TestFuseResults:
 
     def test_fuse_invalid_method(self, sample_results):
         """Test fusing with invalid method."""
-        config = FusionConfig(method="invalid")
+        from pydantic import ValidationError
 
-        with pytest.raises(ValueError, match="Unknown fusion method"):
-            fuse_results(sample_results, config)
+        with pytest.raises(ValidationError):
+            FusionConfig(method="invalid")  # type: ignore
 
     def test_fuse_result_metadata(self, sample_results):
         """Test that fusion adds proper metadata."""

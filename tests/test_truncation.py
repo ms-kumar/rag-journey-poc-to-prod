@@ -4,7 +4,7 @@ Tests for text truncation utilities.
 
 import pytest
 
-from src.models.token_budgets import TokenBudget
+from src.schemas.services.token_budgets import TokenBudget
 from src.services.truncation import (
     TextTruncator,
     TruncationStrategy,

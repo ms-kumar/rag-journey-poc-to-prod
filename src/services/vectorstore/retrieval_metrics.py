@@ -10,26 +10,19 @@ Provides tools for:
 
 import statistics
 import time
-from dataclasses import dataclass, field
 from typing import Any
 
 
-@dataclass
 class RetrievalMetrics:
-    """Track retrieval performance metrics."""
+    """Track retrieval performance metrics with helper methods."""
 
-    # Latency tracking (in seconds)
-    latencies: list[float] = field(default_factory=list)
-
-    # Score statistics
-    scores: list[float] = field(default_factory=list)
-
-    # Query counts
-    total_queries: int = 0
-    cache_hits: int = 0
-
-    # Per-search-type metrics
-    metrics_by_type: dict[str, "RetrievalMetrics"] = field(default_factory=dict)
+    def __init__(self) -> None:
+        """Initialize metrics tracker."""
+        self.latencies: list[float] = []
+        self.scores: list[float] = []
+        self.total_queries: int = 0
+        self.cache_hits: int = 0
+        self.metrics_by_type: dict[str, RetrievalMetrics] = {}
 
     def record_query(
         self,

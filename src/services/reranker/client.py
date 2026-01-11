@@ -11,7 +11,6 @@ Provides:
 
 import logging
 import time
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
@@ -25,32 +24,10 @@ from src.exceptions import (
     RerankerModelError,
     RerankerTimeoutError,
 )
+from src.schemas.services.reranker import PrecisionMetrics, RerankResult
 from src.services.retry import RetryConfig, retry_with_backoff
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class RerankResult:
-    """Result from re-ranking operation."""
-
-    documents: list[Document]
-    scores: list[float]
-    original_ranks: list[int]
-    execution_time: float
-    model_used: str
-    fallback_used: bool = False
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class PrecisionMetrics:
-    """Precision@k evaluation metrics."""
-
-    precision_at_k: dict[int, float]
-    total_relevant: int
-    total_retrieved: int
-    improvement_over_baseline: dict[int, float] = field(default_factory=dict)
 
 
 class CrossEncoderReranker:

@@ -7,7 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.models.health import ComponentHealth, ServiceStatus
+from src.schemas.api.health import ComponentHealth, ServiceStatus
 from src.services.health_check import (
     check_all_components,
     check_embeddings_health,

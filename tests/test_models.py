@@ -5,7 +5,7 @@ Unit tests for Pydantic models.
 import pytest
 from pydantic import ValidationError
 
-from src.models.rag_request import GenerateRequest, GenerateResponse
+from src.schemas.api.rag_request import GenerateRequest, GenerateResponse
 
 
 class TestGenerateRequest:

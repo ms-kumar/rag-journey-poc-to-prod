@@ -1,9 +1,9 @@
 """Tests for query understanding components."""
 
 import pytest
+from pydantic import ValidationError
 
 from src.config import settings
-from src.exceptions import QueryValidationError
 from src.services.query_understanding import (
     QueryRewriter,
     QueryRewriterConfig,
@@ -94,12 +94,12 @@ class TestQueryRewriter:
 
     def test_config_validation_max_rewrites(self):
         """Test config validation for max_rewrites."""
-        with pytest.raises(QueryValidationError, match="max_rewrites must be at least 1"):
+        with pytest.raises(ValidationError):
             QueryRewriterConfig(max_rewrites=0)
 
     def test_config_validation_min_query_length(self):
         """Test config validation for min_query_length."""
-        with pytest.raises(QueryValidationError, match="min_query_length must be at least 1"):
+        with pytest.raises(ValidationError):
             QueryRewriterConfig(min_query_length=0)
 
     def test_case_preservation(self):
@@ -192,12 +192,12 @@ class TestSynonymExpander:
 
     def test_config_validation_max_synonyms(self):
         """Test config validation for max_synonyms_per_term."""
-        with pytest.raises(QueryValidationError, match="max_synonyms_per_term must be at least 1"):
+        with pytest.raises(ValidationError):
             SynonymExpanderConfig(max_synonyms_per_term=0)
 
     def test_config_validation_min_term_length(self):
         """Test config validation for min_term_length."""
-        with pytest.raises(QueryValidationError, match="min_term_length must be at least 1"):
+        with pytest.raises(ValidationError):
             SynonymExpanderConfig(min_term_length=0)
 
     def test_max_synonyms_limit(self):
