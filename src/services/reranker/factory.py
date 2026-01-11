@@ -5,7 +5,7 @@ Factory for creating reranker clients from application settings.
 import logging
 from typing import TYPE_CHECKING, Any
 
-from src.services.reranker.client import CrossEncoderReranker, RerankerConfig
+from src.services.reranker.client import CrossEncoderReranker
 
 if TYPE_CHECKING:
     from src.config import RerankerSettings
@@ -23,9 +23,8 @@ def make_reranker_client(settings: "RerankerSettings") -> CrossEncoderReranker:
     Returns:
         Configured CrossEncoderReranker instance
     """
-    config = RerankerConfig.from_settings(settings)
     logger.info(f"Reranker client created with model={settings.model_name}")
-    return CrossEncoderReranker(config)
+    return CrossEncoderReranker(settings)
 
 
 def create_reranker(settings: "RerankerSettings") -> CrossEncoderReranker:
@@ -68,7 +67,9 @@ def get_reranker(
     Note:
         For new code, prefer using create_reranker(settings) instead.
     """
-    config = RerankerConfig(
+    from src.config import RerankerSettings
+
+    settings = RerankerSettings(
         model_name=model_name,
         batch_size=batch_size,
         timeout_seconds=timeout_seconds,
@@ -77,4 +78,4 @@ def get_reranker(
         **kwargs,
     )
 
-    return CrossEncoderReranker(config)
+    return CrossEncoderReranker(settings)

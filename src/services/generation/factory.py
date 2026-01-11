@@ -5,7 +5,7 @@ Factory for creating generation clients from application settings.
 import logging
 from typing import TYPE_CHECKING, Any
 
-from src.services.generation.client import GenerationConfig, HFGenerator
+from src.services.generation.client import HFGenerator
 
 if TYPE_CHECKING:
     from src.config import GenerationSettings
@@ -27,20 +27,21 @@ def get_generator(
     """
     Factory: returns an `HFGenerator` when `transformers` is installed, otherwise a `DummyGenerator`.
     """
-    config = GenerationConfig(
-        model_name=model_name,
+    from src.config import GenerationSettings
+
+    settings = GenerationSettings(
+        model=model_name,
         device=device,
-        max_new_tokens=max_new_tokens,
+        max_length=max_new_tokens,
         do_sample=do_sample,
         temperature=temperature,
         top_k=top_k,
         top_p=top_p,
         num_return_sequences=num_return_sequences,
-        extra_kwargs=extra_kwargs,
     )
 
     logger.info(f"Created HFGenerator with model={model_name}")
-    return HFGenerator(config=config)
+    return HFGenerator(config=settings)
 
 
 def make_generation_client(settings: "GenerationSettings") -> HFGenerator:
@@ -53,19 +54,8 @@ def make_generation_client(settings: "GenerationSettings") -> HFGenerator:
     Returns:
         Configured HFGenerator instance
     """
-    config = GenerationConfig(
-        model_name=settings.model,
-        device=settings.device,
-        max_new_tokens=settings.max_length,
-        do_sample=True,
-        temperature=settings.temperature,
-        top_k=50,
-        top_p=0.95,
-        num_return_sequences=1,
-        extra_kwargs=None,
-    )
     logger.info(f"Generation client created with model={settings.model}")
-    return HFGenerator(config=config)
+    return HFGenerator(config=settings)
 
 
 def create_from_settings(settings: "GenerationSettings", **overrides):
@@ -74,5 +64,4 @@ def create_from_settings(settings: "GenerationSettings", **overrides):
 
     Deprecated: Use make_generation_client() instead.
     """
-    config = GenerationConfig.from_settings(settings, **overrides)
-    return HFGenerator(config=config)
+    return HFGenerator(config=settings)

@@ -6,8 +6,9 @@ Verifies that overflow guards automatically truncate text to prevent exceeding m
 
 import pytest
 
+from src.config import GenerationSettings
 from src.services.embeddings.client import EmbedClient
-from src.services.generation.client import GenerationConfig, HFGenerator
+from src.services.generation.client import HFGenerator
 from src.services.truncation import estimate_tokens
 
 
@@ -44,7 +45,7 @@ class TestGenerationOverflowGuard:
     @pytest.fixture
     def generator(self):
         """Create a generator with small token limits for testing."""
-        config = GenerationConfig(
+        config = GenerationSettings(
             model_name="gpt2",
             max_new_tokens=50,
             do_sample=False,  # Deterministic output

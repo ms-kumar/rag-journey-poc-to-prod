@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from dataclasses import dataclass
 from typing import Any
 
 from transformers import Pipeline, pipeline
@@ -7,33 +6,7 @@ from transformers import Pipeline, pipeline
 from src.services.retry import RetryConfig, retry_with_backoff
 from src.services.truncation import TextTruncator
 
-
-@dataclass
-class GenerationConfig:
-    model_name: str = "gpt2"
-    device: int | None = None  # -1 for CPU, 0..N for GPU device id
-    max_new_tokens: int = 128  # Use max_new_tokens instead of max_length
-    do_sample: bool = True
-    temperature: float = 1.0
-    top_k: int = 50
-    top_p: float = 0.95
-    num_return_sequences: int = 1
-    # Any additional kwargs passed through to pipeline call
-    extra_kwargs: dict[str, Any] | None = None
-    # Retry configuration
-    retry_config: RetryConfig | None = None
-
-    @classmethod
-    def from_settings(cls, settings, **kwargs):
-        """Create config from application settings."""
-        gen_settings = settings.generation
-        return cls(
-            model_name=gen_settings.model,
-            device=gen_settings.device,
-            max_new_tokens=gen_settings.max_length,
-            temperature=gen_settings.temperature,
-            **kwargs,
-        )
+# GenerationConfig removed - now using GenerationSettings from config.py
 
 
 class DependencyMissingError(RuntimeError):
@@ -49,12 +22,12 @@ class HFGenerator:
     - generate_batch(prompts, **overrides) -> List[str]
     """
 
-    def __init__(self, config: GenerationConfig):
+    def __init__(self, config, retry_config=None):
         if pipeline is None:
             raise DependencyMissingError("transformers is not installed")
 
         self.config = config
-        self.retry_config = config.retry_config or RetryConfig(
+        self.retry_config = retry_config or RetryConfig(
             max_retries=2,
             initial_delay=0.5,
             max_delay=10.0,
@@ -66,13 +39,15 @@ class HFGenerator:
         # Create pipeline for text-generation. Use return_full_text=False to get only generated continuation.
         self.pipe: Pipeline = pipeline(
             "text-generation",
-            model=self.config.model_name,
+            model=self.config.model,
             device=device,
         )
 
     def _merge_kwargs(self, overrides: dict[str, Any] | None = None) -> dict[str, Any]:
+        # Use max_length as max_new_tokens (GenerationSettings uses max_length)
+        max_tokens = getattr(self.config, "max_new_tokens", None) or self.config.max_length
         base = {
-            "max_new_tokens": self.config.max_new_tokens,
+            "max_new_tokens": max_tokens,
             "do_sample": self.config.do_sample,
             "temperature": self.config.temperature,
             "top_k": self.config.top_k,
@@ -82,7 +57,7 @@ class HFGenerator:
             "truncation": True,
             "pad_token_id": self.pipe.tokenizer.eos_token_id,  # type: ignore[union-attr]
         }
-        if self.config.extra_kwargs:
+        if hasattr(self.config, "extra_kwargs") and self.config.extra_kwargs:
             base.update(self.config.extra_kwargs)
         if overrides:
             base.update(overrides)
@@ -92,8 +67,10 @@ class HFGenerator:
         """
         Generate text for a single prompt and return the first generated sequence as a string.
         """  # Apply overflow guard - truncate prompt to model limits (reserve space for output)
+        model_name = self.config.model
+        max_tokens = getattr(self.config, "max_new_tokens", None) or self.config.max_length
         truncator = TextTruncator.from_generation_model(
-            self.config.model_name, reserve_output_tokens=self.config.max_new_tokens
+            model_name, reserve_output_tokens=max_tokens
         )
         prompt = truncator.truncate(prompt)
         kwargs = self._merge_kwargs(overrides)

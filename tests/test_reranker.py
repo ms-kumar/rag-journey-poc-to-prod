@@ -7,10 +7,10 @@ from unittest.mock import Mock, patch
 import pytest
 from langchain_core.documents import Document
 
+from src.config import RerankerSettings
 from src.services.reranker.client import (
     CrossEncoderReranker,
     PrecisionMetrics,
-    RerankerConfig,
     RerankResult,
 )
 from src.services.reranker.evaluation import ComparisonResult, RerankingEvaluator
@@ -22,17 +22,18 @@ class TestRerankerConfig:
 
     def test_default_config(self):
         """Test default configuration values."""
-        config = RerankerConfig()
+        config = RerankerSettings()
 
         assert config.model_name == "cross-encoder/ms-marco-MiniLM-L-6-v2"
         assert config.batch_size == 32
         assert config.timeout_seconds == 30.0
         assert config.fallback_enabled is True
-        assert config.device is not None  # Should auto-detect
+        # Device is None by default, auto-detected when get_device() is called
+        assert config.device is None or config.get_device() in ["cpu", "cuda"]
 
     def test_custom_config(self):
         """Test custom configuration values."""
-        config = RerankerConfig(
+        config = RerankerSettings(
             model_name="custom-model",
             batch_size=16,
             timeout_seconds=10.0,
@@ -71,7 +72,7 @@ class TestCrossEncoderReranker:
     @pytest.fixture
     def mock_reranker(self):
         """Mock reranker for testing without actual model loading."""
-        config = RerankerConfig(device="cpu")
+        config = RerankerSettings(device="cpu")
         reranker = CrossEncoderReranker.__new__(CrossEncoderReranker)
         reranker.config = config
         reranker.model_loaded = True
@@ -292,7 +293,7 @@ class TestIntegration:
     def test_real_reranking(self):
         """Test with real model (slow test)."""
         # This test requires actual model download and may be slow
-        config = RerankerConfig(
+        config = RerankerSettings(
             model_name="cross-encoder/ms-marco-TinyBERT-L-2",  # Smaller model
             device="cpu",
         )

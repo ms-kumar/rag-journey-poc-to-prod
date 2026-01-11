@@ -165,8 +165,12 @@ class GenerationSettings(BaseConfigSettings):
 
     model: str = "gpt2"
     device: int | None = None  # -1 for CPU, 0+ for GPU
-    max_length: int = 128
+    max_length: int = 128  # max_new_tokens in generation
+    do_sample: bool = True
     temperature: float = 1.0
+    top_k: int = 50
+    top_p: float = 0.95
+    num_return_sequences: int = 1
 
 
 class RAGSettings(BaseConfigSettings):
@@ -203,6 +207,14 @@ class RerankerSettings(BaseConfigSettings):
     fallback_enabled: bool = True
     fallback_strategy: str = "original_order"  # "original_order" or "score_descending"
     use_fp16: bool = True
+
+    def get_device(self) -> str:
+        """Auto-detect device if not specified."""
+        if self.device is None:
+            import torch
+
+            return "cuda" if torch.cuda.is_available() else "cpu"
+        return self.device
 
 
 class QueryUnderstandingSettings(BaseConfigSettings):

@@ -31,42 +31,6 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class RerankerConfig:
-    """Configuration for cross-encoder re-ranker."""
-
-    model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    max_length: int = 512
-    batch_size: int = 32
-    timeout_seconds: float = 30.0
-    device: str | None = None
-    # Fallback options
-    fallback_enabled: bool = True
-    fallback_strategy: str = "original_order"  # "original_order" or "score_descending"
-    # Performance settings
-    use_fp16: bool = True
-
-    def __post_init__(self):
-        """Auto-detect device if not specified."""
-        if self.device is None:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    @classmethod
-    def from_settings(cls, settings: Any) -> "RerankerConfig":
-        """Create config from application settings."""
-        reranker_settings = settings.reranker
-        return cls(
-            model_name=reranker_settings.model_name,
-            max_length=reranker_settings.max_length,
-            batch_size=reranker_settings.batch_size,
-            timeout_seconds=reranker_settings.timeout_seconds,
-            device=reranker_settings.device,
-            fallback_enabled=reranker_settings.fallback_enabled,
-            fallback_strategy=reranker_settings.fallback_strategy,
-            use_fp16=reranker_settings.use_fp16,
-        )
-
-
-@dataclass
 class RerankResult:
     """Result from re-ranking operation."""
 
@@ -92,8 +56,10 @@ class PrecisionMetrics:
 class CrossEncoderReranker:
     """Cross-encoder re-ranker for improving retrieval precision."""
 
-    def __init__(self, config: RerankerConfig | None = None):
-        self.config = config or RerankerConfig()
+    def __init__(self, config=None):
+        from src.config import RerankerSettings
+
+        self.config = config or RerankerSettings()
         self.retry_config = RetryConfig(max_retries=2, initial_delay=1.0)
         self.model: CrossEncoder | None = None
         self.model_loaded = False
@@ -107,12 +73,17 @@ class CrossEncoderReranker:
             logger.info(f"Loading cross-encoder model: {self.config.model_name}")
             start_time = time.time()
 
+            device = (
+                self.config.get_device()
+                if hasattr(self.config, "get_device")
+                else (self.config.device if self.config.device else "cpu")
+            )
             self.model = CrossEncoder(
-                self.config.model_name, max_length=self.config.max_length, device=self.config.device
+                self.config.model_name, max_length=self.config.max_length, device=device
             )
 
             # Enable FP16 if requested and available
-            if self.config.use_fp16 and self.config.device != "cpu":
+            if self.config.use_fp16 and device != "cpu":
                 try:
                     self.model.model.half()
                     logger.info("Enabled FP16 optimization")
@@ -122,8 +93,7 @@ class CrossEncoderReranker:
             load_time = time.time() - start_time
             self.model_loaded = True
             logger.info(
-                f"Cross-encoder model loaded successfully in {load_time:.2f}s "
-                f"on device: {self.config.device}"
+                f"Cross-encoder model loaded successfully in {load_time:.2f}s on device: {device}"
             )
 
         except Exception as e:
