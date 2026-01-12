@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 class VectorDBTool(BaseTool):
     """Tool for retrieving documents from vector database."""
-    
+
     def __init__(self, vectorstore_client, top_k: int = 5):
         """Initialize VectorDB tool.
-        
+
         Args:
             vectorstore_client: Vectorstore client instance
             top_k: Number of documents to retrieve
@@ -37,17 +37,17 @@ class VectorDBTool(BaseTool):
         super().__init__(metadata)
         self.vectorstore = vectorstore_client
         self.top_k = top_k
-    
+
     async def execute(self, query: str, **kwargs: Any) -> dict[str, Any]:
         """Execute vector similarity search.
-        
+
         Args:
             query: Search query
             **kwargs: Optional parameters:
                 - top_k: Override default top_k
                 - filters: Metadata filters
                 - score_threshold: Minimum similarity score
-                
+
         Returns:
             Dictionary with search results
         """
@@ -59,14 +59,14 @@ class VectorDBTool(BaseTool):
                     "error": "Invalid input parameters",
                     "metadata": {},
                 }
-            
+
             # Extract parameters
             top_k = kwargs.get("top_k", self.top_k)
             filters = kwargs.get("filters")
             score_threshold = kwargs.get("score_threshold", 0.0)
-            
+
             self.logger.info(f"Retrieving documents for query: {query[:100]}...")
-            
+
             # Perform retrieval
             if hasattr(self.vectorstore, "similarity_search_with_score"):
                 # Use score-based search if available
@@ -75,10 +75,10 @@ class VectorDBTool(BaseTool):
                     k=top_k,
                     filter=filters,
                 )
-                
+
                 # Filter by score threshold
                 results = [(doc, score) for doc, score in results if score >= score_threshold]
-                
+
                 # Format results
                 documents = [
                     {
@@ -103,9 +103,9 @@ class VectorDBTool(BaseTool):
                     }
                     for doc in docs
                 ]
-            
+
             self.logger.info(f"Retrieved {len(documents)} documents")
-            
+
             return {
                 "success": True,
                 "result": {
@@ -120,7 +120,7 @@ class VectorDBTool(BaseTool):
                     "score_threshold": score_threshold,
                 },
             }
-            
+
         except Exception as e:
             self.logger.error(f"VectorDB retrieval failed: {e}")
             return {

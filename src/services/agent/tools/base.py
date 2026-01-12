@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class ToolCategory(str, Enum):
     """Tool categories for routing."""
-    
+
     LOCAL = "local"
     EXTERNAL = "external"
     HYBRID = "hybrid"
@@ -20,7 +20,7 @@ class ToolCategory(str, Enum):
 @dataclass
 class ToolMetadata:
     """Metadata for a tool.
-    
+
     Attributes:
         name: Unique tool name
         description: Human-readable description
@@ -32,7 +32,7 @@ class ToolMetadata:
         requires_api_key: Whether tool requires API key
         version: Tool version
     """
-    
+
     name: str
     description: str
     category: ToolCategory
@@ -46,24 +46,24 @@ class ToolMetadata:
 
 class BaseTool(ABC):
     """Base interface for all agent tools."""
-    
+
     def __init__(self, metadata: ToolMetadata):
         """Initialize the tool with metadata.
-        
+
         Args:
             metadata: Tool metadata
         """
         self.metadata = metadata
         self.logger = logging.getLogger(f"{__name__}.{metadata.name}")
-    
+
     @abstractmethod
     async def execute(self, query: str, **kwargs: Any) -> dict[str, Any]:
         """Execute the tool with the given query.
-        
+
         Args:
             query: User query or task
             **kwargs: Additional tool-specific parameters
-            
+
         Returns:
             Dictionary containing:
                 - success: bool
@@ -72,14 +72,14 @@ class BaseTool(ABC):
                 - metadata: dict (execution metadata)
         """
         pass
-    
+
     def validate_input(self, query: str, **kwargs: Any) -> bool:
         """Validate input parameters.
-        
+
         Args:
             query: User query
             **kwargs: Additional parameters
-            
+
         Returns:
             True if valid, False otherwise
         """
@@ -87,15 +87,15 @@ class BaseTool(ABC):
             self.logger.error("Invalid query: must be a non-empty string")
             return False
         return True
-    
+
     def get_metadata(self) -> ToolMetadata:
         """Get tool metadata.
-        
+
         Returns:
             Tool metadata
         """
         return self.metadata
-    
+
     def __repr__(self) -> str:
         """String representation."""
         return f"{self.__class__.__name__}(name={self.metadata.name}, category={self.metadata.category})"

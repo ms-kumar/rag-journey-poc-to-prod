@@ -7,7 +7,7 @@ from langgraph.graph import add_messages
 
 class AgentState(TypedDict):
     """State for the Agentic RAG workflow.
-    
+
     Attributes:
         query: Original user query
         plan: List of decomposed subtasks
@@ -21,7 +21,7 @@ class AgentState(TypedDict):
         iteration_count: Current iteration count
         messages: Chat messages for LangGraph
     """
-    
+
     query: str
     plan: list[str]
     current_task: str

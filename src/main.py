@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from src.api.router.agent_router import router as agent_router
 from src.api.v1.endpoints import health, rag
 from src.config import settings
 from src.services.cache.factory import make_cache_client
@@ -91,9 +92,6 @@ app = FastAPI(
 # Include routers
 app.include_router(rag.router, prefix="/api/v1/rag", tags=["rag"])
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
-
-# Include agent router
-from src.api.router.agent_router import router as agent_router
 app.include_router(agent_router, prefix="/api/v1", tags=["agent"])
 
 

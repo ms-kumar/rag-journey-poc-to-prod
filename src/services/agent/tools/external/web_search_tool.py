@@ -1,7 +1,7 @@
 """Web search tool using Tavily or DuckDuckGo."""
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from src.services.agent.tools.base import BaseTool, ToolCategory, ToolMetadata
 
@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 class WebSearchTool(BaseTool):
     """Tool for searching the web."""
-    
-    def __init__(self, api_key: Optional[str] = None, max_results: int = 5):
+
+    def __init__(self, api_key: str | None = None, max_results: int = 5):
         """Initialize web search tool.
-        
+
         Args:
             api_key: Optional Tavily API key (uses DuckDuckGo if not provided)
             max_results: Maximum number of results to return
@@ -38,25 +38,27 @@ class WebSearchTool(BaseTool):
         self.api_key = api_key
         self.max_results = max_results
         self._search_client = None
-    
+
     def _get_search_client(self):
         """Lazy initialize search client."""
         if self._search_client is not None:
             return self._search_client
-        
+
         if self.api_key:
             # Use Tavily if API key provided
             try:
                 from tavily import TavilyClient
+
                 self._search_client = TavilyClient(api_key=self.api_key)
                 self.logger.info("Initialized Tavily search client")
                 return self._search_client
             except ImportError:
                 self.logger.warning("Tavily not installed, falling back to DuckDuckGo")
-        
+
         # Fallback to DuckDuckGo (free, no API key)
         try:
             from langchain_community.tools import DuckDuckGoSearchResults
+
             self._search_client = DuckDuckGoSearchResults(max_results=self.max_results)
             self.logger.info("Initialized DuckDuckGo search client")
             return self._search_client
@@ -65,16 +67,16 @@ class WebSearchTool(BaseTool):
                 "Neither Tavily nor DuckDuckGo search is available. "
                 "Install with: pip install tavily-python or duckduckgo-search"
             )
-    
+
     async def execute(self, query: str, **kwargs: Any) -> dict[str, Any]:
         """Execute web search.
-        
+
         Args:
             query: Search query
             **kwargs: Optional parameters:
                 - max_results: Override default max_results
                 - search_depth: "basic" or "advanced" (Tavily only)
-                
+
         Returns:
             Dictionary with search results
         """
@@ -86,14 +88,14 @@ class WebSearchTool(BaseTool):
                     "error": "Invalid input parameters",
                     "metadata": {},
                 }
-            
+
             max_results = kwargs.get("max_results", self.max_results)
             search_depth = kwargs.get("search_depth", "basic")
-            
+
             self.logger.info(f"Searching web for: {query[:100]}...")
-            
+
             search_client = self._get_search_client()
-            
+
             # Execute search based on client type
             if hasattr(search_client, "search"):
                 # Tavily client
@@ -103,7 +105,7 @@ class WebSearchTool(BaseTool):
                     search_depth=search_depth,
                 )
                 results = response.get("results", [])
-                
+
                 # Format Tavily results
                 formatted_results = [
                     {
@@ -117,7 +119,7 @@ class WebSearchTool(BaseTool):
             else:
                 # DuckDuckGo client
                 response = search_client.run(query)
-                
+
                 # Parse DuckDuckGo response (format varies)
                 if isinstance(response, str):
                     # Simple text response
@@ -141,10 +143,12 @@ class WebSearchTool(BaseTool):
                         for r in response[:max_results]
                     ]
                 else:
-                    formatted_results = [{"title": "", "url": "", "content": str(response), "score": 1.0}]
-            
+                    formatted_results = [
+                        {"title": "", "url": "", "content": str(response), "score": 1.0}
+                    ]
+
             self.logger.info(f"Found {len(formatted_results)} web results")
-            
+
             return {
                 "success": True,
                 "result": {
@@ -158,7 +162,7 @@ class WebSearchTool(BaseTool):
                     "search_engine": "tavily" if self.api_key else "duckduckgo",
                 },
             }
-            
+
         except Exception as e:
             self.logger.error(f"Web search failed: {e}")
             return {

@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 class RerankerTool(BaseTool):
     """Tool for reranking retrieved documents."""
-    
+
     def __init__(self, reranker_client, top_k: int = 3):
         """Initialize reranker tool.
-        
+
         Args:
             reranker_client: Reranker client instance
             top_k: Number of documents to return after reranking
@@ -36,17 +36,17 @@ class RerankerTool(BaseTool):
         super().__init__(metadata)
         self.reranker = reranker_client
         self.top_k = top_k
-    
+
     async def execute(self, query: str, **kwargs: Any) -> dict[str, Any]:
         """Execute reranking on documents.
-        
+
         Args:
             query: User query
             **kwargs: Required parameters:
                 - documents: List of documents to rerank
                 Optional:
                 - top_k: Override default top_k
-                
+
         Returns:
             Dictionary with reranked results
         """
@@ -58,7 +58,7 @@ class RerankerTool(BaseTool):
                     "error": "Invalid input parameters",
                     "metadata": {},
                 }
-            
+
             # Extract documents
             documents = kwargs.get("documents")
             if not documents:
@@ -68,11 +68,11 @@ class RerankerTool(BaseTool):
                     "error": "No documents provided for reranking",
                     "metadata": {},
                 }
-            
+
             top_k = kwargs.get("top_k", self.top_k)
-            
+
             self.logger.info(f"Reranking {len(documents)} documents for query: {query[:100]}...")
-            
+
             # Extract text content from documents
             if isinstance(documents[0], dict):
                 texts = [doc.get("content", str(doc)) for doc in documents]
@@ -80,7 +80,7 @@ class RerankerTool(BaseTool):
                 texts = [doc.page_content for doc in documents]
             else:
                 texts = [str(doc) for doc in documents]
-            
+
             # Perform reranking
             if hasattr(self.reranker, "rerank"):
                 # Use reranker's rerank method
@@ -98,7 +98,7 @@ class RerankerTool(BaseTool):
                 )
             else:
                 raise AttributeError("Reranker client does not have rerank or rank method")
-            
+
             # Format results
             reranked_documents = []
             for idx, result in enumerate(reranked_results[:top_k]):
@@ -108,27 +108,31 @@ class RerankerTool(BaseTool):
                 else:
                     score = 1.0 - (idx / len(reranked_results))  # Fallback scoring
                     doc_idx = idx
-                
+
                 # Get original document
                 original_doc = documents[doc_idx] if doc_idx < len(documents) else documents[idx]
-                
+
                 if isinstance(original_doc, dict):
-                    reranked_documents.append({
-                        "content": original_doc.get("content", texts[doc_idx]),
-                        "metadata": original_doc.get("metadata", {}),
-                        "rerank_score": float(score),
-                        "original_rank": doc_idx,
-                    })
+                    reranked_documents.append(
+                        {
+                            "content": original_doc.get("content", texts[doc_idx]),
+                            "metadata": original_doc.get("metadata", {}),
+                            "rerank_score": float(score),
+                            "original_rank": doc_idx,
+                        }
+                    )
                 else:
-                    reranked_documents.append({
-                        "content": texts[doc_idx],
-                        "metadata": {},
-                        "rerank_score": float(score),
-                        "original_rank": doc_idx,
-                    })
-            
+                    reranked_documents.append(
+                        {
+                            "content": texts[doc_idx],
+                            "metadata": {},
+                            "rerank_score": float(score),
+                            "original_rank": doc_idx,
+                        }
+                    )
+
             self.logger.info(f"Reranked to top {len(reranked_documents)} documents")
-            
+
             return {
                 "success": True,
                 "result": {
@@ -142,7 +146,7 @@ class RerankerTool(BaseTool):
                     "top_k": top_k,
                 },
             }
-            
+
         except Exception as e:
             self.logger.error(f"Reranking failed: {e}")
             return {
