@@ -11,16 +11,21 @@ dependencies = [
     "langchain-community>=0.4.1",
     "langchain-core>=1.2.5",
     "langchain-qdrant>=1.1.0",
+    "langgraph>=0.2.45",
+    "langchain-openai>=0.2.10",
     "openai>=2.14.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "python-dotenv>=1.0.0",
     "qdrant-client>=1.16.2",
     "redis>=5.2.0",
+    "restrictedpython>=7.4",
     "sentence-transformers>=3.3.1",
+    "tavily-python>=0.5.0",
     "torch>=2.9.1",
     "transformers>=4.57.3",
     "uvicorn>=0.40.0",
+    "wikipedia>=1.4.0",
 ]
 
 [project.optional-dependencies]

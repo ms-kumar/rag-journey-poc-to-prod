@@ -92,6 +92,10 @@ app = FastAPI(
 app.include_router(rag.router, prefix="/api/v1/rag", tags=["rag"])
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 
+# Include agent router
+from src.api.router.agent_router import router as agent_router
+app.include_router(agent_router, prefix="/api/v1", tags=["agent"])
+
 
 @app.get("/")
 def root():

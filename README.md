@@ -79,6 +79,8 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 🔴 **Adversarial Testing**: Red-team prompts, jailbreak tests, canary tests for CI, 0% violation rate on 26 attack vectors
 
+🤖 **Agentic RAG (Week 7)**: LangGraph-powered autonomous agent with tool routing, self-reflection, planning, and 6 integrated tools (local + external + hybrid) - [Quick Start](docs/AGENT_QUICKSTART.md)
+
 ### Project Structure
 
 ```
@@ -86,6 +88,9 @@ src/
 ├── main.py                 # FastAPI app entry point
 ├── config.py               # App configuration
 ├── api/
+│   ├── router/
+│   │   ├── agent_router.py # Agentic RAG endpoints (NEW)
+│   │   └── rag_router.py   # Traditional RAG endpoints
 │   └── v1/endpoints/
 │       └── rag.py          # RAG endpoints (ingest, generate)
 ├── models/
@@ -93,10 +98,17 @@ src/
 ├── schemas/                # Centralized Pydantic schemas
 │   ├── api/               # API request/response models
 │   └── services/          # Service-level data structures
+│       ├── agent.py       # Agent schemas (NEW)
 │       ├── reranker.py    # Reranker schemas
 │       ├── vectorstore.py # Vector store schemas
 │       └── query_understanding.py  # Query understanding schemas
 └── services/
+    ├── agent/             # Agentic RAG system (NEW)
+    │   ├── graph.py       # LangGraph state machine
+    │   ├── nodes.py       # Agent nodes (plan, route, execute, reflect)
+    │   ├── state.py       # Agent state definition
+    │   ├── tools/         # Tool registry, router, and implementations
+    │   └── metrics/       # Confidence scoring & tracking
     ├── chunking/           # Document chunking
     ├── embeddings/         # Text embeddings
     ├── evaluation/         # Evaluation harness & metrics
