@@ -4,6 +4,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +169,7 @@ class MetricsTracker:
             # Track error type
             if error:
                 error_type = error.split(":")[0] if ":" in error else "unknown"
-                metrics.error_types[error_type] = metrics.error_types.get(error_type, 0) + 1  # type: ignore[index]
+                metrics.error_types[error_type] = metrics.error_types.get(error_type, 0) + 1
         metrics.total_cost += cost
 
         if confidence is not None:
@@ -200,19 +201,20 @@ class MetricsTracker:
         """
         return self._metrics.copy()
 
-    def get_summary(self) -> dict:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary of all metrics.
 
         Returns:
             Summary dictionary
         """
-        summary = {
+        summary: dict[str, Any] = {
             "total_tools": len(self._metrics),
             "tools": {},
         }
 
         for tool_name, metrics in self._metrics.items():
-            summary["tools"][tool_name] = {
+            tools_dict: dict[str, Any] = summary["tools"]
+            tools_dict[tool_name] = {
                 "invocations": metrics.total_invocations,
                 "success_rate": round(metrics.success_rate, 3),
                 "avg_latency_ms": round(metrics.avg_latency_ms, 2),

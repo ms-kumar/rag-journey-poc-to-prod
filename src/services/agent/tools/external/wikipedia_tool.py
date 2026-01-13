@@ -43,7 +43,7 @@ class WikipediaTool(BaseTool):
             return self._wikipedia_client
 
         try:
-            import wikipedia
+            import wikipedia  # type: ignore[import-untyped]
 
             self._wikipedia_client = wikipedia
             self.logger.info("Initialized Wikipedia client")

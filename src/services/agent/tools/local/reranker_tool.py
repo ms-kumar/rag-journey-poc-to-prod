@@ -117,7 +117,7 @@ class RerankerTool(BaseTool):
                         {
                             "content": original_doc.get("content", texts[doc_idx]),
                             "metadata": original_doc.get("metadata", {}),
-                            "rerank_score": float(score),
+                            "rerank_score": float(score) if score is not None else 0.0,
                             "original_rank": doc_idx,
                         }
                     )
@@ -126,7 +126,7 @@ class RerankerTool(BaseTool):
                         {
                             "content": texts[doc_idx],
                             "metadata": {},
-                            "rerank_score": float(score),
+                            "rerank_score": float(score) if score is not None else 0.0,
                             "original_rank": doc_idx,
                         }
                     )

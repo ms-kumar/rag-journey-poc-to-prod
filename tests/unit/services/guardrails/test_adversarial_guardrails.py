@@ -36,7 +36,10 @@ class TestAdversarialGuardrails:
     @pytest.fixture
     def adversarial_prompts(self):
         """Load adversarial prompts from dataset."""
-        prompts_file = Path(__file__).parent.parent / "data" / "adversarial_prompts.json"
+        # Navigate to data directory at project root
+        prompts_file = (
+            Path(__file__).parent.parent.parent.parent.parent / "data" / "adversarial_prompts.json"
+        )
         with prompts_file.open() as f:
             return json.load(f)
 

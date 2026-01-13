@@ -86,12 +86,19 @@ addopts = [
     "--cov=src",
     "--cov-report=term-missing",
     "--cov-report=html",
+    "--cov-branch",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "asyncio: marks tests as async tests",
     "canary: marks tests as canary tests for CI quick validation",
+    "agent: marks agent-related tests",
+    "cache: marks cache-related tests",
+    "embeddings: marks embedding-related tests",
+    "guardrails: marks guardrails and safety tests",
+    "retrieval: marks retrieval and search tests",
 ]
 
 [tool.coverage.run]

@@ -40,7 +40,10 @@ class CodeExecutorTool(BaseTool):
         self._restricted_python_available = False
 
         try:
-            from RestrictedPython import compile_restricted, safe_globals
+            from RestrictedPython import (  # type: ignore[import-untyped]
+                compile_restricted,
+                safe_globals,
+            )
 
             self._compile_restricted = compile_restricted
             self._safe_globals = safe_globals
@@ -91,7 +94,7 @@ class CodeExecutorTool(BaseTool):
 
         safe_dict["math"] = math
 
-        return safe_dict
+        return safe_dict  # type: ignore[no-any-return]
 
     def _extract_code(self, query: str) -> str:
         """Extract Python code from query.

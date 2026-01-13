@@ -144,25 +144,26 @@ async def agent_query(request: AgentRequest):
         )
 
         # Track tool invocations
-        for tool_exec in final_state.get("tool_history", []):
-            tool_name = tool_exec.get("tool")
-            status = tool_exec.get("status")
-            confidence = tool_exec.get("confidence", 0.0)
-            error = tool_exec.get("error")
+        if _registry and _metrics_tracker:
+            for tool_exec in final_state.get("tool_history", []):
+                tool_name = tool_exec.get("tool")
+                status = tool_exec.get("status")
+                confidence = tool_exec.get("confidence", 0.0)
+                error = tool_exec.get("error")
 
-            # Estimate latency (simplified)
-            tool = _registry.get_tool(tool_name)
-            latency = tool.metadata.avg_latency_ms if tool else 100.0
-            cost = tool.metadata.cost_per_call if tool else 0.0
+                # Estimate latency (simplified)
+                tool = _registry.get_tool(tool_name)
+                latency = tool.metadata.avg_latency_ms if tool else 100.0
+                cost = tool.metadata.cost_per_call if tool else 0.0
 
-            _metrics_tracker.track_invocation(
-                tool_name=tool_name,
-                success=(status == "success"),
-                latency_ms=latency,
-                cost=cost,
-                confidence=confidence,
-                error=error,
-            )
+                _metrics_tracker.track_invocation(
+                    tool_name=tool_name,
+                    success=(status == "success"),
+                    latency_ms=latency,
+                    cost=cost,
+                    confidence=confidence,
+                    error=error,
+                )
 
         # Format tool history
         tool_history = [
@@ -216,6 +217,9 @@ async def list_tools():
     """
     _initialize_agent()
 
+    if not _registry:
+        return []
+
     tools = _registry.list_tools()
 
     return [
@@ -247,6 +251,9 @@ async def get_metrics():
     """
     _initialize_agent()
 
+    if not _metrics_tracker:
+        return MetricsSummary(total_tools=0, tools={})
+
     summary = _metrics_tracker.get_summary()
     return MetricsSummary(**summary)
 
@@ -261,7 +268,8 @@ async def reset_metrics(tool_name: str | None = None):
     """
     _initialize_agent()
 
-    _metrics_tracker.reset_metrics(tool_name)
+    if _metrics_tracker:
+        _metrics_tracker.reset_metrics(tool_name)
 
     return {
         "message": f"Metrics reset for {'tool: ' + tool_name if tool_name else 'all tools'}",
@@ -279,6 +287,14 @@ async def agent_status():
     - System readiness
     """
     _initialize_agent()
+
+    if not _registry:
+        return {
+            "status": "not_initialized",
+            "total_tools": 0,
+            "tools_by_category": {},
+            "tool_names": [],
+        }
 
     tools = _registry.list_tools()
 

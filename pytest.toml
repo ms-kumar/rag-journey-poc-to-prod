@@ -1,0 +1,48 @@
+[tool.pytest.ini_options]
+# Pytest configuration for the project
+
+# Test discovery
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Output options
+addopts = [
+    "-v",                          # Verbose output
+    "--strict-markers",            # Strict marker usage
+    "--tb=short",                  # Short traceback format
+    "--disable-warnings",          # Disable warnings (remove to see warnings)
+    "-ra",                         # Show summary of all test outcomes
+    "--cov-report=term-missing",   # Show missing coverage in terminal
+    "--cov-report=html",           # Generate HTML coverage report
+    "--cov-branch",                # Include branch coverage
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/virtualenv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+precision = 2
+show_missing = true
+
+[tool.coverage.html]
+directory = "htmlcov"

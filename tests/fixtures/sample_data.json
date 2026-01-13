@@ -1,0 +1,40 @@
+{
+  "sample_documents": [
+    {
+      "id": "doc1",
+      "text": "Python is a high-level, interpreted programming language known for its simplicity and readability.",
+      "metadata": {
+        "source": "programming_guide",
+        "category": "python",
+        "date": "2024-01-01"
+      }
+    },
+    {
+      "id": "doc2",
+      "text": "Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience.",
+      "metadata": {
+        "source": "ai_handbook",
+        "category": "machine_learning",
+        "date": "2024-01-02"
+      }
+    },
+    {
+      "id": "doc3",
+      "text": "FastAPI is a modern, fast web framework for building APIs with Python based on standard Python type hints.",
+      "metadata": {
+        "source": "web_frameworks",
+        "category": "python",
+        "date": "2024-01-03"
+      }
+    }
+  ],
+  "sample_queries": [
+    "What is Python?",
+    "Explain machine learning",
+    "How does FastAPI work?"
+  ],
+  "sample_embeddings": {
+    "dimension": 384,
+    "description": "Sample embedding vectors for testing"
+  }
+}

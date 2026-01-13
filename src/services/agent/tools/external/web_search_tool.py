@@ -47,7 +47,7 @@ class WebSearchTool(BaseTool):
         if self.api_key:
             # Use Tavily if API key provided
             try:
-                from tavily import TavilyClient
+                from tavily import TavilyClient  # type: ignore[import-untyped]
 
                 self._search_client = TavilyClient(api_key=self.api_key)
                 self.logger.info("Initialized Tavily search client")
@@ -59,7 +59,7 @@ class WebSearchTool(BaseTool):
         try:
             from langchain_community.tools import DuckDuckGoSearchResults
 
-            self._search_client = DuckDuckGoSearchResults(max_results=self.max_results)
+            self._search_client = DuckDuckGoSearchResults(num_results=self.max_results)  # type: ignore[assignment]
             self.logger.info("Initialized DuckDuckGo search client")
             return self._search_client
         except ImportError:

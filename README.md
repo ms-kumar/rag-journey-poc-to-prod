@@ -63,7 +63,7 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 📦 **Schema-First Architecture**: Centralized Pydantic schemas with domain separation (api/ vs services/) for type safety and validation
 
-🧪 **Comprehensive Tests**: 435+ tests with high coverage across all components
+🧪 **Comprehensive Tests**: 1012+ tests with professional organization mirroring source structure
 
 🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
 
@@ -118,6 +118,21 @@ src/
     ├── pipeline/           # RAG orchestration
     ├── query_understanding/  # Query rewriting & expansion
     └── vectorstore/        # Qdrant integration & search
+
+tests/
+├── unit/                   # Unit tests (1012 tests organized by module)
+│   └── services/
+│       ├── agent/         # Agent framework tests (6 tests)
+│       ├── cache/         # Caching tests (5 tests)
+│       ├── embeddings/    # Embedding tests (2 tests)
+│       ├── evaluation/    # Evaluation tests (3 tests)
+│       ├── guardrails/    # Safety tests (6 tests)
+│       ├── retrieval/     # Retrieval tests (10 tests)
+│       ├── ingestion/     # Ingestion tests (3 tests)
+│       └── performance/   # Performance tests (7 tests)
+├── integration/           # Integration tests
+├── fixtures/              # Shared test data
+└── helpers/               # Test utilities
 ```
 
 ### Quick Start
@@ -238,8 +253,10 @@ make pre-commit
 
 #### Testing
 
+The test suite is organized by module with 1012 tests providing comprehensive coverage:
+
 ```bash
-# Run tests (excluding slow tests)
+# Run all tests
 make test
 
 # Run tests with coverage report
@@ -248,24 +265,36 @@ make test-cov
 # Run all tests including slow ones
 make test-all
 
+# Run specific module tests
+uv run pytest tests/unit/services/agent/ -v        # Agent tests
+uv run pytest tests/unit/services/cache/ -v        # Cache tests
+uv run pytest tests/unit/services/guardrails/ -v   # Safety tests
+
+# Run tests by marker
+uv run pytest -m agent              # All agent tests
+uv run pytest -m cache              # All cache tests
+uv run pytest -m "not slow"         # Skip slow tests
+
 # Run specific test file
-uv run pytest tests/test_embeddings.py -v
+uv run pytest tests/unit/services/embeddings/test_embeddings.py -v
 
 # Run tests matching a pattern
 uv run pytest -k "test_embedding" -v
 
-# Run guardrails canary tests (quick smoke tests < 30s)
-make test-canary
-
-# Run adversarial/red-team tests
-make test-adversarial
-
-# Run all guardrails tests
-make test-guardrails
-
-# Verify violation threshold ≤ 0.1%
-make test-violation-threshold
+# Run guardrails tests
+make test-canary                    # Quick smoke tests (< 30s)
+make test-adversarial              # Adversarial/red-team tests
+make test-guardrails               # All safety tests
+make test-violation-threshold      # Verify ≤ 0.1% violations
 ```
+
+**Test Organization:**
+- `tests/unit/` - Fast, isolated unit tests (organized by service module)
+- `tests/integration/` - End-to-end integration tests
+- `tests/fixtures/` - Shared test data and fixtures
+- `tests/helpers/` - Reusable test utilities and mock factories
+
+See [tests/README.md](tests/README.md) for complete testing documentation.
 
 #### Development Workflow
 
@@ -642,7 +671,7 @@ See [.env.example](.env.example) for complete configuration options.
 
 ### Testing & Quality
 
-The project maintains high code quality standards with automated tooling:
+The project maintains high code quality standards with automated tooling and a comprehensive test suite:
 
 ```bash
 # Run all quality checks (format, lint, type-check, security)
@@ -657,11 +686,25 @@ make security    # Security scan with bandit
 # Run tests with coverage
 make test-cov
 
+# Run specific test modules
+pytest tests/unit/services/agent/      # Agent tests
+pytest tests/unit/services/cache/      # Cache tests
+pytest tests/unit/services/guardrails/ # Safety tests
+
 # View coverage report
 open htmlcov/index.html
 ```
 
-**Test Coverage**: 913 tests | 79% coverage
+**Test Suite**: 1012 tests organized by module | 79% coverage
+
+**Test Organization:**
+- 📁 **Unit Tests**: Isolated tests organized by service module
+  - Agent (6 tests), Cache (5 tests), Embeddings (2 tests)
+  - Evaluation (3 tests), Guardrails (6 tests), Retrieval (10 tests)
+  - Ingestion (3 tests), Performance (7 tests)
+- 🔗 **Integration Tests**: End-to-end workflow tests
+- 🛠️ **Test Helpers**: Reusable utilities and mock factories
+- 📦 **Fixtures**: Shared test data and configurations
 
 Quality gates enforced:
 - ✅ Ruff formatting (100 char line length)
@@ -669,6 +712,7 @@ Quality gates enforced:
 - ✅ Mypy type checking (strict mode)
 - ✅ Bandit security scanning
 - ✅ Pre-commit hooks for automated checks
+- ✅ Module-specific test fixtures and conftest files
 
 ### CI/CD
 

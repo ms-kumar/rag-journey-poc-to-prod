@@ -1,6 +1,6 @@
 """Embedding service schemas."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SparseEncoderConfig(BaseModel):
@@ -14,8 +14,8 @@ class SparseEncoderConfig(BaseModel):
     max_length: int = Field(256, description="Maximum sequence length", ge=1)
     revision: str | None = Field(None, description="Model revision for reproducibility")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "model_name": "naver/splade-cocondenser-ensembledistil",
                 "device": "cpu",
@@ -23,6 +23,7 @@ class SparseEncoderConfig(BaseModel):
                 "max_length": 256,
             }
         }
+    )
 
 
 class EmbeddingRequest(BaseModel):

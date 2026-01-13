@@ -107,11 +107,11 @@ def create_agent_graph(
     app = workflow.compile()
 
     logger.info("Agent graph created successfully")
-    return app
+    return app  # type: ignore[return-value]
 
 
 async def run_agent(
-    graph: StateGraph,
+    graph: Any,
     query: str,
     max_iterations: int = 5,
 ) -> dict:
@@ -143,7 +143,7 @@ async def run_agent(
     }
 
     # Run graph
-    final_state = await graph.ainvoke(initial_state)
+    final_state: dict[Any, Any] = await graph.ainvoke(initial_state)
 
     logger.info("Agent workflow completed")
     return final_state

@@ -1,6 +1,6 @@
 """Retry and resilience schemas."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RetryConfig(BaseModel):
@@ -16,8 +16,8 @@ class RetryConfig(BaseModel):
         description="HTTP status codes to retry on",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "max_retries": 3,
                 "initial_delay": 1.0,
@@ -27,3 +27,4 @@ class RetryConfig(BaseModel):
                 "retryable_status_codes": [429, 500, 502, 503, 504],
             }
         }
+    )
