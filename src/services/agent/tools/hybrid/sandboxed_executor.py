@@ -453,11 +453,17 @@ class SandboxedCodeExecutor:
 
     def close(self):
         """Clean up resources."""
-        try:
-            self.process_pool.shutdown(wait=True)
-            logger.info(f"SandboxedCodeExecutor session {self.session_id} closed")
-        except Exception as e:
-            logger.warning(f"Error closing SandboxedCodeExecutor: {e}")
+        if hasattr(self, 'process_pool') and self.process_pool is not None:
+            try:
+                self.process_pool.shutdown(wait=False)
+                self.process_pool = None
+                logger.info(f"SandboxedCodeExecutor session {self.session_id} closed")
+            except Exception as e:
+                logger.warning(f"Error closing SandboxedCodeExecutor: {e}")
+
+    def __del__(self):
+        """Destructor to ensure cleanup."""
+        self.close()
 
     def __enter__(self):
         """Context manager entry."""

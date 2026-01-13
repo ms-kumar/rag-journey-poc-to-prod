@@ -1,6 +1,17 @@
 """Pytest configuration for agent tests."""
 
+import gc
+
 import pytest
+
+
+# Cleanup fixture to prevent memory leaks
+@pytest.fixture(autouse=True)
+def cleanup_after_test():
+    """Cleanup resources after each test to prevent memory leaks."""
+    yield
+    # Force garbage collection to clean up any unclosed ProcessPoolExecutors
+    gc.collect()
 
 
 # Agent-specific fixtures
