@@ -141,7 +141,7 @@ async def validate_query_params(
     """Validate common query parameters for RAG endpoints."""
     if not query.strip():
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Query cannot be empty or whitespace only",
         )
 
