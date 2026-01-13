@@ -1,7 +1,7 @@
 """Enhanced safe code executor tool with comprehensive sandbox."""
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from src.config import get_settings
 from src.services.agent.tools.base import BaseTool, ToolCategory, ToolMetadata
@@ -22,13 +22,13 @@ class CodeExecutorTool(BaseTool):
     """Tool for safe Python code execution with comprehensive security sandbox."""
 
     def __init__(
-        self, 
-        timeout: Optional[int] = None,
-        security_level: Optional[SecurityLevel] = None,
-        max_memory_mb: Optional[int] = None,
-        max_processes: Optional[int] = None,
-        allow_network: Optional[bool] = None,
-        audit_log_file: Optional[str] = None,
+        self,
+        timeout: int | None = None,
+        security_level: SecurityLevel | None = None,
+        max_memory_mb: int | None = None,
+        max_processes: int | None = None,
+        allow_network: bool | None = None,
+        audit_log_file: str | None = None,
     ):
         """Initialize enhanced code executor tool.
 
@@ -48,7 +48,7 @@ class CodeExecutorTool(BaseTool):
                 "python execution",
                 "code running",
                 "calculations",
-                "data analysis", 
+                "data analysis",
                 "mathematical operations",
                 "resource monitoring",
                 "security validation",
@@ -57,15 +57,15 @@ class CodeExecutorTool(BaseTool):
             ],
             cost_per_call=0.0,
             avg_latency_ms=400.0,  # Slightly higher due to enhanced security
-            success_rate=0.90,     # Higher due to better error handling
+            success_rate=0.90,  # Higher due to better error handling
             requires_api_key=False,
         )
         super().__init__(metadata)
-        
+
         # Load settings
         settings = get_settings()
         sandbox_settings = settings.sandbox
-        
+
         # Get resource limits from config (with overrides)
         self.resource_limits = get_resource_limits()
         if timeout is not None:
@@ -75,24 +75,27 @@ class CodeExecutorTool(BaseTool):
             self.resource_limits.max_memory_mb = max_memory_mb
         if max_processes is not None:
             self.resource_limits.max_processes = max_processes
-        
+
         # Get network config from config (with overrides)
         self.network_config = get_network_config()
         if allow_network is not None:
             self.network_config.allow_network = allow_network
-        
+
         # Get security level from config (with override)
         self.security_level = security_level if security_level is not None else get_security_level()
-        
+
         # Get audit log file from config (with override)
         self.audit_log_file = (
-            audit_log_file if audit_log_file is not None 
-            else (sandbox_settings.audit_log_file if sandbox_settings.enable_audit_logging else None)
+            audit_log_file
+            if audit_log_file is not None
+            else (
+                sandbox_settings.audit_log_file if sandbox_settings.enable_audit_logging else None
+            )
         )
-        
+
         # Initialize sandbox (will be created per execution for isolation)
-        self._sandbox: Optional[SandboxedCodeExecutor] = None
-        
+        self._sandbox: SandboxedCodeExecutor | None = None
+
         self.logger.info(
             f"CodeExecutorTool initialized: security_level={self.security_level.value}, "
             f"timeout={self.resource_limits.max_execution_time_seconds}s, "
@@ -137,37 +140,44 @@ class CodeExecutorTool(BaseTool):
                 audit_log_file=self.audit_log_file,
                 max_workers=1,  # Single worker for this execution
             ) as sandbox:
-                
                 # Execute in sandbox
                 result = await sandbox.execute(
                     query=query,
                     user_id=user_id,
                     timeout=timeout,
                 )
-                
+
                 # Add sandbox-specific metadata
                 security_info = sandbox.get_security_info()
                 audit_records = sandbox.get_session_audit_records()
-                
+
                 # Enhance result with additional metadata
                 if result["success"]:
-                    result["metadata"].update({
-                        "session_id": security_info["session_id"],
-                        "audit_records_count": len(audit_records),
-                        "resource_limits": security_info["resource_limits"],
-                        "network_config": security_info["network_config"],
-                    })
-                    
-                    self.logger.info(f"Code execution successful: {result['metadata'].get('code_hash', 'unknown')}")
-                else:
-                    result["metadata"].update({
-                        "session_id": security_info["session_id"],
-                        "audit_records_count": len(audit_records),
-                    })
-                    
-                    self.logger.warning(f"Code execution failed: {result.get('error', 'Unknown error')}")
+                    result["metadata"].update(
+                        {
+                            "session_id": security_info["session_id"],
+                            "audit_records_count": len(audit_records),
+                            "resource_limits": security_info["resource_limits"],
+                            "network_config": security_info["network_config"],
+                        }
+                    )
 
-                return result
+                    self.logger.info(
+                        f"Code execution successful: {result['metadata'].get('code_hash', 'unknown')}"
+                    )
+                else:
+                    result["metadata"].update(
+                        {
+                            "session_id": security_info["session_id"],
+                            "audit_records_count": len(audit_records),
+                        }
+                    )
+
+                    self.logger.warning(
+                        f"Code execution failed: {result.get('error', 'Unknown error')}"
+                    )
+
+                return result  # type: ignore[no-any-return]
 
         except Exception as e:
             self.logger.error(f"Code executor tool error: {e}")
@@ -194,16 +204,16 @@ class CodeExecutorTool(BaseTool):
         if not query or not isinstance(query, str):
             self.logger.error("Invalid query: must be a non-empty string")
             return False
-            
+
         if len(query) > 50000:  # Reasonable limit for code size
             self.logger.error("Query too long: maximum 50,000 characters")
             return False
-            
+
         return True
-        
+
     def get_security_status(self) -> dict[str, Any]:
         """Get current security configuration status.
-        
+
         Returns:
             Dictionary with security configuration details
         """

@@ -6,7 +6,8 @@ This directory contains unit tests for all service modules.
 
 Each service module has its own subdirectory:
 
-- **agent/**: Agent framework tests (tools, nodes, routing, metrics)
+- **agent/**: Agent framework tests (tools, nodes, routing, metrics, **sandbox**)
+  - **Sandbox tests**: Security validation, resource limits, network controls, audit logging
 - **cache/**: Caching layer tests (Redis, semantic cache, embedding cache)
 - **embeddings/**: Embedding generation and provider tests
 - **evaluation/**: Evaluation metrics and dataset tests
