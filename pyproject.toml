@@ -62,9 +62,15 @@ parsers = [
     "markdown>=3.7",
 ]
 
+# Sandbox code execution enhancements
+sandbox = [
+    "psutil>=5.9.0",           # Enhanced resource monitoring
+    "RestrictedPython>=7.4",    # Already in main deps, but listed for clarity
+]
+
 # All optional dependencies
 all = [
-    "advanced-rag[dev,production,embeddings,parsers]",
+    "advanced-rag[dev,production,embeddings,parsers,sandbox]",
 ]
 
 [build-system]

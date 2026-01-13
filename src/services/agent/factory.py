@@ -9,6 +9,7 @@ from src.services.agent.metrics.tracker import get_metrics_tracker
 from src.services.agent.tools.external.web_search_tool import WebSearchTool
 from src.services.agent.tools.external.wikipedia_tool import WikipediaTool
 from src.services.agent.tools.hybrid.code_executor import CodeExecutorTool
+from src.services.agent.tools.hybrid.sandbox import SecurityLevel
 from src.services.agent.tools.local.generator_tool import GeneratorTool
 from src.services.agent.tools.local.reranker_tool import RerankerTool
 from src.services.agent.tools.local.vectordb_tool import VectorDBTool
@@ -27,6 +28,7 @@ def create_agent_system(
     enable_code_executor: bool = True,
     tavily_api_key: str | None = None,
     metrics_storage_path: str = "./logs/agent_metrics.json",
+    code_executor_security_level: SecurityLevel | None = None,
 ) -> tuple[ToolRegistry, AgentRouter, Any, Any]:
     """Create and initialize the complete agent system.
 
@@ -39,6 +41,7 @@ def create_agent_system(
         enable_code_executor: Enable code executor tool
         tavily_api_key: Tavily API key (uses DuckDuckGo if not provided)
         metrics_storage_path: Path to store metrics
+        code_executor_security_level: Optional security level override for code executor
 
     Returns:
         Tuple of (registry, router, graph, metrics_tracker)
@@ -94,9 +97,17 @@ def create_agent_system(
 
     # Register hybrid tools
     if enable_code_executor:
-        code_executor_tool = CodeExecutorTool(timeout=5)
+        # Create code executor - uses centralized config with optional override
+        code_executor_tool = CodeExecutorTool(
+            security_level=code_executor_security_level,  # None = use config default
+        )
         registry.register_tool(code_executor_tool)
-        logger.info("✓ Code executor tool registered")
+        logger.info(
+            f"✓ Code executor tool registered "
+            f"(security={code_executor_tool.security_level.value}, "
+            f"memory={code_executor_tool.resource_limits.max_memory_mb}MB, "
+            f"audit={code_executor_tool.audit_log_file is not None})"
+        )
 
     # Initialize router
     router = AgentRouter(registry)

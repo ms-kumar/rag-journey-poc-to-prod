@@ -299,6 +299,70 @@ class CacheSettings(BaseConfigSettings):
     target_hit_rate: float = 0.6  # Target cache hit rate (60%)
 
 
+class SandboxSettings(BaseConfigSettings):
+    """Sandboxed code execution configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=[".env", str(ENV_FILE_PATH)],
+        env_prefix="SANDBOX__",
+        extra="ignore",
+        frozen=True,
+        case_sensitive=False,
+    )
+
+    # Security settings
+    security_level: str = "moderate"  # strict, moderate, or permissive
+    enable_audit_logging: bool = True
+    audit_log_file: str = "./logs/sandbox_audit.jsonl"
+    
+    # Resource limits
+    max_execution_time: float = 5.0  # seconds
+    max_cpu_time: float = 4.0  # seconds
+    max_memory_mb: int = 128  # megabytes
+    max_stack_size_mb: int = 8  # megabytes
+    max_processes: int = 1
+    max_open_files: int = 32
+    max_output_size: int = 1024 * 1024  # 1MB in bytes
+    max_variables: int = 1000
+    
+    # Network settings
+    allow_network: bool = False
+    allowed_hosts: str = ""  # Comma-separated list of allowed hosts
+    allowed_ports: str = ""  # Comma-separated list of allowed ports
+    block_local_network: bool = True
+    
+    # Process isolation
+    max_workers: int = 2
+    
+    # Tool-specific settings
+    tool_timeout: int = 5
+    tool_max_memory_mb: int = 128
+    
+    @field_validator("audit_log_file")
+    @classmethod
+    def validate_audit_log_dir(cls, v: str) -> str:
+        """Ensure audit log directory exists."""
+        if v:
+            log_path = Path(v)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+        return v
+    
+    def get_allowed_hosts_set(self) -> set[str]:
+        """Parse allowed_hosts string into a set."""
+        if not self.allowed_hosts:
+            return set()
+        return {host.strip() for host in self.allowed_hosts.split(",") if host.strip()}
+    
+    def get_allowed_ports_set(self) -> set[int]:
+        """Parse allowed_ports string into a set of integers."""
+        if not self.allowed_ports:
+            return set()
+        try:
+            return {int(port.strip()) for port in self.allowed_ports.split(",") if port.strip()}
+        except ValueError:
+            return set()
+
+
 class Settings(BaseConfigSettings):
     """Aggregated settings for the entire application."""
 
@@ -316,6 +380,7 @@ class Settings(BaseConfigSettings):
         default_factory=QueryUnderstandingSettings
     )
     cache: CacheSettings = Field(default_factory=CacheSettings)
+    sandbox: SandboxSettings = Field(default_factory=SandboxSettings)
 
 
 @lru_cache(maxsize=1)
