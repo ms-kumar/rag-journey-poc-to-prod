@@ -63,7 +63,7 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 📦 **Schema-First Architecture**: Centralized Pydantic schemas with domain separation (api/ vs services/) for type safety and validation
 
-🧪 **Comprehensive Tests**: 1012+ tests with professional organization mirroring source structure
+🧪 **Comprehensive Tests**: 1500+ tests with professional organization mirroring source structure
 
 🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
 
@@ -146,13 +146,13 @@ src/
     └── vectorstore/        # Qdrant integration & search
 
 tests/
-├── unit/                   # Unit tests (1200+ tests organized by module)
+├── unit/                   # Unit tests (1500+ tests organized by module)
 │   └── services/
 │       ├── agent/         # Agent framework tests (275 tests)
 │       ├── cache/         # Caching tests (5 tests)
 │       ├── embeddings/    # Embedding tests (2 tests)
 │       ├── evaluation/    # Evaluation tests (3 tests)
-│       ├── experimentation/ # A/B & feature flag tests (NEW)
+│       ├── experimentation/ # A/B & feature flag tests (180+ tests)
 │       ├── guardrails/    # Safety tests (6 tests)
 │       ├── observability/ # Observability tests (136 tests)
 │       ├── retrieval/     # Retrieval tests (10 tests)
@@ -681,6 +681,8 @@ Comprehensive guides for all major features:
 - [Week 4](docs/week-plans/week-4.md): Metadata Filtering (source, date, tag filters)
 - [Week 5](docs/week-plans/week-5.md): Evaluation Framework & Guardrails (metrics, safety, audit)
 - [Week 6](docs/week-plans/week-6.md): Schema Consolidation & Architectural Refinement
+- [Week 7](docs/week-plans/week-7.md): Agentic RAG (LangGraph, tools, reflection, planning, feedback)
+- [Week 8](docs/week-plans/week-8.md): Production Operations (observability, A/B testing, CI/CD)
 
 ### Configuration
 
