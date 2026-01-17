@@ -87,6 +87,10 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 🎯 **SLO Monitoring**: Real-time Service Level Objective tracking with error budgets, burn rate calculation, severity-based alerts, and dashboard summaries
 
+🧪 **A/B Experimentation (Week 8)**: Feature flags, experiment variants, canary deployments, statistical analysis with t-tests/chi-square, automated experiment reports
+
+🚀 **CI/CD Pipeline (Week 8)**: Build → test → eval gates, progressive deployment (staging → canary → prod), automatic rollback, rehearsal scripts
+
 ### Project Structure
 
 ```
@@ -119,12 +123,18 @@ src/
 │   │   ├── benchmarking.py # Task execution benchmarking
 │   │   ├── tools/         # Tool registry, router, and implementations
 │   │   └── metrics/       # Confidence scoring & tracking
-│   ├── observability/      # Production observability (NEW)
+│   ├── observability/      # Production observability
 │   │   ├── tracing.py     # Distributed tracing with spans
 │   │   ├── logging.py     # Structured JSON logging
 │   │   ├── metrics.py     # Latency/cost/quality dashboards
 │   │   ├── slo.py         # SLO monitoring & alerting
 │   │   └── golden_traces.py # Golden traces for regression
+│   ├── experimentation/    # A/B testing & feature flags (NEW)
+│   │   ├── experiments.py # Experiment definition & variants
+│   │   ├── feature_flags.py # Feature flag management
+│   │   ├── analysis.py    # Statistical analysis (t-test, chi-square)
+│   │   ├── canary.py      # Canary deployment support
+│   │   └── reports.py     # Automated experiment reports
     ├── chunking/           # Document chunking
     ├── embeddings/         # Text embeddings
     ├── evaluation/         # Evaluation harness & metrics
@@ -136,20 +146,27 @@ src/
     └── vectorstore/        # Qdrant integration & search
 
 tests/
-├── unit/                   # Unit tests (1150+ tests organized by module)
+├── unit/                   # Unit tests (1200+ tests organized by module)
 │   └── services/
 │       ├── agent/         # Agent framework tests (275 tests)
 │       ├── cache/         # Caching tests (5 tests)
 │       ├── embeddings/    # Embedding tests (2 tests)
 │       ├── evaluation/    # Evaluation tests (3 tests)
+│       ├── experimentation/ # A/B & feature flag tests (NEW)
 │       ├── guardrails/    # Safety tests (6 tests)
-│       ├── observability/ # Observability tests (136 tests) (NEW)
+│       ├── observability/ # Observability tests (136 tests)
 │       ├── retrieval/     # Retrieval tests (10 tests)
 │       ├── ingestion/     # Ingestion tests (3 tests)
 │       └── performance/   # Performance tests (7 tests)
 ├── integration/           # Integration tests
 ├── fixtures/              # Shared test data
 └── helpers/               # Test utilities
+
+scripts/                    # Operational scripts
+├── ci_eval_gate.py        # CI evaluation gate
+├── check_canary_health.py # Canary health checks (NEW)
+├── rehearse_rollback.py   # Rollback rehearsal (NEW)
+└── generate_dashboard.py  # Metrics dashboard
 ```
 
 ### Quick Start
@@ -731,14 +748,34 @@ Quality gates enforced:
 - ✅ Pre-commit hooks for automated checks
 - ✅ Module-specific test fixtures and conftest files
 
-### CI/CD
+### CI/CD & Deployment
 
-GitHub Actions workflow runs on every push:
-- Install dependencies with uv
-- Run all quality checks
-- Execute full test suite with coverage
+GitHub Actions workflows for continuous integration and deployment:
 
-See [.github/workflows/ci.yml](.github/workflows/ci.yml) for details.
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| [ci.yml](.github/workflows/ci.yml) | Push, PR | Run tests, linting, security checks |
+| [eval_gate.yml](.github/workflows/eval_gate.yml) | PR | RAG quality evaluation gate |
+| [deploy.yml](.github/workflows/deploy.yml) | Push (main), manual | Build → staging → canary → production |
+| [rollback.yml](.github/workflows/rollback.yml) | Manual | Rollback to previous version |
+
+**Deployment Pipeline:**
+```
+Build → Test → Eval Gate → Staging → Canary (5%→25%) → Production
+```
+
+**Key Commands:**
+```bash
+make docker-build      # Build Docker image
+make deploy-staging    # Deploy to staging
+make deploy-canary     # Deploy canary (5% traffic)
+make deploy-prod       # Deploy to production
+make rollback ENV=prod # Rollback deployment
+make canary-health     # Check canary health
+make rehearse-rollback # Practice rollback procedures
+```
+
+See [docs/ci-cd-pipeline.md](docs/ci-cd-pipeline.md) and [docs/rollback-playbook.md](docs/rollback-playbook.md) for details.
 
 ## Special Thanks
 

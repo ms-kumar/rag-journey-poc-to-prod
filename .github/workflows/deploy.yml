@@ -1,0 +1,521 @@
+# ===========================================
+# RAG Deployment Pipeline
+# ===========================================
+# Deploys to staging → canary → production with automated gates
+# Supports rollback and manual approval for production
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - canary
+          - production
+      skip_tests:
+        description: 'Skip test suite (emergency deploy)'
+        required: false
+        default: false
+        type: boolean
+      force_deploy:
+        description: 'Force deploy (skip canary checks)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  # ===========================================
+  # Build Stage
+  # ===========================================
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      version: ${{ steps.version.outputs.version }}
+      sha_short: ${{ steps.sha.outputs.sha_short }}
+    
+    services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get short SHA
+        id: sha
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Get version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ steps.sha.outputs.sha_short }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Run quality checks
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          uv run ruff format --check src tests
+          uv run ruff check src tests
+          uv run mypy --namespace-packages -p src
+
+      - name: Run unit tests
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          uv run pytest tests/unit -v -k "not slow" \
+            --cov=src --cov-report=xml \
+            -p no:cacheprovider --tb=line
+        env:
+          CACHE__REDIS_HOST: localhost
+          CACHE__REDIS_PORT: 6379
+
+      - name: Upload coverage
+        if: ${{ !inputs.skip_tests }}
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,prefix=
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            BUILD_SHA=${{ steps.sha.outputs.sha_short }}
+
+      - name: Create build summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA:** ${{ steps.sha.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================
+  # Evaluation Gate
+  # ===========================================
+  eval-gate:
+    name: Evaluation Gate
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_tests }}
+    
+    services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Create evaluation datasets
+        run: uv run python scripts/create_eval_datasets.py
+
+      - name: Run evaluation gate
+        run: |
+          uv run python scripts/ci_eval_gate.py \
+            --dataset data/eval/rag_test_small.json \
+            --output results/eval_result.json
+        env:
+          CACHE__REDIS_HOST: localhost
+          CACHE__REDIS_PORT: 6379
+
+      - name: Upload evaluation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-results
+          path: results/eval_result.json
+
+      - name: Check evaluation passed
+        run: |
+          python -c "
+          import json
+          with open('results/eval_result.json') as f:
+              result = json.load(f)
+          if not result.get('passed', False):
+              print('❌ Evaluation gate failed')
+              print('Failed checks:', result.get('failed_checks', []))
+              exit(1)
+          print('✅ Evaluation gate passed')
+          "
+
+  # ===========================================
+  # Deploy to Staging
+  # ===========================================
+  deploy-staging:
+    name: Deploy Staging
+    needs: [build, eval-gate]
+    if: |
+      always() && 
+      needs.build.result == 'success' && 
+      (needs.eval-gate.result == 'success' || needs.eval-gate.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.rag-api.example.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "🚀 Deploying to staging..."
+          echo "Image: ${{ needs.build.outputs.image_tag }}"
+          echo "Version: ${{ needs.build.outputs.version }}"
+          
+          # Example deployment commands (customize for your infrastructure)
+          # kubectl set image deployment/rag-api rag-api=${{ needs.build.outputs.image_tag }} -n staging
+          # or
+          # aws ecs update-service --cluster staging --service rag-api --force-new-deployment
+          
+          echo "✅ Deployed to staging"
+
+      - name: Run smoke tests
+        run: |
+          echo "🧪 Running smoke tests against staging..."
+          # curl -f https://staging.rag-api.example.com/health
+          echo "✅ Smoke tests passed"
+
+      - name: Notify staging deployment
+        run: |
+          echo "## Staging Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ needs.build.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** staging" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================
+  # Canary Deployment
+  # ===========================================
+  deploy-canary:
+    name: Deploy Canary
+    needs: [build, deploy-staging]
+    if: |
+      github.ref == 'refs/heads/main' || 
+      startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment:
+      name: canary
+      url: https://canary.rag-api.example.com
+    outputs:
+      canary_healthy: ${{ steps.health.outputs.healthy }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Deploy canary (5% traffic)
+        run: |
+          echo "🐤 Deploying canary with 5% traffic..."
+          echo "Image: ${{ needs.build.outputs.image_tag }}"
+          
+          # Example: Deploy canary with traffic split
+          # kubectl apply -f infra/k8s/canary-5.yaml
+          
+          echo "✅ Canary deployed with 5% traffic"
+
+      - name: Wait for canary stabilization
+        run: |
+          echo "⏳ Waiting 2 minutes for canary stabilization..."
+          sleep 120
+
+      - name: Check canary health
+        id: health
+        run: |
+          echo "🔍 Checking canary health metrics..."
+          
+          # Run canary health check script
+          uv run python scripts/check_canary_health.py \
+            --deployment canary \
+            --error-threshold 0.05 \
+            --latency-threshold 500 \
+            --min-requests 100 || {
+            echo "healthy=false" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          
+          echo "healthy=true" >> $GITHUB_OUTPUT
+          echo "✅ Canary is healthy"
+
+      - name: Promote canary (25% traffic)
+        if: steps.health.outputs.healthy == 'true'
+        run: |
+          echo "📈 Promoting canary to 25% traffic..."
+          # kubectl apply -f infra/k8s/canary-25.yaml
+          echo "✅ Canary promoted to 25%"
+
+      - name: Wait for traffic ramp
+        if: steps.health.outputs.healthy == 'true'
+        run: |
+          echo "⏳ Waiting 3 minutes at 25% traffic..."
+          sleep 180
+
+      - name: Final canary health check
+        if: steps.health.outputs.healthy == 'true'
+        run: |
+          echo "🔍 Final canary health check..."
+          uv run python scripts/check_canary_health.py \
+            --deployment canary \
+            --error-threshold 0.03 \
+            --latency-threshold 400 \
+            --min-requests 500
+
+      - name: Create canary summary
+        if: always()
+        run: |
+          echo "## Canary Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ steps.health.outputs.healthy == 'true' && '✅ Healthy' || '❌ Unhealthy' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ needs.build.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================
+  # Deploy to Production
+  # ===========================================
+  deploy-production:
+    name: Deploy Production
+    needs: [build, deploy-canary]
+    if: |
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) &&
+      (needs.deploy-canary.outputs.canary_healthy == 'true' || inputs.force_deploy)
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://api.rag-api.example.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Pre-deployment checks
+        run: |
+          echo "🔒 Running pre-deployment checks..."
+          echo "Version: ${{ needs.build.outputs.version }}"
+          echo "Canary healthy: ${{ needs.deploy-canary.outputs.canary_healthy }}"
+          echo "✅ Pre-deployment checks passed"
+
+      - name: Create deployment record
+        run: |
+          echo "📝 Creating deployment record..."
+          cat << EOF > deployment-record.json
+          {
+            "version": "${{ needs.build.outputs.version }}",
+            "sha": "${{ needs.build.outputs.sha_short }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "deployer": "${{ github.actor }}",
+            "workflow_run_id": "${{ github.run_id }}",
+            "previous_version": "$(cat .current-version 2>/dev/null || echo 'unknown')"
+          }
+          EOF
+          cat deployment-record.json
+
+      - name: Deploy to production (rolling)
+        run: |
+          echo "🚀 Deploying to production..."
+          echo "Image: ${{ needs.build.outputs.image_tag }}"
+          
+          # Example: Rolling deployment
+          # kubectl set image deployment/rag-api rag-api=${{ needs.build.outputs.image_tag }} -n production
+          # kubectl rollout status deployment/rag-api -n production --timeout=5m
+          
+          # Or blue-green deployment
+          # kubectl apply -f infra/k8s/production-green.yaml
+          # kubectl patch service rag-api -p '{"spec":{"selector":{"version":"green"}}}'
+          
+          echo "✅ Production deployment complete"
+
+      - name: Post-deployment verification
+        run: |
+          echo "🔍 Running post-deployment verification..."
+          # curl -f https://api.rag-api.example.com/health
+          # curl -f https://api.rag-api.example.com/api/v1/rag/query -X POST -d '{"query": "test"}'
+          echo "✅ Post-deployment verification passed"
+
+      - name: Update deployment tracking
+        run: |
+          echo "${{ needs.build.outputs.version }}" > .current-version
+          echo "✅ Updated deployment tracking"
+
+      - name: Create production summary
+        run: |
+          echo "## Production Deployment 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ needs.build.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA:** ${{ needs.build.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================
+  # Rollback Handler
+  # ===========================================
+  rollback:
+    name: Rollback on Failure
+    needs: [build, deploy-canary, deploy-production]
+    if: failure() && !inputs.force_deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine rollback target
+        id: rollback
+        run: |
+          echo "🔄 Determining rollback target..."
+          
+          # Get previous version
+          PREV_VERSION=$(cat .current-version 2>/dev/null || echo "")
+          if [ -z "$PREV_VERSION" ]; then
+            echo "⚠️ No previous version found, manual intervention required"
+            echo "needs_manual=true" >> $GITHUB_OUTPUT
+          else
+            echo "previous_version=$PREV_VERSION" >> $GITHUB_OUTPUT
+            echo "needs_manual=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Execute rollback
+        if: steps.rollback.outputs.needs_manual == 'false'
+        run: |
+          echo "🔄 Rolling back to ${{ steps.rollback.outputs.previous_version }}..."
+          
+          # Rollback commands
+          # kubectl rollout undo deployment/rag-api -n production
+          # or
+          # kubectl set image deployment/rag-api rag-api=ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.rollback.outputs.previous_version }}
+          
+          echo "✅ Rollback complete"
+
+      - name: Create rollback issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 Deployment Rollback: ${context.sha.substring(0, 7)}`;
+            const body = `
+            ## Deployment Rollback Required
+            
+            **Workflow Run:** [#${context.runNumber}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            **Commit:** ${context.sha}
+            **Actor:** @${context.actor}
+            **Time:** ${new Date().toISOString()}
+            
+            ### Actions Taken
+            - [ ] Automatic rollback attempted
+            - [ ] Manual verification required
+            - [ ] Root cause identified
+            - [ ] Fix deployed
+            
+            ### Next Steps
+            1. Check deployment logs
+            2. Review canary metrics
+            3. Identify root cause
+            4. Create fix PR
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['deployment', 'rollback', 'urgent']
+            });

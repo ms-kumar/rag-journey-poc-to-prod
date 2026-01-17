@@ -1,9 +1,16 @@
-.PHONY: clean format check lint run ingest test help sync install test-cov test-all type-check security quality pre-commit dev eval-datasets eval eval-ci dashboard eval-full test-canary test-adversarial test-guardrails test-violation-threshold guardrails-report guardrails-audit-review test-agent test-cache test-embeddings test-evaluation test-retrieval test-ingestion test-performance test-observability
+.PHONY: clean format check lint run ingest test help sync install test-cov test-all type-check security quality pre-commit dev eval-datasets eval eval-ci dashboard eval-full test-canary test-adversarial test-guardrails test-violation-threshold guardrails-report guardrails-audit-review test-agent test-cache test-embeddings test-evaluation test-retrieval test-ingestion test-performance test-observability docker-build docker-push deploy-staging deploy-canary deploy-prod rollback canary-health rehearse-rollback
 
 # Python and project settings
 PYTHON := uv run python
 SRC_DIR := src
 TESTS_DIR := tests
+
+# Docker/Deployment settings
+IMAGE_NAME ?= rag-api
+IMAGE_TAG ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "latest")
+REGISTRY ?= ghcr.io/$(shell git config --get remote.origin.url | sed 's/.*[:/]\([^/]*\/[^.]*\).*/\1/' 2>/dev/null || echo "owner/repo")
+NAMESPACE_STAGING ?= staging
+NAMESPACE_PROD ?= production
 
 help:
 	@echo "Available targets:"
@@ -49,6 +56,18 @@ help:
 	@echo "  make test-violation-threshold - Verify violation rate ≤ 0.1%"
 	@echo "  make guardrails-report        - Generate compliance report"
 	@echo "  make guardrails-audit-review  - Review audit logs"
+	@echo ""
+	@echo "Docker & Deployment targets:"
+	@echo "  make docker-build   - Build Docker image"
+	@echo "  make docker-push    - Build and push image to registry"
+	@echo "  make deploy-staging - Deploy to staging environment"
+	@echo "  make deploy-canary  - Deploy canary (5% traffic)"
+	@echo "  make deploy-prod    - Deploy to production (full rollout)"
+	@echo "  make rollback ENV=x - Rollback deployment (staging|production)"
+	@echo "  make canary-health  - Check canary health metrics"
+	@echo "  make rehearse-rollback - Run rollback rehearsal"
+	@echo "  make deploy-status  - Show deployment status"
+	@echo "  make deploy-history ENV=x - View deployment history"
 
 # Sync dependencies with uv
 sync:
@@ -137,6 +156,7 @@ test-all: sync
 	@uv run python -m pytest $(TESTS_DIR)/unit/services/cache -p no:cacheprovider --tb=line -q || true
 	@uv run python -m pytest $(TESTS_DIR)/unit/services/embeddings -p no:cacheprovider --tb=line -q || true
 	@uv run python -m pytest $(TESTS_DIR)/unit/services/observability -p no:cacheprovider --tb=line -q || true
+	@uv run python -m pytest $(TESTS_DIR)/unit/services/experimentation -p no:cacheprovider --tb=line -q || true
 	@uv run python -m pytest $(TESTS_DIR)/unit/services/retrieval -p no:cacheprovider --tb=line -q || true
 	@uv run python -m pytest $(TESTS_DIR)/unit/services/performance -p no:cacheprovider --tb=line -q || true
 	@uv run python -m pytest $(TESTS_DIR)/unit/test_*.py -p no:cacheprovider --tb=line -q || true
@@ -176,6 +196,10 @@ test-performance: sync
 test-observability: sync
 	@echo "Running observability module tests..."
 	uv run python -m pytest $(TESTS_DIR)/unit/services/observability/ -v
+
+test-experimentation: sync
+	@echo "Running experimentation module tests..."
+	uv run python -m pytest $(TESTS_DIR)/unit/services/experimentation/ -v
 
 # Create evaluation datasets
 eval-datasets: sync
@@ -249,3 +273,104 @@ guardrails-audit-review: sync
 	else \
 		echo "Audit log not found"; \
 	fi
+
+# ============================================
+# Docker & Deployment Targets
+# ============================================
+
+# Build Docker image
+docker-build:
+	@echo "🐳 Building Docker image..."
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest .
+	@echo "✅ Built $(IMAGE_NAME):$(IMAGE_TAG)"
+
+# Push Docker image to registry
+docker-push: docker-build
+	@echo "🚀 Pushing Docker image to $(REGISTRY)..."
+	docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+	docker tag $(IMAGE_NAME):latest $(REGISTRY)/$(IMAGE_NAME):latest
+	docker push $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+	docker push $(REGISTRY)/$(IMAGE_NAME):latest
+	@echo "✅ Pushed to $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)"
+
+# Deploy to staging environment
+deploy-staging: docker-push
+	@echo "🎯 Deploying to staging..."
+	kubectl -n $(NAMESPACE_STAGING) set image deployment/rag-api \
+		rag-api=$(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+	kubectl -n $(NAMESPACE_STAGING) rollout status deployment/rag-api --timeout=5m
+	@echo "✅ Deployed to staging!"
+
+# Deploy canary (5% traffic)
+deploy-canary:
+	@echo "🐤 Deploying canary..."
+	kubectl -n $(NAMESPACE_PROD) set image deployment/rag-api-canary \
+		rag-api=$(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+	kubectl -n $(NAMESPACE_PROD) scale deployment/rag-api-canary --replicas=1
+	@echo "✅ Canary deployed! Monitor metrics before promoting."
+
+# Deploy to production (full rollout)
+deploy-prod:
+	@echo "🚀 Deploying to production..."
+	@echo "⚠️  This will deploy to all production pods!"
+	@read -p "Are you sure? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
+	kubectl -n $(NAMESPACE_PROD) set image deployment/rag-api \
+		rag-api=$(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+	kubectl -n $(NAMESPACE_PROD) rollout status deployment/rag-api --timeout=10m
+	@echo "✅ Production deployment complete!"
+
+# Rollback to previous version
+rollback:
+	@echo "⏪ Rolling back..."
+ifndef ENV
+	$(error ENV is required. Usage: make rollback ENV=staging|production)
+endif
+ifeq ($(ENV),staging)
+	kubectl -n $(NAMESPACE_STAGING) rollout undo deployment/rag-api
+	kubectl -n $(NAMESPACE_STAGING) rollout status deployment/rag-api
+else ifeq ($(ENV),production)
+	kubectl -n $(NAMESPACE_PROD) rollout undo deployment/rag-api
+	kubectl -n $(NAMESPACE_PROD) rollout status deployment/rag-api
+else
+	$(error Invalid ENV. Use staging or production)
+endif
+	@echo "✅ Rollback complete!"
+
+# Check canary health
+canary-health:
+	@echo "🔍 Checking canary health..."
+	uv run python scripts/check_canary_health.py \
+		--deployment rag-api-canary \
+		--error-threshold 0.05 \
+		--latency-threshold 500 \
+		--min-requests 100
+
+# Run rollback rehearsal
+rehearse-rollback:
+	@echo "🎭 Running rollback rehearsal..."
+	uv run python scripts/rehearse_rollback.py \
+		--scenario error_spike \
+		--environment staging \
+		--output results/rollback_rehearsal_$(shell date +%Y%m%d_%H%M%S).json
+
+# Show deployment status
+deploy-status:
+	@echo "📊 Deployment Status:"
+	@echo "\n=== Staging ==="
+	@kubectl -n $(NAMESPACE_STAGING) get deployment rag-api -o wide 2>/dev/null || echo "Not found"
+	@echo "\n=== Production ==="
+	@kubectl -n $(NAMESPACE_PROD) get deployment rag-api -o wide 2>/dev/null || echo "Not found"
+	@echo "\n=== Canary ==="
+	@kubectl -n $(NAMESPACE_PROD) get deployment rag-api-canary -o wide 2>/dev/null || echo "Not found"
+
+# View deployment history
+deploy-history:
+	@echo "📜 Deployment History:"
+ifndef ENV
+	$(error ENV is required. Usage: make deploy-history ENV=staging|production)
+endif
+ifeq ($(ENV),staging)
+	kubectl -n $(NAMESPACE_STAGING) rollout history deployment/rag-api
+else ifeq ($(ENV),production)
+	kubectl -n $(NAMESPACE_PROD) rollout history deployment/rag-api
+endif

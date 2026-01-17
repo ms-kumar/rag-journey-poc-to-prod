@@ -416,6 +416,54 @@ class ObservabilitySettings(BaseConfigSettings):
         return v
 
 
+class ExperimentationSettings(BaseConfigSettings):
+    """Experimentation configuration settings for A/B testing and feature flags."""
+
+    model_config = SettingsConfigDict(
+        env_file=[".env", str(ENV_FILE_PATH)],
+        env_prefix="EXPERIMENTATION__",
+        extra="ignore",
+        frozen=True,
+        case_sensitive=False,
+    )
+
+    # General settings
+    enabled: bool = True
+    storage_path: str = "./data/experiments"
+    environment: str = "development"
+
+    # Experiment settings
+    default_sample_size: int = 1000
+    default_min_runtime_hours: int = 24
+    default_confidence_level: float = 0.95
+
+    # Feature flag settings
+    flags_enabled: bool = True
+    default_flag_value: bool = False
+
+    # Canary deployment settings
+    canary_enabled: bool = True
+    canary_initial_percentage: float = 1.0
+    canary_max_percentage: float = 100.0
+    canary_increment_percentage: float = 10.0
+    canary_increment_interval_minutes: int = 5
+    canary_max_error_rate: float = 0.05
+    canary_max_latency_p99_ms: float = 500.0
+    canary_min_quality_score: float = 0.8
+
+    # Report settings
+    reports_output_dir: str = "./data/experiment_reports"
+    reports_default_format: str = "markdown"
+
+    @field_validator("storage_path", "reports_output_dir")
+    @classmethod
+    def validate_exp_path_dir(cls, v: str) -> str:
+        """Ensure directory exists."""
+        if v:
+            Path(v).mkdir(parents=True, exist_ok=True)
+        return v
+
+
 class Settings(BaseConfigSettings):
     """Aggregated settings for the entire application."""
 
@@ -435,6 +483,7 @@ class Settings(BaseConfigSettings):
     cache: CacheSettings = Field(default_factory=CacheSettings)
     sandbox: SandboxSettings = Field(default_factory=SandboxSettings)
     observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
+    experimentation: ExperimentationSettings = Field(default_factory=ExperimentationSettings)
 
 
 @lru_cache(maxsize=1)

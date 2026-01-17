@@ -1,8 +1,15 @@
-# Week 8: Observability & Production Readiness
+# Week 8: Observability, Experimentation & Production Readiness
 
-## 🎉 Task 1: Tracing & Logging - Complete
+## 🎉 All Week 8 Tasks Complete!
 
-All Week 8 Task 1 objectives have been successfully implemented!
+All three Week 8 objectives have been successfully implemented:
+- ✅ Task 1: Tracing & Logging (Observability)
+- ✅ Task 2: A/B Experiments & Feature Flags
+- ✅ Task 3: CI/CD & Release Pipeline
+
+---
+
+## ✅ Task 1: Tracing & Logging - Complete
 
 ---
 
@@ -237,3 +244,302 @@ The observability module integrates with:
 - [ ] Prometheus/Grafana dashboard templates
 - [ ] OpenTelemetry export support
 - [ ] Distributed tracing across microservices
+---
+
+## ✅ Task 2: A/B Experiments & Feature Flags - Complete
+
+### Objectives Completed
+
+#### 1. Experiment Framework
+- ✅ `Experiment` class with variants and traffic allocation
+- ✅ Deterministic user assignment with hash-based bucketing
+- ✅ `ExperimentManager` for experiment lifecycle management
+- ✅ Exposure logging and result tracking
+- ✅ Multi-variant support (A/B/n testing)
+
+#### 2. Feature Flags
+- ✅ `FeatureFlag` with percentage rollouts
+- ✅ User targeting rules (user_id, group, custom attributes)
+- ✅ `FeatureFlagManager` for centralized flag management
+- ✅ Kill switch support for emergency disabling
+- ✅ Default value handling for missing flags
+
+#### 3. Statistical Analysis
+- ✅ T-test for continuous metrics (latency, scores)
+- ✅ Chi-square test for categorical outcomes (conversion)
+- ✅ Confidence interval calculation
+- ✅ Sample size validation and power analysis
+- ✅ `ExperimentAnalyzer` for automated analysis
+
+#### 4. Canary Support
+- ✅ `CanaryDeployment` with traffic percentage control
+- ✅ Health metrics tracking (error_rate, latency, success_rate)
+- ✅ Automatic promotion/rollback thresholds
+- ✅ `CanaryManager` for deployment lifecycle
+- ✅ Progressive traffic ramping
+
+#### 5. Experiment Reports
+- ✅ `ExperimentReport` with summary statistics
+- ✅ Markdown and JSON report generation
+- ✅ Automated significance testing in reports
+- ✅ Winner recommendation with confidence levels
+- ✅ `ReportGenerator` for scheduled reports
+
+### Files Created
+
+```
+src/services/experimentation/
+├── __init__.py           # Module exports
+├── experiments.py        # Experiment definitions and manager
+├── feature_flags.py      # Feature flag management
+├── analysis.py           # Statistical analysis (t-test, chi-square)
+├── canary.py             # Canary deployment support
+└── reports.py            # Automated experiment reports
+```
+
+```
+tests/unit/services/experimentation/
+├── __init__.py
+├── conftest.py           # Shared fixtures
+├── test_experiments.py   # Experiment tests
+├── test_feature_flags.py # Feature flag tests
+├── test_analysis.py      # Statistical analysis tests
+├── test_canary.py        # Canary deployment tests
+└── test_reports.py       # Report generation tests
+```
+
+### Usage Examples
+
+#### Running an Experiment
+```python
+from src.services.experimentation import Experiment, ExperimentManager
+
+manager = ExperimentManager()
+
+experiment = Experiment(
+    id="reranker_model_test",
+    name="Reranker Model A/B Test",
+    variants=[
+        {"id": "control", "name": "cross-encoder-v1", "weight": 50},
+        {"id": "treatment", "name": "cross-encoder-v2", "weight": 50},
+    ]
+)
+
+manager.register_experiment(experiment)
+variant = manager.get_variant("reranker_model_test", user_id="user_123")
+manager.record_result("reranker_model_test", "user_123", {"latency_ms": 45.2})
+```
+
+#### Feature Flags
+```python
+from src.services.experimentation import FeatureFlag, FeatureFlagManager
+
+manager = FeatureFlagManager()
+
+flag = FeatureFlag(
+    id="new_chunking_strategy",
+    enabled=True,
+    rollout_percentage=25,
+    targeting_rules={"groups": ["beta_users"]}
+)
+
+manager.register_flag(flag)
+if manager.is_enabled("new_chunking_strategy", user_id="user_123"):
+    use_new_chunking()
+```
+
+#### Statistical Analysis
+```python
+from src.services.experimentation import ExperimentAnalyzer
+
+analyzer = ExperimentAnalyzer()
+result = analyzer.analyze_experiment(
+    experiment_id="reranker_model_test",
+    metric="latency_ms",
+    control_data=[45.2, 52.1, 48.3, ...],
+    treatment_data=[42.1, 44.5, 41.8, ...]
+)
+print(f"Significant: {result.is_significant}, P-value: {result.p_value:.4f}")
+```
+
+---
+
+## ✅ Task 3: CI/CD & Release Pipeline - Complete
+
+### Objectives Completed
+
+#### 1. Build → Test → Eval Gates
+- ✅ Multi-stage Docker build with uv
+- ✅ Automated test suite execution
+- ✅ RAG quality evaluation gate
+- ✅ Quality thresholds from `config/eval_thresholds.json`
+
+#### 2. Deploy Staging → Canary → Prod
+- ✅ Staging deployment with smoke tests
+- ✅ Canary deployment with 5% → 25% traffic ramping
+- ✅ Production deployment with approval gate
+- ✅ Health checks at each stage
+
+#### 3. Rollback Playbooks
+- ✅ Comprehensive rollback documentation
+- ✅ Decision matrix for when to rollback
+- ✅ Step-by-step procedures for each scenario
+- ✅ Communication templates
+- ✅ Troubleshooting guide
+
+#### 4. Automated Deploy Green
+- ✅ GitHub Actions workflow on main branch push
+- ✅ Automatic progression through stages
+- ✅ Automatic rollback on canary failure
+- ✅ Manual trigger support
+
+#### 5. Rehearse Rollback
+- ✅ `rehearse_rollback.py` script with 6 scenarios
+- ✅ Interactive and non-interactive modes
+- ✅ Lessons learned collection
+- ✅ Results export to JSON
+
+### Files Created
+
+```
+.github/workflows/
+├── deploy.yml            # Full deployment pipeline
+└── rollback.yml          # Manual rollback workflow
+```
+
+```
+scripts/
+├── check_canary_health.py  # Canary health validation
+└── rehearse_rollback.py    # Rollback rehearsal tool
+```
+
+```
+docs/
+├── ci-cd-pipeline.md     # Pipeline architecture docs
+└── rollback-playbook.md  # Rollback procedures
+```
+
+```
+Dockerfile                # Multi-stage production build
+```
+
+### Makefile Targets Added
+
+```bash
+# Docker & Deployment
+make docker-build         # Build Docker image
+make docker-push          # Push to registry
+make deploy-staging       # Deploy to staging
+make deploy-canary        # Deploy canary (5%)
+make deploy-prod          # Deploy to production
+make rollback ENV=x       # Rollback (staging|production)
+make canary-health        # Check canary metrics
+make rehearse-rollback    # Practice rollback
+make deploy-status        # Show deployment status
+make deploy-history ENV=x # View history
+```
+
+### Pipeline Flow
+
+```
+┌─────────┐    ┌──────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐    ┌────────────┐
+│  Build  │───►│   Test   │───►│  Eval   │───►│ Staging │───►│  Canary  │───►│ Production │
+│ Docker  │    │  pytest  │    │  Gate   │    │  Deploy │    │ 5%→25%   │    │   100%     │
+└─────────┘    └──────────┘    └─────────┘    └─────────┘    └──────────┘    └────────────┘
+                                                                   │
+                                                                   ▼
+                                                            ┌────────────┐
+                                                            │  Rollback  │
+                                                            │ (on fail)  │
+                                                            └────────────┘
+```
+
+### Rollback Scenarios Supported
+
+| Scenario | Description |
+|----------|-------------|
+| `canary_failure` | Canary health check fails |
+| `error_spike` | Sudden increase in error rate |
+| `latency_degradation` | P99 latency exceeds threshold |
+| `health_check_failure` | Pods fail readiness probes |
+| `memory_leak` | Memory usage trending up |
+| `dependency_failure` | Qdrant/Redis unavailable |
+
+---
+
+## 📁 Complete Week 8 File Summary
+
+### Observability (Task 1)
+```
+src/services/observability/
+├── __init__.py
+├── tracing.py            # Distributed tracing
+├── logging.py            # Structured logging
+├── metrics.py            # Dashboard metrics
+├── slo.py                # SLO monitoring
+└── golden_traces.py      # Golden traces
+```
+
+### Experimentation (Task 2)
+```
+src/services/experimentation/
+├── __init__.py
+├── experiments.py        # A/B experiments
+├── feature_flags.py      # Feature flags
+├── analysis.py           # Statistical analysis
+├── canary.py             # Canary deployments
+└── reports.py            # Experiment reports
+```
+
+### CI/CD (Task 3)
+```
+.github/workflows/
+├── deploy.yml            # Deployment pipeline
+└── rollback.yml          # Rollback workflow
+
+scripts/
+├── check_canary_health.py
+└── rehearse_rollback.py
+
+docs/
+├── ci-cd-pipeline.md
+└── rollback-playbook.md
+
+Dockerfile
+```
+
+### Tests
+```
+tests/unit/services/
+├── observability/        # 136 tests
+└── experimentation/      # 50+ tests
+```
+
+---
+
+## 🧪 Test Results
+
+```
+Observability Tests:     136 passed
+Experimentation Tests:    50+ passed
+Total Week 8 Tests:      186+ passed
+```
+
+---
+
+## 🔗 Integration Points
+
+### Observability → Everything
+- Tracing spans in RAG pipeline stages
+- Correlation IDs through all requests
+- SLO monitoring for production health
+
+### Experimentation → RAG Pipeline
+- A/B test different reranker models
+- Feature flag new chunking strategies
+- Canary test embedding providers
+
+### CI/CD → All Components
+- Quality gates use evaluation harness
+- Canary health uses observability metrics
+- Rollback uses feature flags for kill switches

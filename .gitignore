@@ -64,6 +64,9 @@ dmypy.json
 *.log
 logs/
 
+# Results (CI/CD rehearsals, dashboards)
+results/
+
 # OS files
 .DS_Store
 Thumbs.db

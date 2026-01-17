@@ -83,6 +83,7 @@ jobs:
           uv run pytest tests/unit/services/guardrails -v -k "not slow" -p no:cacheprovider --tb=line -q
           uv run pytest tests/unit/services/ingestion -v -k "not slow" -p no:cacheprovider --tb=line -q
           uv run pytest tests/unit/services/observability -v -k "not slow" -p no:cacheprovider --tb=line -q
+          uv run pytest tests/unit/services/experimentation -v -k "not slow" -p no:cacheprovider --tb=line -q
           uv run pytest tests/unit/services/performance -v -k "not slow" -p no:cacheprovider --tb=line -q
           uv run pytest tests/unit/services/retrieval -v -k "not slow" -p no:cacheprovider --tb=line -q
 
