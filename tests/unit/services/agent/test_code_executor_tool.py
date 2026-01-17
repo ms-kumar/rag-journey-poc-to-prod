@@ -16,7 +16,9 @@ import pytest
 from src.services.agent.tools.hybrid.code_executor import CodeExecutorTool
 
 # Skip all tests in this module due to ProcessPoolExecutor memory issues
-pytestmark = pytest.mark.skip(reason="ProcessPoolExecutor causes memory exhaustion in test environment")
+pytestmark = pytest.mark.skip(
+    reason="ProcessPoolExecutor causes memory exhaustion in test environment"
+)
 
 
 class TestCodeExecutorTool:

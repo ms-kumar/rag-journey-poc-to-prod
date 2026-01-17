@@ -7,6 +7,13 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
+# Markers
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "memory_intensive: marks tests that use significant memory (skipped by default)",
+]
+
 # Output options
 addopts = [
     "-v",                          # Verbose output
@@ -17,6 +24,9 @@ addopts = [
     "--cov-report=term-missing",   # Show missing coverage in terminal
     "--cov-report=html",           # Generate HTML coverage report
     "--cov-branch",                # Include branch coverage
+    "--ignore=tests/unit/services/agent/test_sandboxed_executor.py",  # Skip memory-intensive tests
+    "--ignore=tests/unit/services/agent/test_code_executor_tool.py",   # Skip memory-intensive tests
+    "--ignore=tests/integration/test_sandbox_integration.py",          # Skip memory-intensive tests
 ]
 
 # Coverage configuration

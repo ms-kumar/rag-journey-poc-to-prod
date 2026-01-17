@@ -24,7 +24,9 @@ from src.services.agent.tools.hybrid.sandbox import (
 from src.services.agent.tools.hybrid.sandboxed_executor import SandboxedCodeExecutor
 
 # Skip all tests in this module due to ProcessPoolExecutor memory issues
-pytestmark = pytest.mark.skip(reason="ProcessPoolExecutor causes memory exhaustion in test environment")
+pytestmark = pytest.mark.skip(
+    reason="ProcessPoolExecutor causes memory exhaustion in test environment"
+)
 
 
 class TestEndToEndExecution:

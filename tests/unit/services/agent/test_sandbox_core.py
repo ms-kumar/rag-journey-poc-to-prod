@@ -351,8 +351,8 @@ class TestAuditLogger:
         assert len(session1_records) == 1
         assert session1_records[0].session_id == "session-1"
 
-    @patch("builtins.open", create=True)
-    def test_log_to_file(self, mock_open):
+    @patch("pathlib.Path.open")
+    def test_log_to_file(self, mock_path_open):
         """Test logging to file."""
         logger = AuditLogger(log_file="/tmp/test_audit.log")
         record = AuditRecord(
@@ -372,7 +372,7 @@ class TestAuditLogger:
         )
 
         logger.log_execution(record)
-        mock_open.assert_called()
+        mock_path_open.assert_called()
 
 
 class TestSecurityLevelEnum:

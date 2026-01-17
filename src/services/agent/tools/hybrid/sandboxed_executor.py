@@ -453,10 +453,10 @@ class SandboxedCodeExecutor:
 
     def close(self):
         """Clean up resources."""
-        if hasattr(self, 'process_pool') and self.process_pool is not None:
+        if hasattr(self, "process_pool") and self.process_pool is not None:
             try:
                 self.process_pool.shutdown(wait=False)
-                self.process_pool = None
+                self.process_pool = None  # type: ignore[assignment]
                 logger.info(f"SandboxedCodeExecutor session {self.session_id} closed")
             except Exception as e:
                 logger.warning(f"Error closing SandboxedCodeExecutor: {e}")
