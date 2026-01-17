@@ -228,9 +228,11 @@ class FlagEvaluator:
             if not user_id:
                 return bool(flag.default_value)
 
-            # Use consistent hashing for deterministic results
+            # Use consistent hashing for deterministic results (not security-sensitive)
             hash_input = f"{self.salt}:{flag.name}:{user_id}"
-            hash_value = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
+            hash_value = int(
+                hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16
+            )  # noqa: S324
             bucket = (hash_value % 10000) / 100.0  # 0-100
 
             return bucket < flag.rollout.percentage

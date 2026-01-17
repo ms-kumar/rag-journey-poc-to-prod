@@ -218,9 +218,9 @@ class ExperimentAssigner:
         if experiment.status != ExperimentStatus.RUNNING:
             raise ValueError(f"Cannot assign to experiment in {experiment.status} status")
 
-        # Create deterministic hash
+        # Create deterministic hash for bucketing (not security-sensitive)
         hash_input = f"{self.salt}:{experiment.id}:{user_id}"
-        hash_value = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
+        hash_value = int(hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16)  # noqa: S324
         bucket = (hash_value % 10000) / 10000.0  # 0.0 to 1.0
 
         # Assign to variant based on weights

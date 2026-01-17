@@ -274,7 +274,10 @@ class CanaryDeployment:
             return True, RollbackReason.LATENCY
 
         # Check quality (if we have quality scores)
-        if self.canary_metrics.quality_scores and self.canary_metrics.avg_quality < self.config.min_quality_score:
+        if (
+            self.canary_metrics.quality_scores
+            and self.canary_metrics.avg_quality < self.config.min_quality_score
+        ):
             return True, RollbackReason.QUALITY
 
         # Check timeout
@@ -468,17 +471,19 @@ class CanaryManager:
             return False
 
         if user_id:
-            # Consistent hashing for sticky routing
+            # Consistent hashing for sticky routing (not security-sensitive)
             import hashlib
 
             hash_input = f"canary:{deployment_id}:{user_id}"
-            hash_value = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
+            hash_value = int(
+                hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16
+            )  # noqa: S324
             bucket = (hash_value % 10000) / 100.0
             return bucket < deployment.current_percentage
-        # Random routing
+        # Random routing for traffic splitting (not security-sensitive)
         import random
 
-        return random.random() * 100 < deployment.current_percentage
+        return random.random() * 100 < deployment.current_percentage  # nosec B311
 
     def evaluate_deployments(self) -> list[tuple[str, str]]:
         """

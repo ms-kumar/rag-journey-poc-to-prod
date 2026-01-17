@@ -1,6 +1,5 @@
 """Tests for canary deployment module."""
 
-
 from src.services.experimentation.canary import (
     CanaryConfig,
     CanaryDeployment,
