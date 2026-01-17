@@ -5,6 +5,9 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage
 
+from src.services.agent.benchmarking import TaskBenchmarker
+from src.services.agent.planning import QueryPlanner
+from src.services.agent.reflection import AnswerCritic, SourceVerifier
 from src.services.agent.state import AgentState
 from src.services.agent.tools.registry import ToolRegistry
 from src.services.agent.tools.router import AgentRouter
@@ -15,18 +18,49 @@ logger = logging.getLogger(__name__)
 class AgentNodes:
     """Agent nodes for LangGraph state machine."""
 
-    def __init__(self, registry: ToolRegistry, router: AgentRouter, llm: Any = None):
+    def __init__(
+        self,
+        registry: ToolRegistry,
+        router: AgentRouter,
+        llm: Any = None,
+        enable_reflection: bool = True,
+        enable_planning: bool = True,
+        enable_benchmarking: bool = False,
+    ):
         """Initialize agent nodes.
 
         Args:
             registry: Tool registry instance
             router: Agent router instance
             llm: Optional LLM for planning/reflection
+            enable_reflection: Enable answer critique and source verification
+            enable_planning: Enable advanced query planning
+            enable_benchmarking: Enable task benchmarking
         """
         self.registry = registry
         self.router = router
         self.llm = llm
         self.logger = logging.getLogger(__name__)
+
+        # Initialize reflection components
+        self.enable_reflection = enable_reflection
+        self.answer_critic: AnswerCritic | None = None
+        self.source_verifier: SourceVerifier | None = None
+        if enable_reflection:
+            self.answer_critic = AnswerCritic(llm=llm)
+            self.source_verifier = SourceVerifier()
+
+        # Initialize planning component
+        self.enable_planning = enable_planning
+        self.query_planner: QueryPlanner | None = None
+        if enable_planning:
+            self.query_planner = QueryPlanner(llm=llm)
+
+        # Initialize benchmarking
+        self.enable_benchmarking = enable_benchmarking
+        self.benchmarker: TaskBenchmarker | None = None
+        if enable_benchmarking:
+            self.benchmarker = TaskBenchmarker(storage_path="logs/agent_benchmarks.jsonl")
 
     async def plan_node(self, state: AgentState) -> dict:
         """Plan node: Decompose query into subtasks.
@@ -40,8 +74,58 @@ class AgentNodes:
         self.logger.info("=== PLAN NODE ===")
         query = state["query"]
 
+        # Use advanced planner if enabled
+        if self.enable_planning and self.query_planner:
+            try:
+                execution_plan = self.query_planner.create_plan(query)
+                plan = [task.description for task in execution_plan.tasks]
+
+                self.logger.info(
+                    f"Advanced planning: {len(plan)} tasks, "
+                    f"complexity={execution_plan.complexity_level}, "
+                    f"strategy={execution_plan.execution_strategy}"
+                )
+                self.logger.info(f"Plan rationale: {execution_plan.rationale}")
+
+                # Start benchmark if enabled
+                if self.enable_benchmarking and self.benchmarker:
+                    benchmark = self.benchmarker.start_benchmark(
+                        query=query,
+                        plan_complexity=execution_plan.complexity_level,
+                        num_tasks=len(plan),
+                    )
+                    state["_benchmark"] = benchmark
+
+            except Exception as e:
+                self.logger.warning(f"Advanced planning failed: {e}, using simple plan")
+                plan = self._simple_plan(query)
+        else:
+            # Simple planning
+            plan = self._simple_plan(query)
+
+        self.logger.info(f"Created plan with {len(plan)} tasks: {plan}")
+
+        return {
+            "plan": plan,
+            "current_task": plan[0] if plan else query,
+            "iteration_count": state.get("iteration_count", 0) + 1,
+            "messages": state.get("messages", [])
+            + [
+                HumanMessage(content=query),
+                AIMessage(content=f"Plan created: {len(plan)} tasks"),
+            ],
+        }
+
+    def _simple_plan(self, query: str) -> list[str]:
+        """Create a simple plan without advanced planning.
+
+        Args:
+            query: Query text
+
+        Returns:
+            List of task descriptions
+        """
         # Simple planning: Check if query needs decomposition
-        # For complex queries, we could use an LLM here
         keywords = ["and", "also", "then", "after", "plus"]
         needs_decomposition = any(kw in query.lower() for kw in keywords)
 
@@ -60,25 +144,13 @@ Provide 2-4 simple, actionable subtasks. Format as a numbered list."""
                     for line in response.split("\n")
                     if line.strip() and any(c.isdigit() for c in line[:3])
                 ]
+                if plan:
+                    return plan
             except Exception as e:
-                self.logger.warning(f"LLM planning failed: {e}, using simple plan")
-                plan = [query]
-        else:
-            # Simple plan: treat entire query as one task
-            plan = [query]
+                self.logger.warning(f"LLM planning failed: {e}")
 
-        self.logger.info(f"Created plan with {len(plan)} tasks: {plan}")
-
-        return {
-            "plan": plan,
-            "current_task": plan[0] if plan else query,
-            "iteration_count": state.get("iteration_count", 0) + 1,
-            "messages": state.get("messages", [])
-            + [
-                HumanMessage(content=query),
-                AIMessage(content=f"Plan created: {len(plan)} tasks"),
-            ],
-        }
+        # Default: single task
+        return [query]
 
     async def route_node(self, state: AgentState) -> dict:
         """Route node: Select appropriate tool.
@@ -125,6 +197,8 @@ Provide 2-4 simple, actionable subtasks. Format as a numbered list."""
         Returns:
             Updated state with execution results
         """
+        import time
+
         self.logger.info("=== EXECUTE NODE ===")
 
         # Get last routing decision
@@ -143,12 +217,26 @@ Provide 2-4 simple, actionable subtasks. Format as a numbered list."""
             # Update history with error
             tool_history[-1]["status"] = "failed"
             tool_history[-1]["error"] = f"Tool '{tool_name}' not found"
+
+            # Record in benchmark
+            if self.enable_benchmarking and self.benchmarker and "_benchmark" in state:
+                self.benchmarker.record_task(
+                    benchmark=state["_benchmark"],
+                    task_id=f"task_{len(tool_history)}",
+                    task_description=current_task,
+                    execution_time=0.0,
+                    success=False,
+                    tool_used=tool_name,
+                    error_message=f"Tool '{tool_name}' not found",
+                )
+
             return {
                 "tool_history": tool_history,
                 "needs_replanning": True,
             }
 
         # Execute tool
+        start_time = time.time()
         try:
             self.logger.info(f"Executing tool '{tool_name}'...")
 
@@ -173,16 +261,33 @@ Provide 2-4 simple, actionable subtasks. Format as a numbered list."""
                         context["context"] = last_result["result"]["results"]
 
             result = await tool.execute(current_task, **context)
+            execution_time = time.time() - start_time
 
             # Update history
             tool_history[-1]["status"] = "success" if result["success"] else "failed"
             tool_history[-1]["result"] = result
+            tool_history[-1]["execution_time"] = execution_time
 
             # Store result
             results = state.get("results", [])
             results.append(result)
 
-            self.logger.info(f"Tool execution {'succeeded' if result['success'] else 'failed'}")
+            # Record in benchmark
+            if self.enable_benchmarking and self.benchmarker and "_benchmark" in state:
+                self.benchmarker.record_task(
+                    benchmark=state["_benchmark"],
+                    task_id=f"task_{len(tool_history)}",
+                    task_description=current_task,
+                    execution_time=execution_time,
+                    success=result["success"],
+                    tool_used=tool_name,
+                    tool_confidence=last_decision.get("confidence", 0.0),
+                )
+
+            self.logger.info(
+                f"Tool execution {'succeeded' if result['success'] else 'failed'} "
+                f"in {execution_time:.2f}s"
+            )
 
             return {
                 "tool_history": tool_history,
@@ -190,9 +295,24 @@ Provide 2-4 simple, actionable subtasks. Format as a numbered list."""
             }
 
         except Exception as e:
+            execution_time = time.time() - start_time
             self.logger.error(f"Tool execution failed: {e}")
             tool_history[-1]["status"] = "failed"
             tool_history[-1]["error"] = str(e)
+            tool_history[-1]["execution_time"] = execution_time
+
+            # Record in benchmark
+            if self.enable_benchmarking and self.benchmarker and "_benchmark" in state:
+                self.benchmarker.record_task(
+                    benchmark=state["_benchmark"],
+                    task_id=f"task_{len(tool_history)}",
+                    task_description=current_task,
+                    execution_time=execution_time,
+                    success=False,
+                    tool_used=tool_name,
+                    error_message=str(e),
+                )
+
             return {
                 "tool_history": tool_history,
                 "needs_replanning": True,
@@ -225,17 +345,70 @@ Provide 2-4 simple, actionable subtasks. Format as a numbered list."""
         # Check stopping conditions
         if iteration_count >= max_iterations:
             self.logger.warning("Max iterations reached")
+            final_answer = self._synthesize_answer(state)
+
+            # Critique answer if reflection enabled
+            critique_result = {}
+            if self.enable_reflection and self.answer_critic:
+                critique_result = self._critique_and_verify(
+                    answer=final_answer,
+                    query=state["query"],
+                    state=state,
+                )
+
+            # Complete benchmark
+            if self.enable_benchmarking and self.benchmarker and "_benchmark" in state:
+                self.benchmarker.complete_benchmark(
+                    benchmark=state["_benchmark"],
+                    final_quality_score=critique_result.get("quality_score", 0.0),
+                )
+
             return {
-                "final_answer": self._synthesize_answer(state),
+                "final_answer": final_answer,
                 "needs_replanning": False,
+                **critique_result,
             }
 
         if completed_tasks >= len(plan):
-            # All tasks completed
+            # All tasks completed - perform reflection
             self.logger.info("All tasks completed successfully")
+            final_answer = self._synthesize_answer(state)
+
+            # Critique answer if reflection enabled
+            critique_result = {}
+            if self.enable_reflection and self.answer_critic:
+                critique_result = self._critique_and_verify(
+                    answer=final_answer,
+                    query=state["query"],
+                    state=state,
+                )
+
+                # Check if answer needs improvement
+                if critique_result.get("needs_revision", False):
+                    self.logger.warning(
+                        "Answer critique suggests revision needed: "
+                        f"{critique_result.get('issues', [])}"
+                    )
+
+                    # If we haven't exceeded max iterations, consider replanning
+                    if iteration_count < max_iterations - 1:
+                        return {
+                            "needs_replanning": True,
+                            "current_task": f"Improve answer quality: {state['query']}",
+                            **critique_result,
+                        }
+
+            # Complete benchmark
+            if self.enable_benchmarking and self.benchmarker and "_benchmark" in state:
+                self.benchmarker.complete_benchmark(
+                    benchmark=state["_benchmark"],
+                    final_quality_score=critique_result.get("quality_score", 0.0),
+                )
+
             return {
-                "final_answer": self._synthesize_answer(state),
+                "final_answer": final_answer,
                 "needs_replanning": False,
+                **critique_result,
             }
 
         # Check if last tool failed
@@ -256,9 +429,77 @@ Provide 2-4 simple, actionable subtasks. Format as a numbered list."""
             }
 
         # Default: finish
+        final_answer = self._synthesize_answer(state)
         return {
-            "final_answer": self._synthesize_answer(state),
+            "final_answer": final_answer,
             "needs_replanning": False,
+        }
+
+    def _critique_and_verify(self, answer: str, query: str, state: AgentState) -> dict[str, Any]:
+        """Critique answer and verify sources.
+
+        Args:
+            answer: The generated answer
+            query: Original query
+            state: Agent state
+
+        Returns:
+            Dictionary with critique results
+        """
+        results = state.get("results", [])
+        tool_history = state.get("tool_history", [])
+
+        # Extract sources from results
+        sources = []
+        for result in results:
+            if result.get("success"):
+                result_data = result.get("result", {})
+                if "documents" in result_data:
+                    sources.extend(result_data["documents"])
+
+        # Return empty result if reflection components not available
+        if not self.answer_critic or not self.source_verifier:
+            return {}
+
+        # Critique answer
+        critique = self.answer_critic.critique_answer(
+            answer=answer,
+            query=query,
+            sources=sources,
+            tool_history=tool_history,
+        )
+
+        # Verify sources
+        verification = self.source_verifier.verify_sources(
+            answer=answer,
+            sources=sources,
+            tool_history=tool_history,
+        )
+
+        self.logger.info(
+            f"Answer critique: quality={critique.overall_score:.2f}, "
+            f"needs_revision={critique.needs_revision}"
+        )
+        self.logger.info(
+            f"Source verification: {verification.sources_verified}/"
+            f"{verification.sources_found} verified, "
+            f"hallucination_risk={verification.hallucination_risk:.2f}"
+        )
+
+        return {
+            "quality_score": critique.overall_score,
+            "completeness_score": critique.completeness_score,
+            "accuracy_score": critique.accuracy_score,
+            "relevance_score": critique.relevance_score,
+            "clarity_score": critique.clarity_score,
+            "source_quality_score": critique.source_quality_score,
+            "needs_revision": critique.needs_revision,
+            "issues": critique.issues,
+            "suggestions": critique.suggestions,
+            "missing_aspects": critique.missing_aspects,
+            "sources_verified": verification.sources_verified,
+            "hallucination_risk": verification.hallucination_risk,
+            "questionable_claims": verification.questionable_claims,
         }
 
     def _synthesize_answer(self, state: AgentState) -> str:

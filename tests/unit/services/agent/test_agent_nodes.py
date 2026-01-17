@@ -67,7 +67,10 @@ class TestAgentNodes:
         """Set up test fixtures."""
         self.registry = ToolRegistry()
         self.router = AgentRouter(self.registry)
-        self.nodes = AgentNodes(self.registry, self.router)
+        # Disable reflection/planning to test basic node behavior
+        self.nodes = AgentNodes(
+            self.registry, self.router, enable_reflection=False, enable_planning=False
+        )
 
         # Register test tools
         self._register_test_tools()

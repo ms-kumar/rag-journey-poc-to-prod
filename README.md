@@ -79,7 +79,9 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 🔴 **Adversarial Testing**: Red-team prompts, jailbreak tests, canary tests for CI, 0% violation rate on 26 attack vectors
 
-🤖 **Agentic RAG (Week 7)**: LangGraph-powered autonomous agent with tool routing, self-reflection, planning, and 6 integrated tools (local + external + hybrid) - [Quick Start](docs/AGENT_QUICKSTART.md)
+🤖 **Agentic RAG (Week 7)**: LangGraph-powered autonomous agent with tool routing, self-reflection, planning, benchmarking, user feedback learning, and 6 integrated tools (local + external + hybrid) - [Quick Start](docs/AGENT_QUICKSTART.md)
+
+🧠 **Self-Reflection & Planning**: Answer critique with quality scoring, source verification, query decomposition, adaptive replanning, task benchmarking, and user feedback analytics
 
 ### Project Structure
 
@@ -107,6 +109,10 @@ src/
     │   ├── graph.py       # LangGraph state machine
     │   ├── nodes.py       # Agent nodes (plan, route, execute, reflect)
     │   ├── state.py       # Agent state definition
+    │   ├── reflection.py  # Answer critique & source verification (NEW)
+    │   ├── planning.py    # Query decomposition & task planning (NEW)
+    │   ├── feedback.py    # User feedback logging & analytics (NEW)
+    │   ├── benchmarking.py # Task execution benchmarking (NEW)
     │   ├── tools/         # Tool registry, router, and implementations
     │   └── metrics/       # Confidence scoring & tracking
     ├── chunking/           # Document chunking

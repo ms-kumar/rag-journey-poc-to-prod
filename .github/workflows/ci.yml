@@ -71,6 +71,8 @@ jobs:
       - name: Run tests
         run: |
           set -euo pipefail
+          # Note: Some HF model tests are skipped to prevent MemoryError on CI
+          # See tests/unit/services/performance/test_overflow_guards.py
           uv run pytest tests -v -k "not slow" --cov=src --cov-report=term-missing
         env:
           CACHE__REDIS_HOST: localhost

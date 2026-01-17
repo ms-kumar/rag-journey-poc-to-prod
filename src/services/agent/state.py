@@ -1,11 +1,11 @@
 """Agent state definition for LangGraph."""
 
-from typing import Annotated, TypedDict
+from typing import Annotated, Any, TypedDict
 
 from langgraph.graph import add_messages
 
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
     """State for the Agentic RAG workflow.
 
     Attributes:
@@ -20,16 +20,18 @@ class AgentState(TypedDict):
         max_iterations: Maximum number of iterations allowed
         iteration_count: Current iteration count
         messages: Chat messages for LangGraph
+        _benchmark: Internal benchmark state for performance tracking
     """
 
     query: str
     plan: list[str]
     current_task: str
-    tool_history: list[dict]
-    results: list[dict]
+    tool_history: list[dict[str, Any]]
+    results: list[dict[str, Any]]
     final_answer: str
     confidence: float
     needs_replanning: bool
     max_iterations: int
     iteration_count: int
-    messages: Annotated[list, add_messages]
+    messages: Annotated[list[Any], add_messages]
+    _benchmark: Any

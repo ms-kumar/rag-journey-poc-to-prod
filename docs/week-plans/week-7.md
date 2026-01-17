@@ -29,6 +29,13 @@ All Week 7 objectives and checklist items have been successfully implemented!
 - ✅ Max iteration limits
 - ✅ Final answer synthesis
 
+### 4. Advanced Self-Reflection & Planning (NEW)
+- ✅ **Answer Critic**: Quality scoring (completeness, accuracy, clarity, relevance)
+- ✅ **Source Verifier**: Verify claims against retrieved sources, detect hallucinations
+- ✅ **Query Planner**: Advanced query decomposition with complexity analysis
+- ✅ **Task Benchmarker**: Track execution times, quality scores, identify bottlenecks
+- ✅ **User Feedback Logger**: Collect ratings, analyze patterns, export analytics
+
 ---
 
 ## ✅ Checklist Completed
@@ -43,6 +50,13 @@ All Week 7 objectives and checklist items have been successfully implemented!
   - Hybrid: Code Executor
 - [x] **Track router success**: Complete metrics tracking system with JSON persistence
 
+### Self-Reflection & Planning (NEW)
+- [x] **Critique draft answers**: AnswerCritic with multi-dimensional quality scoring
+- [x] **Plan steps & re-query**: QueryPlanner with complexity analysis and execution strategies
+- [x] **Verify sources**: SourceVerifier detects hallucinations and missing citations
+- [x] **Benchmark complex tasks**: TaskBenchmarker tracks execution time & quality metrics
+- [x] **Log user feedback**: FeedbackLogger with analytics and pattern detection
+
 ---
 
 ## 📁 Files Created
@@ -55,6 +69,10 @@ src/services/agent/
 ├── graph.py                 # LangGraph state machine
 ├── nodes.py                 # Agent nodes (plan, route, execute, reflect)
 ├── state.py                 # Agent state definition
+├── reflection.py            # Answer critique & source verification (NEW)
+├── planning.py              # Query decomposition & task planning (NEW)
+├── feedback.py              # User feedback logging & analytics (NEW)
+├── benchmarking.py          # Task execution benchmarking (NEW)
 ├── tools/
 │   ├── __init__.py
 │   ├── base.py              # BaseTool interface
@@ -76,6 +94,15 @@ src/services/agent/
     ├── __init__.py
     ├── confidence.py        # Confidence scoring
     └── tracker.py           # MetricsTracker
+```
+
+### Tests (NEW)
+```
+tests/unit/services/agent/
+├── test_reflection.py       # 30 tests for AnswerCritic & SourceVerifier
+├── test_planning.py         # 37 tests for QueryPlanner & ExecutionPlan
+├── test_feedback.py         # 35 tests for FeedbackLogger & analytics
+└── test_benchmarking.py     # 33 tests for TaskBenchmarker
 ```
 
 ### API Layer
@@ -111,6 +138,67 @@ src/main.py                  # Integrated agent router
 ### LangGraph Workflow
 ```
 START → PLAN → ROUTE → EXECUTE → REFLECT → [ROUTE | END]
+                                    ↓
+                            Answer Critique
+                                    ↓
+                            Source Verification
+                                    ↓
+                         [Replan if needed | Return Answer]
+```
+
+### Self-Reflection Components (NEW)
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Answer Critic                             │
+├─────────────────────────────────────────────────────────────┤
+│ • Completeness Score (0-1): Coverage of query aspects       │
+│ • Accuracy Score (0-1): Factual correctness                 │
+│ • Clarity Score (0-1): Readability and structure            │
+│ • Relevance Score (0-1): On-topic assessment                │
+│ • Overall Quality Score: Weighted combination               │
+│ • Issues: List of identified problems                       │
+│ • Suggestions: Actionable improvements                      │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    Source Verifier                           │
+├─────────────────────────────────────────────────────────────┤
+│ • Sources Found: Count of relevant sources                  │
+│ • Sources Verified: Count matching answer claims            │
+│ • Hallucination Risk (0-1): Unsupported claims ratio        │
+│ • Missing Citations: Claims without source backing          │
+│ • Verification Details: Per-source verification status      │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    Query Planner                             │
+├─────────────────────────────────────────────────────────────┤
+│ • Complexity Analysis: simple/moderate/complex              │
+│ • Task Decomposition: Break into subtasks                   │
+│ • Execution Strategy: sequential/parallel/adaptive          │
+│ • Priority Assignment: Order tasks by importance            │
+│ • Estimated Duration: Time budget per task                  │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    Task Benchmarker                          │
+├─────────────────────────────────────────────────────────────┤
+│ • Execution Time Tracking: Per-task timing                  │
+│ • Quality Score Recording: Per-task quality metrics         │
+│ • Bottleneck Detection: Identify slow tasks                 │
+│ • Success Rate Analysis: Track task completion              │
+│ • Historical Comparison: Compare against past performance   │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    Feedback Logger                           │
+├─────────────────────────────────────────────────────────────┤
+│ • User Ratings (1-5): Collect user satisfaction             │
+│ • Feedback Text: Capture detailed comments                  │
+│ • Pattern Detection: Identify improvement areas             │
+│ • Analytics Export: JSON/CSV reporting                      │
+│ • Trend Analysis: Track satisfaction over time              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Tool Categories
@@ -239,13 +327,17 @@ curl http://localhost:8000/api/v1/agent/metrics
 ## 🎯 Key Features
 
 1. **Intelligent Routing**: Confidence-based tool selection
-2. **Self-Reflection**: Automatic result evaluation
-3. **Multi-Step Planning**: Query decomposition
-4. **Fallback Strategies**: Automatic retry with alternative tools
-5. **Metrics Tracking**: Complete performance monitoring
-6. **Safety**: RestrictedPython sandbox for code execution
-7. **Flexibility**: Easy to add new tools
-8. **Observability**: Detailed execution history
+2. **Self-Reflection**: Automatic result evaluation with quality scoring
+3. **Answer Critique**: Multi-dimensional quality assessment (completeness, accuracy, clarity, relevance)
+4. **Source Verification**: Detect hallucinations and missing citations
+5. **Multi-Step Planning**: Query decomposition with complexity analysis
+6. **Task Benchmarking**: Track execution time and quality metrics
+7. **User Feedback**: Collect ratings and analyze improvement patterns
+8. **Fallback Strategies**: Automatic retry with alternative tools
+9. **Metrics Tracking**: Complete performance monitoring
+10. **Safety**: RestrictedPython sandbox for code execution
+11. **Flexibility**: Easy to add new tools
+12. **Observability**: Detailed execution history
 
 ---
 
@@ -341,6 +433,12 @@ The Agentic RAG implementation successfully delivers:
 - ✅ **Complete metrics** tracking and monitoring
 - ✅ **Production-ready** API with FastAPI
 - ✅ **Comprehensive docs** and examples
+- ✅ **Answer critique** with multi-dimensional quality scoring (NEW)
+- ✅ **Source verification** with hallucination detection (NEW)
+- ✅ **Advanced query planning** with complexity analysis (NEW)
+- ✅ **Task benchmarking** for performance tracking (NEW)
+- ✅ **User feedback system** with analytics (NEW)
+- ✅ **135 new tests** for self-reflection & planning modules (NEW)
 
 **Status**: ✅ Ready for production use and further experimentation!
 
@@ -349,5 +447,5 @@ The Agentic RAG implementation successfully delivers:
 **Implementation Date**: January 2026  
 **Framework**: LangGraph + FastAPI  
 **Tools Integrated**: 6 (VectorDB, Reranker, Generator, Web Search, Wikipedia, Code Executor)  
-**Lines of Code**: ~2,500+  
-**Test Coverage**: Manual testing + demo script
+**Lines of Code**: ~4,000+  
+**Test Coverage**: 135 new tests + existing tests (1000+ total)
