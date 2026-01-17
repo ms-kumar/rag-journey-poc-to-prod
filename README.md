@@ -83,6 +83,10 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 🧠 **Self-Reflection & Planning**: Answer critique with quality scoring, source verification, query decomposition, adaptive replanning, task benchmarking, and user feedback analytics
 
+📡 **Full Observability (Week 8)**: Distributed tracing with correlation IDs, structured JSON logging, latency/cost/quality dashboards, SLO monitoring with alerting, and golden traces for regression testing
+
+🎯 **SLO Monitoring**: Real-time Service Level Objective tracking with error budgets, burn rate calculation, severity-based alerts, and dashboard summaries
+
 ### Project Structure
 
 ```
@@ -105,16 +109,22 @@ src/
 │       ├── vectorstore.py # Vector store schemas
 │       └── query_understanding.py  # Query understanding schemas
 └── services/
-    ├── agent/             # Agentic RAG system (NEW)
-    │   ├── graph.py       # LangGraph state machine
-    │   ├── nodes.py       # Agent nodes (plan, route, execute, reflect)
-    │   ├── state.py       # Agent state definition
-    │   ├── reflection.py  # Answer critique & source verification (NEW)
-    │   ├── planning.py    # Query decomposition & task planning (NEW)
-    │   ├── feedback.py    # User feedback logging & analytics (NEW)
-    │   ├── benchmarking.py # Task execution benchmarking (NEW)
-    │   ├── tools/         # Tool registry, router, and implementations
-    │   └── metrics/       # Confidence scoring & tracking
+│   ├── agent/             # Agentic RAG system
+│   │   ├── graph.py       # LangGraph state machine
+│   │   ├── nodes.py       # Agent nodes (plan, route, execute, reflect)
+│   │   ├── state.py       # Agent state definition
+│   │   ├── reflection.py  # Answer critique & source verification
+│   │   ├── planning.py    # Query decomposition & task planning
+│   │   ├── feedback.py    # User feedback logging & analytics
+│   │   ├── benchmarking.py # Task execution benchmarking
+│   │   ├── tools/         # Tool registry, router, and implementations
+│   │   └── metrics/       # Confidence scoring & tracking
+│   ├── observability/      # Production observability (NEW)
+│   │   ├── tracing.py     # Distributed tracing with spans
+│   │   ├── logging.py     # Structured JSON logging
+│   │   ├── metrics.py     # Latency/cost/quality dashboards
+│   │   ├── slo.py         # SLO monitoring & alerting
+│   │   └── golden_traces.py # Golden traces for regression
     ├── chunking/           # Document chunking
     ├── embeddings/         # Text embeddings
     ├── evaluation/         # Evaluation harness & metrics
@@ -126,13 +136,14 @@ src/
     └── vectorstore/        # Qdrant integration & search
 
 tests/
-├── unit/                   # Unit tests (1012 tests organized by module)
+├── unit/                   # Unit tests (1150+ tests organized by module)
 │   └── services/
-│       ├── agent/         # Agent framework tests (6 tests)
+│       ├── agent/         # Agent framework tests (275 tests)
 │       ├── cache/         # Caching tests (5 tests)
 │       ├── embeddings/    # Embedding tests (2 tests)
 │       ├── evaluation/    # Evaluation tests (3 tests)
 │       ├── guardrails/    # Safety tests (6 tests)
+│       ├── observability/ # Observability tests (136 tests) (NEW)
 │       ├── retrieval/     # Retrieval tests (10 tests)
 │       ├── ingestion/     # Ingestion tests (3 tests)
 │       └── performance/   # Performance tests (7 tests)

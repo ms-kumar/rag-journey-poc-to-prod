@@ -363,6 +363,59 @@ class SandboxSettings(BaseConfigSettings):
             return set()
 
 
+class ObservabilitySettings(BaseConfigSettings):
+    """Observability configuration settings for tracing, logging, and metrics."""
+
+    model_config = SettingsConfigDict(
+        env_file=[".env", str(ENV_FILE_PATH)],
+        env_prefix="OBSERVABILITY__",
+        extra="ignore",
+        frozen=True,
+        case_sensitive=False,
+    )
+
+    # Service identification
+    service_name: str = "rag-pipeline"
+    environment: str = "development"
+
+    # Tracing settings
+    tracing_enabled: bool = True
+    trace_file_path: str = "./logs/traces.jsonl"
+    trace_console_output: bool = False
+    trace_batch_size: int = 100
+
+    # Logging settings
+    structured_logging: bool = True
+    log_format: str = "json"  # "json" or "text"
+    log_level: str = "INFO"
+
+    # Metrics settings
+    metrics_enabled: bool = True
+    metrics_max_samples: int = 10000
+    metrics_detailed_tracking: bool = True
+
+    # SLO settings
+    slo_enabled: bool = True
+    slo_availability_target: float = 99.5
+    slo_p95_latency_target_ms: float = 2000.0
+    slo_p99_latency_target_ms: float = 5000.0
+    slo_quality_target: float = 90.0
+
+    # Golden traces settings
+    golden_traces_enabled: bool = True
+    golden_traces_path: str = "./data/golden_traces"
+    golden_traces_latency_tolerance_percent: float = 20.0
+    golden_traces_quality_tolerance: float = 0.1
+
+    @field_validator("trace_file_path", "golden_traces_path")
+    @classmethod
+    def validate_path_dir(cls, v: str) -> str:
+        """Ensure parent directory exists."""
+        if v:
+            Path(v).parent.mkdir(parents=True, exist_ok=True)
+        return v
+
+
 class Settings(BaseConfigSettings):
     """Aggregated settings for the entire application."""
 
@@ -381,6 +434,7 @@ class Settings(BaseConfigSettings):
     )
     cache: CacheSettings = Field(default_factory=CacheSettings)
     sandbox: SandboxSettings = Field(default_factory=SandboxSettings)
+    observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
 
 
 @lru_cache(maxsize=1)
