@@ -7,12 +7,17 @@ ARG PYTHON_VERSION=3.11
 ARG UV_VERSION=0.5
 
 # ============================================
+# UV binary stage (workaround for --from variable expansion)
+# ============================================
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+
+# ============================================
 # Stage 1: Builder
 # ============================================
 FROM python:${PYTHON_VERSION}-slim AS builder
 
 # Install uv (pinned version for reproducibility)
-COPY --from=ghcr.io/astral-sh/uv:${UV_VERSION} /uv /usr/local/bin/uv
+COPY --from=uv /uv /usr/local/bin/uv
 
 # Set working directory
 WORKDIR /app
@@ -107,8 +112,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy uv from builder
-COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /usr/local/bin/uv
+# Copy uv from uv stage
+COPY --from=uv /uv /usr/local/bin/uv
 
 # Install dev dependencies (README.md needed for pyproject.toml)
 COPY pyproject.toml uv.lock README.md ./
