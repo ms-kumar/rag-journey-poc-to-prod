@@ -8,7 +8,7 @@ from src.services.experimentation.analysis import (
     ExperimentAnalysis,
     ExperimentOutcome,
     StatisticalTest,
-    TestResult,
+    StatTestResult,
 )
 from src.services.experimentation.canary import (
     CanaryConfig,
@@ -210,7 +210,7 @@ class TestReportGenerator:
             sample_size=0,
             metric_values=[2.0, 3.0, 4.0, 5.0, 6.0],
         )
-        test_result = TestResult(
+        test_result = StatTestResult(
             test_type=StatisticalTest.T_TEST,
             statistic=2.5,
             p_value=0.02,

@@ -7,7 +7,7 @@ from src.services.experimentation.analysis import (
     ExperimentOutcome,
     StatisticalAnalyzer,
     StatisticalTest,
-    TestResult,
+    StatTestResult,
     analyze_experiment,
     calculate_confidence_interval,
     calculate_lift,
@@ -70,12 +70,12 @@ class TestExperimentOutcome:
         assert data["mean"] == 2.0
 
 
-class TestTestResult:
-    """Tests for TestResult."""
+class TestStatisticalTestResult:
+    """Tests for StatTestResult."""
 
     def test_test_result_to_dict(self):
         """Test result serialization."""
-        result = TestResult(
+        result = StatTestResult(
             test_type=StatisticalTest.T_TEST,
             statistic=2.5,
             p_value=0.01,
@@ -287,7 +287,7 @@ class TestExperimentAnalysis:
             sample_size=0,
             metric_values=[2.0, 3.0, 4.0],
         )
-        test_result = TestResult(
+        test_result = StatTestResult(
             test_type=StatisticalTest.T_TEST,
             statistic=1.5,
             p_value=0.1,

@@ -85,7 +85,7 @@ class ExperimentOutcome:
 
 
 @dataclass
-class TestResult:
+class StatTestResult:
     """Result of a statistical test."""
 
     test_type: StatisticalTest
@@ -117,7 +117,7 @@ class ExperimentAnalysis:
     experiment_name: str
     control_outcome: ExperimentOutcome
     treatment_outcomes: list[ExperimentOutcome]
-    test_results: list[TestResult]
+    test_results: list[StatTestResult]
     winner: str | None = None
     recommendation: str = ""
     analyzed_at: datetime = field(default_factory=datetime.utcnow)
@@ -164,7 +164,7 @@ class StatisticalAnalyzer:
         self,
         control: ExperimentOutcome,
         treatment: ExperimentOutcome,
-    ) -> TestResult:
+    ) -> StatTestResult:
         """
         Perform independent two-sample t-test.
 
@@ -176,7 +176,7 @@ class StatisticalAnalyzer:
 
         # Check for sufficient sample size
         if n1 < 2 or n2 < 2:
-            return TestResult(
+            return StatTestResult(
                 test_type=StatisticalTest.T_TEST,
                 statistic=0.0,
                 p_value=1.0,
@@ -187,7 +187,7 @@ class StatisticalAnalyzer:
         # Pooled standard error
         se = math.sqrt((s1**2 / n1) + (s2**2 / n2))
         if se == 0:
-            return TestResult(
+            return StatTestResult(
                 test_type=StatisticalTest.T_TEST,
                 statistic=0.0,
                 p_value=1.0,
@@ -215,7 +215,7 @@ class StatisticalAnalyzer:
         margin = t_critical * se
         ci = (m2 - m1 - margin, m2 - m1 + margin)
 
-        return TestResult(
+        return StatTestResult(
             test_type=StatisticalTest.T_TEST,
             statistic=t_stat,
             p_value=p_value,
@@ -229,7 +229,7 @@ class StatisticalAnalyzer:
         self,
         control: ExperimentOutcome,
         treatment: ExperimentOutcome,
-    ) -> TestResult:
+    ) -> StatTestResult:
         """
         Perform z-test for proportions (conversion rates).
 
@@ -239,7 +239,7 @@ class StatisticalAnalyzer:
         p1, p2 = control.conversion_rate, treatment.conversion_rate
 
         if n1 == 0 or n2 == 0:
-            return TestResult(
+            return StatTestResult(
                 test_type=StatisticalTest.Z_TEST,
                 statistic=0.0,
                 p_value=1.0,
@@ -253,7 +253,7 @@ class StatisticalAnalyzer:
         # Standard error
         se = math.sqrt(p_pool * (1 - p_pool) * (1 / n1 + 1 / n2))
         if se == 0:
-            return TestResult(
+            return StatTestResult(
                 test_type=StatisticalTest.Z_TEST,
                 statistic=0.0,
                 p_value=1.0,
@@ -273,7 +273,7 @@ class StatisticalAnalyzer:
         margin = z_critical * se_diff
         ci = (p2 - p1 - margin, p2 - p1 + margin)
 
-        return TestResult(
+        return StatTestResult(
             test_type=StatisticalTest.Z_TEST,
             statistic=z_stat,
             p_value=p_value,

@@ -1,3 +1,4 @@
+import warnings
 from collections.abc import Sequence
 from uuid import uuid4
 
@@ -68,7 +69,14 @@ class QdrantVectorStoreClient:
             client_kwargs["api_key"] = config.api_key
         client_kwargs["prefer_grpc"] = str(config.prefer_grpc)
 
-        self.qdrant_client = QdrantClient(**client_kwargs)
+        # Suppress warning about API key with insecure connection (expected in dev/test)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="Api key is used with an insecure connection",
+                category=UserWarning,
+            )
+            self.qdrant_client = QdrantClient(**client_kwargs)
 
         # Ensure collection exists
         self._ensure_collection_exists()

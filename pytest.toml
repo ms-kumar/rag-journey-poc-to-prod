@@ -19,7 +19,6 @@ addopts = [
     "-v",                          # Verbose output
     "--strict-markers",            # Strict marker usage
     "--tb=short",                  # Short traceback format
-    "--disable-warnings",          # Disable warnings (remove to see warnings)
     "-ra",                         # Show summary of all test outcomes
     "--cov-report=term-missing",   # Show missing coverage in terminal
     "--cov-report=html",           # Generate HTML coverage report
@@ -27,6 +26,12 @@ addopts = [
     "--ignore=tests/unit/services/agent/test_sandboxed_executor.py",  # Skip memory-intensive tests
     "--ignore=tests/unit/services/agent/test_code_executor_tool.py",   # Skip memory-intensive tests
     "--ignore=tests/integration/test_sandbox_integration.py",          # Skip memory-intensive tests
+]
+
+# Warning filters
+filterwarnings = [
+    "ignore::UserWarning:qdrant_client",
+    "ignore:Api key is used with an insecure connection:UserWarning",
 ]
 
 # Coverage configuration
