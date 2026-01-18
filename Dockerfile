@@ -28,10 +28,15 @@ COPY pyproject.toml uv.lock README.md ./
 
 # Install dependencies using uv with CPU-only PyTorch to reduce image size
 # This avoids downloading ~3GB of CUDA libraries
-# Use cache mount to speed up rebuilds
-ENV UV_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu
+# Use --reinstall-package to force CPU versions from PyTorch index
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-editable
+    uv sync --frozen --no-dev --no-editable && \
+    uv pip install --reinstall \
+        --index-url https://download.pytorch.org/whl/cpu \
+        torch torchvision torchaudio 2>/dev/null || \
+    uv pip install --reinstall \
+        --index-url https://download.pytorch.org/whl/cpu \
+        torch
 
 # Remove unnecessary files from venv to reduce image size significantly
 RUN find /app/.venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
