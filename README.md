@@ -1,807 +1,649 @@
-# Advanced RAG
+<p align="center">
+  <h1 align="center">🚀 Advanced RAG System</h1>
+  <p align="center">
+    <strong>Production-Ready Retrieval-Augmented Generation</strong>
+  </p>
+  <p align="center">
+    Built with FastAPI • Qdrant • HuggingFace • LangGraph
+  </p>
+</p>
 
-A production-ready Retrieval-Augmented Generation (RAG) system built with FastAPI, Qdrant, and HuggingFace, featuring intelligent caching, multiple embedding providers, and comprehensive quality tooling.
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/tests-1600+-green.svg" alt="1600+ Tests">
+  <img src="https://img.shields.io/badge/coverage-79%25-yellow.svg" alt="79% Coverage">
+  <img src="https://img.shields.io/badge/code%20style-ruff-purple.svg" alt="Ruff">
+  <img src="https://img.shields.io/badge/type%20checked-mypy-blue.svg" alt="Mypy">
+</p>
 
-### Architecture
+---
 
-```
-Documents → Chunking → Embeddings → Vector Store (Qdrant)
-                           ↓
-                    LRU Cache (83x speedup)
-                           ↓
-Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retrieved Chunks → LLM → Answer
-```
+## 📋 Table of Contents
+
+- [Overview](#-overview)
+- [Architecture](#-architecture)
+- [Features](#-features)
+- [Quick Start](#-quick-start)
+- [API Reference](#-api-reference)
+- [Configuration](#-configuration)
+- [Examples](#-examples)
+- [Testing](#-testing)
+- [Documentation](#-documentation)
+- [CI/CD & Deployment](#-cicd--deployment)
+- [Project Structure](#-project-structure)
+- [Acknowledgments](#-acknowledgments)
+
+---
+
+## 🎯 Overview
+
+A **production-ready RAG system** featuring intelligent caching, multiple embedding providers, comprehensive safety guardrails, and agentic capabilities. Built for scale with observability, A/B testing, and automated deployment pipelines.
 
 ### Core Components
 
 | Component | Description |
-|-----------|-------------|
-| **Ingestion** | Multi-format document loading (TXT, MD, HTML, PDF) with BeautifulSoup and PyPDF2 |
-| **Chunking** | Fixed-size and heading-aware chunking with configurable overlap |
-| **Embeddings** | Multiple providers with automatic caching (Hash, E5, BGE, OpenAI, Cohere) |
-| **Cache** | LRU embedding cache with disk persistence (83x speedup on repeated texts) |
-| **Vector Store** | Qdrant integration with efficient similarity search |
-| **Re-ranking** | Cross-encoder re-ranking for improved precision@k with timeout & fallback |
-| **Generation** | HuggingFace transformers for text generation (GPT-2 default) |
-| **API** | FastAPI with async endpoints for ingest and generate |
+|:----------|:------------|
+| 📥 **Ingestion** | Multi-format document loading (TXT, MD, HTML, PDF) |
+| ✂️ **Chunking** | Fixed-size and heading-aware chunking with overlap |
+| 🧮 **Embeddings** | Multiple providers with caching (Hash, E5, BGE, OpenAI, Cohere) |
+| 💾 **Cache** | LRU embedding cache with disk persistence (**83x speedup**) |
+| 🗄️ **Vector Store** | Qdrant integration with similarity search |
+| 🎯 **Re-ranking** | Cross-encoder re-ranking with timeout & fallback |
+| 🤖 **Generation** | HuggingFace transformers for text generation |
+| 🌐 **API** | FastAPI with async endpoints |
 
-### Key Features
+---
 
-✨ **Intelligent Caching**: LRU cache with disk persistence reduces redundant computations by up to 83x
-
-🔄 **Batch Processing**: Efficient batch encoding with configurable batch sizes
-
-🔌 **Multiple Providers**: Support for local (E5, BGE) and API-based (OpenAI, Cohere) embeddings
-
-📄 **Multi-Format**: Ingest TXT, Markdown, HTML, and PDF documents with format-specific processing
-
-🔍 **Advanced Search**: BM25 keyword search, vector similarity, hybrid search, and SPLADE sparse retrieval with metadata filtering
-
-�️ **Metadata Filtering**: Rich filtering by source, date range, tags, author with flexible operators ($in, $gte, $not)
-
-�🎯 **Smart Filtering**: Flexible query filters with range, exact match, text search, and exclusion operators
-
-🔧 **Cross-Encoder Re-ranking**: Improve retrieval precision@k with configurable timeouts and fallback strategies
-🧠 **Query Understanding**: Automatic query rewriting (acronyms, typos, context), synonym expansion, and intent classification (<1ms latency)
-⚡ **Index Mappings**: Optimized payload indices for 10-100x faster filtering on large collections
-
-🔁 **Retry & Backoff**: Exponential backoff with jitter for resilient external service calls
-
-🏥 **Health Checks**: Comprehensive health monitoring with Kubernetes-ready readiness/liveness probes
-
-📈 **Retrieval Metrics**: Track p50/p95/p99 latencies, cache hit rates, and per-search-type performance
-
-⚡ **Performance Profiling**: Complete profiling system with timers, percentile tracking, throughput tests, SLA monitoring, and multi-format reports
-
-💾 **Index Persistence**: Snapshot and restore capabilities for backup and disaster recovery
-
-🧠 **Neural Sparse Retrieval**: SPLADE encoder for efficient learned sparse representations
-
-📏 **Score Normalization**: Normalize similarity scores across different search types for fair comparison
-
-🔀 **Fusion Orchestration**: Combine multiple search methods using RRF or weighted fusion for 33%+ recall uplift
-
-📦 **Schema-First Architecture**: Centralized Pydantic schemas with domain separation (api/ vs services/) for type safety and validation
-
-🧪 **Comprehensive Tests**: 1600+ tests with professional organization mirroring source structure
-
-🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
-
-📊 **Performance Benchmarks**: Built-in retrieval@k and latency benchmarking tools
-
-💰 **Token Budget Management**: Comprehensive token limits and cost estimation for all models
-
-✂️ **Smart Truncation**: Multiple truncation strategies (HEAD/TAIL/MIDDLE) with word boundary preservation
-
-🛡️ **Overflow Protection**: Automatic token limit enforcement prevents model API errors
-
-🛡️ **Guardrails & Safety**: Comprehensive PII detection/redaction, toxicity filtering, jailbreak detection, prompt injection blocking, audit logging, and safe response templates
-
-🔴 **Adversarial Testing**: Red-team prompts, jailbreak tests, canary tests for CI, 0% violation rate on 26 attack vectors
-
-🤖 **Agentic RAG (Week 7)**: LangGraph-powered autonomous agent with tool routing, self-reflection, planning, benchmarking, user feedback learning, and 6 integrated tools (local + external + hybrid) - [Quick Start](docs/AGENT_QUICKSTART.md)
-
-🧠 **Self-Reflection & Planning**: Answer critique with quality scoring, source verification, query decomposition, adaptive replanning, task benchmarking, and user feedback analytics
-
-📡 **Full Observability (Week 8)**: Distributed tracing with correlation IDs, structured JSON logging, latency/cost/quality dashboards, SLO monitoring with alerting, and golden traces for regression testing
-
-🎯 **SLO Monitoring**: Real-time Service Level Objective tracking with error budgets, burn rate calculation, severity-based alerts, and dashboard summaries
-
-🧪 **A/B Experimentation (Week 8)**: Feature flags, experiment variants, canary deployments, statistical analysis with t-tests/chi-square, automated experiment reports
-
-🚀 **CI/CD Pipeline (Week 8)**: Build → test → eval gates, progressive deployment (staging → canary → prod), automatic rollback, rehearsal scripts
-
-### Project Structure
+## 🏗️ Architecture
 
 ```
-src/
-├── main.py                 # FastAPI app entry point
-├── config.py               # App configuration
-├── api/
-│   ├── router/
-│   │   ├── agent_router.py # Agentic RAG endpoints (NEW)
-│   │   └── rag_router.py   # Traditional RAG endpoints
-│   └── v1/endpoints/
-│       └── rag.py          # RAG endpoints (ingest, generate)
-├── models/
-│   └── rag_request.py      # Pydantic models
-├── schemas/                # Centralized Pydantic schemas
-│   ├── api/               # API request/response models
-│   └── services/          # Service-level data structures
-│       ├── agent.py       # Agent schemas (NEW)
-│       ├── reranker.py    # Reranker schemas
-│       ├── vectorstore.py # Vector store schemas
-│       └── query_understanding.py  # Query understanding schemas
-└── services/
-│   ├── agent/             # Agentic RAG system
-│   │   ├── graph.py       # LangGraph state machine
-│   │   ├── nodes.py       # Agent nodes (plan, route, execute, reflect)
-│   │   ├── state.py       # Agent state definition
-│   │   ├── reflection.py  # Answer critique & source verification
-│   │   ├── planning.py    # Query decomposition & task planning
-│   │   ├── feedback.py    # User feedback logging & analytics
-│   │   ├── benchmarking.py # Task execution benchmarking
-│   │   ├── tools/         # Tool registry, router, and implementations
-│   │   └── metrics/       # Confidence scoring & tracking
-│   ├── observability/      # Production observability
-│   │   ├── tracing.py     # Distributed tracing with spans
-│   │   ├── logging.py     # Structured JSON logging
-│   │   ├── metrics.py     # Latency/cost/quality dashboards
-│   │   ├── slo.py         # SLO monitoring & alerting
-│   │   └── golden_traces.py # Golden traces for regression
-│   ├── experimentation/    # A/B testing & feature flags (NEW)
-│   │   ├── experiments.py # Experiment definition & variants
-│   │   ├── feature_flags.py # Feature flag management
-│   │   ├── analysis.py    # Statistical analysis (t-test, chi-square)
-│   │   ├── canary.py      # Canary deployment support
-│   │   └── reports.py     # Automated experiment reports
-    ├── chunking/           # Document chunking
-    ├── embeddings/         # Text embeddings
-    ├── evaluation/         # Evaluation harness & metrics
-    ├── generation/         # LLM generation
-    ├── guardrails/         # Safety (PII, toxicity, audit)
-    ├── ingestion/          # Document loading
-    ├── pipeline/           # RAG orchestration
-    ├── cost/               # Cost tracking & model selection
-    ├── query_understanding/  # Query rewriting & expansion
-    └── vectorstore/        # Qdrant integration & search
-
-tests/
-├── unit/                   # Unit tests (1600+ tests organized by module)
-│   └── services/
-│       ├── agent/         # Agent framework tests (275 tests)
-│       ├── cache/         # Caching tests (5 tests)
-│       ├── cost/          # Cost tracking tests (50+ tests)
-│       ├── embeddings/    # Embedding tests (2 tests)
-│       ├── evaluation/    # Evaluation tests (3 tests)
-│       ├── experimentation/ # A/B & feature flag tests (180+ tests)
-│       ├── guardrails/    # Safety tests (6 tests)
-│       ├── observability/ # Observability tests (136 tests)
-│       ├── retrieval/     # Retrieval tests (10 tests)
-│       ├── ingestion/     # Ingestion tests (3 tests)
-│       └── performance/   # Performance tests (7 tests)
-├── integration/           # Integration tests
-├── fixtures/              # Shared test data
-└── helpers/               # Test utilities
-
-scripts/                    # Operational scripts
-├── ci_eval_gate.py        # CI evaluation gate
-├── check_canary_health.py # Canary health checks (NEW)
-├── rehearse_rollback.py   # Rollback rehearsal (NEW)
-└── generate_dashboard.py  # Metrics dashboard
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              INGESTION PIPELINE                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Documents → Chunking → Embeddings → Vector Store (Qdrant)                  │
+│                              ↓                                               │
+│                       LRU Cache (83x speedup)                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              QUERY PIPELINE                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Query → Query Understanding → Embedding → Similarity Search                │
+│            ↓                                      ↓                          │
+│     (Rewriting, Synonyms)              Cross-Encoder Re-ranking             │
+│                                                   ↓                          │
+│                                        Retrieved Chunks → LLM → Answer      │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Quick Start
+---
 
-1. **Start Qdrant** (using Docker):
-   ```bash
-   docker compose -f infra/docker/compose.yml up -d
-   ```
+## ✨ Features
 
-2. **Install dependencies** (using [uv](https://github.com/astral-sh/uv)):
-   ```bash
-   # Install uv if not already installed
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   
-   # Sync dependencies
-   uv sync
-   
-   # Or install all optional dependencies (dev, embeddings, parsers)
-   uv sync --all-extras
-   ```
+### 🔍 Search & Retrieval
 
-3. **Configure environment**:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your settings
-   ```
+| Feature | Description |
+|:--------|:------------|
+| **Hybrid Search** | BM25 keyword + vector similarity + SPLADE sparse |
+| **Metadata Filtering** | Rich filters by source, date, tags with operators (`$in`, `$gte`, `$not`) |
+| **Cross-Encoder Re-ranking** | Improve precision@k with configurable timeouts |
+| **Query Understanding** | Auto rewriting, synonym expansion, intent classification (<1ms) |
+| **Index Optimization** | Payload indices for 10-100x faster filtering |
+| **Fusion Orchestration** | RRF or weighted fusion for 33%+ recall uplift |
 
-4. **Run the server**:
-   ```bash
-   make run
-   # or with auto-reload for development
-   make dev
-   # or directly
-   uv run python -m src.main
-   ```
+### ⚡ Performance
 
-5. **(Optional) Generate a larger benchmark corpus** (recommended for performance analysis):
-   ```bash
-   # Generates ~a few MiB of synthetic docs under data/generated/ (gitignored)
-   python scripts/generate_benchmark_corpus.py \
-     --docs 1500 \
-     --min-words 140 \
-     --max-words 360 \
-     --jsonl \
-     --combined
-   ```
+| Feature | Description |
+|:--------|:------------|
+| **Intelligent Caching** | LRU cache with disk persistence (83x speedup) |
+| **Batch Processing** | Efficient batch encoding with configurable sizes |
+| **Token Budgets** | Comprehensive limits and cost estimation |
+| **Smart Truncation** | HEAD/TAIL/MIDDLE strategies with word boundaries |
+| **Overflow Protection** | Automatic token limit enforcement |
+| **Performance Profiling** | Timers, percentile tracking, SLA monitoring |
 
-    For **GiB-scale end-to-end benchmarking**, prefer sharded `.txt` files to avoid millions of tiny files:
-    ```bash
-    # Example: ~1 GiB corpus split across 64 shard files
-    python scripts/generate_benchmark_corpus.py \
-       --out-dir data/generated/benchmark_1gib \
-       --target-gib 1 \
-       --shards 64 \
-       --min-words 140 \
-       --max-words 360
+### 🛡️ Safety & Reliability
 
-    # Point ingestion to the generated folder (either via env var or .env)
-    export INGESTION__DIR=./data/generated/benchmark_1gib
-    ```
+| Feature | Description |
+|:--------|:------------|
+| **PII Detection** | Email, phone, SSN, credit cards, IP addresses |
+| **Toxicity Filtering** | Profanity, threats, harassment, hate speech |
+| **Jailbreak Detection** | Prompt injection blocking |
+| **Audit Logging** | Structured JSON logs with severity levels |
+| **Adversarial Testing** | Red-team prompts, 0% violation on 26 attack vectors |
+| **Retry & Backoff** | Exponential backoff with jitter |
+| **Health Checks** | K8s-ready readiness/liveness probes |
 
-6. **Ingest documents**:
-   ```bash
-   make ingest
-   # or
-   curl -X POST http://localhost:8000/api/v1/rag/ingest
-   ```
+### 🤖 Agentic RAG
 
-7. **Query the RAG system**:
-   ```bash
-   curl -X POST http://localhost:8000/api/v1/rag/generate \
-     -H "Content-Type: application/json" \
-     -d '{"prompt": "What is RAG?", "top_k": 3}'
-   ```
+| Feature | Description |
+|:--------|:------------|
+| **LangGraph Agent** | Autonomous agent with tool routing |
+| **Self-Reflection** | Answer critique with quality scoring |
+| **Planning** | Query decomposition, adaptive replanning |
+| **6 Tools** | Local + External + Hybrid integrations |
+| **User Feedback** | Feedback learning and analytics |
 
-### API Endpoints
+### 📡 Production Operations
+
+| Feature | Description |
+|:--------|:------------|
+| **Observability** | Distributed tracing, structured logging, metrics |
+| **SLO Monitoring** | Error budgets, burn rate, severity alerts |
+| **A/B Testing** | Feature flags, experiments, statistical analysis |
+| **CI/CD Pipeline** | Build → Test → Eval → Staging → Canary → Prod |
+| **Rollback** | Automated rollback with rehearsal scripts |
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- Docker (for Qdrant)
+- [uv](https://github.com/astral-sh/uv) (recommended package manager)
+
+### 1️⃣ Start Qdrant
+
+```bash
+docker compose -f infra/docker/compose.yml up -d
+```
+
+### 2️⃣ Install Dependencies
+
+```bash
+# Install uv if needed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install all dependencies
+uv sync --all-extras
+```
+
+### 3️⃣ Configure Environment
+
+```bash
+cp .env.example .env
+# Edit .env with your settings
+```
+
+### 4️⃣ Run the Server
+
+```bash
+# Production mode
+make run
+
+# Development mode (with auto-reload)
+make dev
+```
+
+### 5️⃣ Ingest Documents
+
+```bash
+make ingest
+# or
+curl -X POST http://localhost:8000/api/v1/rag/ingest
+```
+
+### 6️⃣ Query the System
+
+```bash
+curl -X POST http://localhost:8000/api/v1/rag/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "What is RAG?", "top_k": 3}'
+```
+
+---
+
+## 📡 API Reference
+
+### Endpoints
 
 | Endpoint | Method | Description |
-|----------|--------|-------------|
+|:---------|:-------|:------------|
 | `/health` | GET | Health check |
+| `/health/ready` | GET | Readiness probe |
+| `/health/live` | GET | Liveness probe |
 | `/api/v1/rag/ingest` | POST | Ingest and index documents |
 | `/api/v1/rag/generate` | POST | Generate answer using RAG |
+| `/api/v1/agent/query` | POST | Query with agentic RAG |
 
-### Development
-
-#### Code Quality Tools
-
-This project uses modern Python tooling for code quality:
+### Example Request
 
 ```bash
-# Install dev dependencies
-make install
-
-# Format code with ruff
-make format
-
-# Check formatting without changes
-make check
-
-# Lint code with ruff
-make lint
-
-# Auto-fix linting issues
-make lint-fix
-
-# Type check with mypy
-make type-check
-
-# Security scan with bandit
-make security
-
-# Run all quality checks
-make quality
-
-# Setup pre-commit hooks (runs checks automatically)
-make pre-commit
+# Generate with RAG
+curl -X POST http://localhost:8000/api/v1/rag/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Explain machine learning",
+    "top_k": 5,
+    "filters": {"source": "ml_notes.txt"}
+  }'
 ```
 
-#### Testing
+---
 
-The test suite is organized by module with 1012 tests providing comprehensive coverage:
+## ⚙️ Configuration
 
-```bash
-# Run all tests
-make test
+### Environment Variables
 
-# Run tests with coverage report
-make test-cov
+<details>
+<summary><b>📁 Ingestion & Chunking</b></summary>
 
-# Run all tests including slow ones
-make test-all
+| Variable | Default | Description |
+|:---------|:--------|:------------|
+| `INGESTION__DIR` | `./data` | Document ingestion directory |
+| `CHUNKING__CHUNK_SIZE` | `200` | Characters per chunk |
+| `CHUNKING__CHUNK_OVERLAP` | `50` | Overlap between chunks |
+| `CHUNKING__STRATEGY` | `heading_aware` | `fixed` or `heading_aware` |
 
-# Run specific module tests
-uv run pytest tests/unit/services/agent/ -v        # Agent tests
-uv run pytest tests/unit/services/cache/ -v        # Cache tests
-uv run pytest tests/unit/services/guardrails/ -v   # Safety tests
+</details>
 
-# Run tests by marker
-uv run pytest -m agent              # All agent tests
-uv run pytest -m cache              # All cache tests
-uv run pytest -m "not slow"         # Skip slow tests
+<details>
+<summary><b>🧮 Embeddings</b></summary>
 
-# Run specific test file
-uv run pytest tests/unit/services/embeddings/test_embeddings.py -v
+| Variable | Default | Description |
+|:---------|:--------|:------------|
+| `EMBED__PROVIDER` | `hash` | Provider: hash, e5, bge, openai, cohere |
+| `EMBED__MODEL` | `simple-hash` | Model name/identifier |
+| `EMBED__DIM` | `64` | Embedding dimension |
+| `EMBED__CACHE_ENABLED` | `true` | Enable embedding cache |
+| `EMBED__CACHE_MAX_SIZE` | `10000` | Maximum cache entries |
+| `EMBED__CACHE_DIR` | `.cache/embeddings` | Cache directory |
 
-# Run tests matching a pattern
-uv run pytest -k "test_embedding" -v
+</details>
 
-# Run guardrails tests
-make test-canary                    # Quick smoke tests (< 30s)
-make test-adversarial              # Adversarial/red-team tests
-make test-guardrails               # All safety tests
-make test-violation-threshold      # Verify ≤ 0.1% violations
-```
+<details>
+<summary><b>🗄️ Vector Store (Qdrant)</b></summary>
 
-**Test Organization:**
-- `tests/unit/` - Fast, isolated unit tests (organized by service module)
-- `tests/integration/` - End-to-end integration tests
-- `tests/fixtures/` - Shared test data and fixtures
-- `tests/helpers/` - Reusable test utilities and mock factories
+| Variable | Default | Description |
+|:---------|:--------|:------------|
+| `QDRANT__URL` | `http://localhost:6333` | Qdrant server URL |
+| `QDRANT__COLLECTION_NAME` | `naive_collection` | Collection name |
+| `QDRANT__PREFER_GRPC` | `true` | Use gRPC protocol |
+| `QDRANT__ENABLE_BM25` | `false` | Enable BM25 indexing |
 
-See [tests/README.md](tests/README.md) for complete testing documentation.
+</details>
 
-#### Development Workflow
+<details>
+<summary><b>💾 Cache (Redis)</b></summary>
 
-1. **Setup development environment**:
-   ```bash
-   uv sync --all-extras
-   make pre-commit
-   ```
+| Variable | Default | Description |
+|:---------|:--------|:------------|
+| `REDIS__HOST` | `localhost` | Redis host |
+| `REDIS__PORT` | `6379` | Redis port |
+| `CACHE__ENABLED` | `true` | Enable caching |
+| `CACHE__DEFAULT_TTL` | `3600` | Default TTL (seconds) |
 
-2. **Make changes and test**:
-   ```bash
-   make format      # Format code
-   make test        # Run tests
-   ```
+</details>
 
-3. **Run quality checks before commit**:
-   ```bash
-   make quality     # Runs lint, format-check, type-check, security
-   ```
+See [.env.example](.env.example) for complete configuration options.
 
-4. **Development server with auto-reload**:
-   ```bash
-   make dev         # Runs uvicorn with --reload
-   ```
+### Embedding Providers
 
-### Examples & Demos
+| Provider | Type | Models | Configuration |
+|:---------|:-----|:-------|:--------------|
+| **hash** | Local | Deterministic hash | Built-in, no deps |
+| **e5** | Local | E5-small/base/large | `EMBED__PROVIDER=e5` |
+| **bge** | Local | BGE-small/base/large | `EMBED__PROVIDER=bge` |
+| **openai** | API | text-embedding-3-* | `EMBED__PROVIDER=openai` |
+| **cohere** | API | embed-english-* | `EMBED__PROVIDER=cohere` |
 
-#### Embedding Cache Performance
+---
 
-See the performance benefits of intelligent caching:
+## 📚 Examples
+
+### Embedding Cache Performance
 
 ```bash
 python examples/cache_demo.py
 ```
 
-Expected output showing **83x speedup**:
 ```
-Benchmark 2: WITH CACHE
+Benchmark: WITH CACHE
 First run:  5.13ms (cache miss)
 Second run: 0.06ms (cache hit)
-Third run:  0.04ms (cache hit)
-Speedup:    83.1x
+Speedup:    83.1x ⚡
 ```
 
-For detailed caching documentation, see [docs/embedding-cache.md](docs/embedding-cache.md).
-
-#### Retrieval Benchmarks
-
-Run comprehensive retrieval@k and latency benchmarks:
-
-```bash
-python examples/benchmark_retrieval.py
-```
-
-This benchmarks:
-- Document ingestion and chunking latency
-- Embedding generation (cold vs warm cache)
-- Vector store indexing performance  
-- Retrieval@k latency for k=1,3,5,10
-- Answer generation time
-- End-to-end pipeline performance
-
-#### Fusion Orchestration
-
-Combine multiple search methods (vector, BM25, sparse) for better results:
+### Fusion Search
 
 ```python
 from src.services.vectorstore.fusion import fuse_results, FusionConfig
-from src.services.vectorstore.fusion_eval import calculate_uplift
 
-# Get results from different search methods
-vector_results = vector_store.similarity_search("query", k=10)
-bm25_results = vector_store.bm25_search("query", k=10)
-sparse_results = vector_store.sparse_search("query", k=10)
+# Combine multiple search methods
+results = {
+    "vector": vector_store.similarity_search("query", k=10),
+    "bm25": vector_store.bm25_search("query", k=10),
+    "sparse": vector_store.sparse_search("query", k=10)
+}
 
-# Reciprocal Rank Fusion (RRF) - simple and effective
-rrf_config = FusionConfig(method="rrf", rrf_k=60)
-fused = fuse_results({
-    "vector": vector_results,
-    "bm25": bm25_results,
-    "sparse": sparse_results
-}, config=rrf_config)
+# Reciprocal Rank Fusion
+config = FusionConfig(method="rrf", rrf_k=60)
+fused = fuse_results(results, config=config)
+# → 25-50% recall uplift over single method
+```
 
-# Weighted fusion - tune method importance
-weighted_config = FusionConfig(
-    method="weighted",
-    weights={"vector": 0.5, "bm25": 0.3, "sparse": 0.2},
-    normalize_scores=True
+### Guardrails & Safety
+
+```python
+from src.services.guardrails.coordinator import GuardrailsCoordinator
+
+coordinator = GuardrailsCoordinator(
+    enable_pii_check=True,
+    enable_toxicity_check=True,
+    auto_redact_pii=True
 )
-fused = fuse_results(results, config=weighted_config)
 
-# Measure recall uplift
-uplift = calculate_uplift(fused.documents, baseline_results, relevant_docs)
-print(f"Recall uplift: +{uplift.uplift_over_best[5]:.1f}%")
+# Process user query safely
+is_safe, processed = coordinator.process_query(
+    "My SSN is 123-45-6789",
+    user_id="user123"
+)
+# → PII automatically redacted
 ```
 
-**Run fusion benchmark**:
-```bash
-python examples/fusion_benchmark.py
-```
-
-**Fusion Methods**:
-- **RRF**: Reciprocal Rank Fusion - score(d) = Σ 1/(k + rank(d))
-- **Weighted**: Weighted score combination with normalization
-- **Tie-breaking**: Score, rank, or stable strategies
-
-**Typical Results**:
-- 25-50% recall uplift over best single method
-- Better coverage of relevant documents
-- More robust across different query types
-
-#### Token Budget Management
-
-Check token limits and estimate costs for any model:
+### Token Budget Management
 
 ```python
 from src.models.token_budgets import get_embedding_budget, estimate_cost
 
-# Check model limits
 budget = get_embedding_budget("text-embedding-3-small")
 print(f"Max tokens: {budget.max_input_tokens}")
-print(f"Batch size: {budget.recommended_batch_size}")
 
-# Estimate costs
 cost = estimate_cost("gpt-4-turbo", input_tokens=5000, output_tokens=1000)
-print(f"Estimated cost: ${cost:.4f}")
+print(f"Estimated: ${cost:.4f}")
 ```
 
-**Supported Models:**
-- **Embeddings**: OpenAI (text-embedding-3-*), Cohere (embed-*), E5, BGE, Hash
-- **Generation**: GPT-4, GPT-3.5, Claude 3 (Opus/Sonnet/Haiku), Llama 2, Mistral, GPT-2
+<details>
+<summary><b>More Examples</b></summary>
 
-See [docs/token-budgets.md](docs/token-budgets.md) for complete details and cost optimization strategies.
+| Example | Description |
+|:--------|:------------|
+| `cache_demo.py` | Embedding cache performance |
+| `fusion_benchmark.py` | Search fusion comparison |
+| `query_understanding_demo.py` | Query rewriting & expansion |
+| `reranker_demo.py` | Cross-encoder re-ranking |
+| `evaluation_demo.py` | Evaluation harness |
+| `agent_demo.py` | Agentic RAG usage |
+| `sandbox_demo.py` | Code execution sandbox |
 
-#### Text Truncation
-
-Automatically truncate text to fit model token limits:
-
-```python
-from src.services.truncation import TextTruncator, TruncationStrategy
-
-# Create truncator for specific model
-truncator = TextTruncator.from_embedding_model("text-embedding-3-small")
-
-# Truncate with different strategies
-text = "..." * 10000
-truncated = truncator.truncate(text)  # HEAD strategy (keep beginning)
-
-# Or use TAIL (keep end), MIDDLE (keep both ends), NONE (error on exceed)
-truncator = TextTruncator(max_tokens=512, strategy=TruncationStrategy.MIDDLE)
-```
-
-**Features:**
-- 4 truncation strategies: HEAD, TAIL, MIDDLE, NONE
-- Word boundary preservation
-- Batch processing support
-- Model-aware token limits
-- Conservative token estimation (~4 chars/token)
-
-See [docs/truncation.md](docs/truncation.md) for complete truncation guide.
-
-#### Overflow Protection
-
-The system automatically protects against token limit overflows in all embedding and generation calls:
-
-```python
-# Overflow guards are built-in - no manual truncation needed!
-from src.services.embeddings.providers import OpenAIEmbeddings
-
-# Create embedding client
-embedder = OpenAIEmbeddings(model="text-embedding-3-small")
-
-# Automatically truncates to 8191 tokens if needed
-long_texts = ["..." * 10000]  # Way over token limit
-embeddings = embedder.embed(long_texts)  # No error! Auto-truncated
-```
-
-**How It Works:**
-- Embedding providers automatically truncate texts before API calls
-- Generation client reserves space for output tokens
-- Uses model-specific token limits from token budget system
-- Prevents costly API errors and failed requests
-
-**Protected Components:**
-- ✅ OpenAI embeddings (8191 token limit)
-- ✅ Cohere embeddings (512 token limit)
-- ✅ HuggingFace embeddings (model-specific limits)
-- ✅ Text generation (reserves output tokens from input budget)
-
-See [docs/overflow-guards.md](docs/overflow-guards.md) for complete documentation and [tests/test_overflow_guards.py](tests/test_overflow_guards.py) for 12 comprehensive tests.
-
-#### Retrieval Metrics & Performance Tracking
-
-Track detailed retrieval performance metrics including latency percentiles (p50/p95/p99), cache hit rates, and per-search-type statistics:
-
-```python
-from src.services.vectorstore.client import QdrantVectorStoreClient, VectorStoreConfig
-
-# Enable metrics tracking
-config = VectorStoreConfig(
-    qdrant_url="http://localhost:6333",
-    collection_name="my_collection",
-    vector_size=384,
-    enable_metrics=True,  # Enable performance tracking
-    normalize_scores=True  # Normalize scores to [0, 1]
-)
-client = QdrantVectorStoreClient(embeddings, config)
-
-# Perform searches with automatic metrics tracking
-docs = client.similarity_search_with_metrics("machine learning", k=10)
-docs = client.hybrid_search_with_metrics("deep learning", k=5, alpha=0.6)
-
-# Get comprehensive metrics
-metrics = client.get_retrieval_metrics()
-print(f"Total queries: {metrics['total_queries']}")
-print(f"P50 latency: {metrics['latency']['p50']:.2f}ms")
-print(f"P95 latency: {metrics['latency']['p95']:.2f}ms")
-print(f"P99 latency: {metrics['latency']['p99']:.2f}ms")
-print(f"Cache hit rate: {metrics['cache_hit_rate']:.1f}%")
-
-# Per-search-type breakdown
-for search_type, stats in metrics['by_search_type'].items():
-    print(f"{search_type}: {stats['latency']['p50']:.2f}ms (p50)")
-```
-
-**Score Normalization**:
-```python
-from src.services.vectorstore.retrieval_metrics import normalize_scores
-
-# Normalize different search types for fair comparison
-vector_scores = [0.92, 0.87, 0.81]  # Cosine similarity (0-1)
-bm25_scores = [15.3, 12.1, 8.9]  # BM25 (unbounded)
-
-normalized_vector = normalize_scores(vector_scores, method="minmax")
-normalized_bm25 = normalize_scores(bm25_scores, method="sigmoid")
-```
-
-**Index Persistence**:
-```python
-# Create snapshots for backup/disaster recovery
-snapshot_id = client.create_snapshot("backup_2024_01_08")
-
-# List available snapshots
-snapshots = client.list_snapshots()
-
-# Restore from snapshot
-client.restore_snapshot(snapshot_id)
-
-# Export collection info for monitoring
-info = client.export_collection_info()
-print(f"Vectors: {info['vectors_count']}, Indices: {info['payload_indices']}")
-```
-
-**Features:**
-- 📊 **Latency Percentiles**: p50, p90, p95, p99, mean, min, max
-- 🎯 **Score Statistics**: mean, median, std, min, max
-- 💾 **Index Snapshots**: Create, list, restore collection snapshots
-- 📈 **Per-Type Metrics**: Separate stats for vector, BM25, hybrid searches
-- 🔄 **Score Normalization**: MinMax, Z-score, Sigmoid methods
-- 📏 **Quality Metrics**: MRR, Recall@k, Precision@k calculations
-
-#### Guardrails & Safety
-
-Comprehensive safety features to protect against PII leakage and toxic content:
-
-```python
-from src.services.guardrails.coordinator import GuardrailsCoordinator
-from src.services.guardrails.audit_log import AuditLogger
-
-# Initialize guardrails
-audit_logger = AuditLogger(log_file="audit.log")
-coordinator = GuardrailsCoordinator(
-    audit_logger=audit_logger,
-    enable_pii_check=True,
-    enable_toxicity_check=True,
-    auto_redact_pii=True,
-    block_on_toxicity=True
-)
-
-# Process user query
-user_query = "My SSN is 123-45-6789"
-is_safe, processed = coordinator.process_query(user_query, user_id="user123")
-
-if not is_safe:
-    return {"error": processed}  # Safe response template
-
-# Continue with RAG...
-rag_response = your_rag_function(processed)
-
-# Sanitize output
-final_response = coordinator.process_response(rag_response)
-return {"response": final_response}
-```
-
-**Safety Features:**
-- 🔒 **PII Detection**: Email, phone, SSN, credit cards, IP addresses
-- 🚫 **Toxicity Filter**: Profanity, threats, harassment, hate speech
-- 📝 **Audit Logging**: Structured JSON logs with severity levels
-- ✅ **Safe Responses**: Pre-configured templates for violations
-- ⚙️ **Configurable**: Enable/disable checks, auto-redaction, blocking
-
-See [docs/guardrails-implementation.md](docs/guardrails-implementation.md) for complete documentation.
-
-#### Embedding Providers
-
-The system supports multiple embedding providers:
-
-| Provider | Type | Models | Setup |
-|----------|------|--------|-------|
-| **hash** | Local | Deterministic hash-based | Built-in, no dependencies |
-| **e5** | Local | E5-small/base/large | `EMBED_PROVIDER=e5 EMBED_MODEL=e5-small` |
-| **bge** | Local | BGE-small/base/large | `EMBED_PROVIDER=bge EMBED_MODEL=bge-small` |
-| **openai** | API | text-embedding-3-small/large | `EMBED_PROVIDER=openai EMBED_API_KEY=sk-...` |
-| **cohere** | API | embed-english/multilingual | `EMBED_PROVIDER=cohere EMBED_API_KEY=...` |
-
-Example configuration in `.env`:
+Run any example:
 ```bash
-# Using E5 embeddings (local)
-EMBED_PROVIDER=e5
-EMBED_MODEL=intfloat/e5-small-v2
-EMBED_DEVICE=cuda
-
-# Using OpenAI embeddings (API)
-EMBED_PROVIDER=openai
-EMBED_MODEL=text-embedding-3-small
-EMBED_API_KEY=sk-proj-...
+python examples/<example_name>.py
 ```
 
-### Documentation
+</details>
 
-Comprehensive guides for all major features:
+---
 
-| Document | Description |
-|----------|-------------|
-| [AGENT_QUICKSTART.md](docs/AGENT_QUICKSTART.md) | Quick start guide for the agentic RAG system |
-| [retry-backoff.md](docs/retry-backoff.md) | Exponential backoff retry system with jitter for resilient service calls |
-| [health-check.md](docs/health-check.md) | Health monitoring with Kubernetes-ready readiness/liveness probes |
-| [performance-profiling.md](docs/performance-profiling.md) | Performance profiling with timers, percentile tracking, throughput tests, and SLA monitoring |
-| [embedding-cache.md](docs/embedding-cache.md) | LRU embedding cache with 83x speedup and disk persistence |
-| [cache-architecture.md](docs/cache-architecture.md) | Cache architecture design and implementation details |
-| [token-budgets.md](docs/token-budgets.md) | Token limits and cost estimation for all embedding/generation models |
-| [truncation.md](docs/truncation.md) | Text truncation strategies (HEAD/TAIL/MIDDLE) with word boundaries |
-| [overflow-guards.md](docs/overflow-guards.md) | Automatic token limit enforcement to prevent API errors |
-| [bm25-filters.md](docs/bm25-filters.md) | BM25 keyword search and metadata filtering with query builders |
-| [index-mappings.md](docs/index-mappings.md) | Payload index optimization for 10-100x faster filtering |
-| [metadata-filters.md](docs/metadata-filters.md) | Advanced metadata filtering with operators ($in, $gte, $not) |
-| [reranking.md](docs/reranking.md) | Cross-encoder re-ranking for improved retrieval precision |
-| [query-understanding.md](docs/query-understanding.md) | Query rewriting, synonym expansion, and intent classification |
-| [guardrails-implementation.md](docs/guardrails-implementation.md) | Comprehensive safety: PII detection, toxicity filtering, audit logging |
-| [adversarial-testing-runbook.md](docs/adversarial-testing-runbook.md) | Red-team testing procedures and jailbreak prevention |
-| [evaluation-harness.md](docs/evaluation-harness.md) | Evaluation framework with NDCG, MRR, recall metrics |
-| [cost-tracking.md](docs/cost-tracking.md) | Cost tracking, model selection, and budget management |
-| [self-reflection-planning.md](docs/self-reflection-planning.md) | Self-reflection, answer critique, and query decomposition |
-| [observability.md](docs/observability.md) | Distributed tracing, structured logging, and metrics |
-| [experimentation.md](docs/experimentation.md) | A/B testing, feature flags, and statistical analysis |
-| [ci-cd-pipeline.md](docs/ci-cd-pipeline.md) | CI/CD pipeline architecture and deployment strategy |
-| [rollback-playbook.md](docs/rollback-playbook.md) | Rollback procedures and incident response |
+## 🧪 Testing
 
-**Development Progress:**
-- [Week 1](docs/week-plans/week-1.md): Naive RAG Pipeline
-- [Week 2](docs/week-plans/week-2.md): Production-Ready Enhancements (caching, providers, quality)
-- [Week 3](docs/week-plans/week-3.md): Hybrid Retrieval & Fusion (dense, sparse, RRF, weighted fusion)
-- [Week 4](docs/week-plans/week-4.md): Metadata Filtering (source, date, tag filters)
-- [Week 5](docs/week-plans/week-5.md): Evaluation Framework & Guardrails (metrics, safety, audit)
-- [Week 6](docs/week-plans/week-6.md): Schema Consolidation & Architectural Refinement
-- [Week 7](docs/week-plans/week-7.md): Agentic RAG (LangGraph, tools, reflection, planning, feedback)
-- [Week 8](docs/week-plans/week-8.md): Production Operations (observability, A/B testing, CI/CD)
+### Test Suite Overview
 
-### Configuration
+```
+📊 1600+ Tests | 79% Coverage | Organized by Module
+```
 
-All configuration is managed through environment variables and `.env` file:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `INGESTION_DIR` | `./data` | Directory for document ingestion |
-| `CHUNK_SIZE` | `200` | Characters per chunk |
-| `CHUNK_OVERLAP` | `50` | Overlapping characters between chunks |
-| `CHUNKING_STRATEGY` | `heading_aware` | Chunking strategy: `fixed` or `heading_aware` |
-| `EMBED_PROVIDER` | `hash` | Embedding provider |
-| `EMBED_MODEL` | `simple-hash` | Model name/identifier |
-| `EMBED_DIM` | `64` | Embedding dimension |
-| `EMBED_CACHE_ENABLED` | `true` | Enable embedding cache |
-| `EMBED_CACHE_MAX_SIZE` | `10000` | Maximum cache entries |
-| `EMBED_CACHE_DIR` | `.cache/embeddings` | Cache directory |
-| `QDRANT_URL` | `None` | Qdrant server URL |
-| `QDRANT_COLLECTION_NAME` | `naive_collection` | Collection name |
-
-See [.env.example](.env.example) for complete configuration options.
-
-### Testing & Quality
-
-The project maintains high code quality standards with automated tooling and a comprehensive test suite:
+### Running Tests
 
 ```bash
-# Run all quality checks (format, lint, type-check, security)
+# All tests
+make test
+
+# With coverage
+make test-cov
+
+# By module
+make test-agent       # Agent tests
+make test-cache       # Cache tests
+make test-guardrails  # Safety tests
+make test-retrieval   # Retrieval tests
+
+# By marker
+uv run pytest -m "not slow"    # Skip slow tests
+uv run pytest -m agent         # Agent tests only
+
+# Specific file
+uv run pytest tests/unit/services/agent/test_reflection.py -v
+```
+
+### Test Organization
+
+```
+tests/
+├── unit/                    # Fast, isolated unit tests
+│   └── services/
+│       ├── agent/          # 275 tests - Agent framework
+│       ├── cache/          # Cache tests
+│       ├── cost/           # 74 tests - Cost tracking
+│       ├── embeddings/     # Embedding tests
+│       ├── evaluation/     # Evaluation tests
+│       ├── experimentation/# 180+ tests - A/B testing
+│       ├── guardrails/     # Safety tests
+│       ├── observability/  # 136 tests - Monitoring
+│       ├── retrieval/      # Retrieval tests
+│       └── performance/    # Performance tests
+├── integration/            # End-to-end tests
+├── fixtures/               # Shared test data
+└── helpers/                # Test utilities
+```
+
+### Quality Checks
+
+```bash
+# Run all quality checks
 make quality
 
 # Individual checks
-make format      # Format code with ruff
-make lint        # Lint with ruff  
-make type-check  # Type check with mypy
-make security    # Security scan with bandit
-
-# Run tests with coverage
-make test-cov
-
-# Run specific test modules
-pytest tests/unit/services/agent/      # Agent tests
-pytest tests/unit/services/cache/      # Cache tests
-pytest tests/unit/services/guardrails/ # Safety tests
-
-# View coverage report
-open htmlcov/index.html
+make format      # Format with Ruff
+make lint        # Lint with Ruff
+make type-check  # Type check with Mypy
+make security    # Security scan with Bandit
 ```
 
-**Test Suite**: 1012 tests organized by module | 79% coverage
+---
 
-**Test Organization:**
-- 📁 **Unit Tests**: Isolated tests organized by service module
-  - Agent (6 tests), Cache (5 tests), Embeddings (2 tests)
-  - Evaluation (3 tests), Guardrails (6 tests), Retrieval (10 tests)
-  - Ingestion (3 tests), Performance (7 tests)
-- 🔗 **Integration Tests**: End-to-end workflow tests
-- 🛠️ **Test Helpers**: Reusable utilities and mock factories
-- 📦 **Fixtures**: Shared test data and configurations
+## 📖 Documentation
 
-Quality gates enforced:
-- ✅ Ruff formatting (100 char line length)
-- ✅ Ruff linting (E, W, F, I, N, UP, B, C4, SIM, TCH, Q, RET, PTH rules)
-- ✅ Mypy type checking (strict mode)
-- ✅ Bandit security scanning
-- ✅ Pre-commit hooks for automated checks
-- ✅ Module-specific test fixtures and conftest files
+### Core Guides
 
-### CI/CD & Deployment
+| Document | Description |
+|:---------|:------------|
+| [🤖 Agent Quickstart](docs/AGENT_QUICKSTART.md) | Agentic RAG getting started |
+| [🔍 Query Understanding](docs/query-understanding.md) | Rewriting & expansion |
+| [🎯 Reranking](docs/reranking.md) | Cross-encoder re-ranking |
+| [💾 Embedding Cache](docs/embedding-cache.md) | Cache with 83x speedup |
+| [🔀 BM25 Filters](docs/bm25-filters.md) | Keyword search & filtering |
 
-GitHub Actions workflows for continuous integration and deployment:
+### Safety & Reliability
+
+| Document | Description |
+|:---------|:------------|
+| [🛡️ Guardrails](docs/guardrails-implementation.md) | PII, toxicity, audit |
+| [🔴 Adversarial Testing](docs/adversarial-testing-runbook.md) | Red-team procedures |
+| [🔁 Retry & Backoff](docs/retry-backoff.md) | Resilient service calls |
+| [🏥 Health Checks](docs/health-check.md) | K8s probes |
+
+### Performance
+
+| Document | Description |
+|:---------|:------------|
+| [📊 Performance Profiling](docs/performance-profiling.md) | Timers, SLA monitoring |
+| [📏 Token Budgets](docs/token-budgets.md) | Limits & cost estimation |
+| [✂️ Truncation](docs/truncation.md) | Text truncation strategies |
+| [🛡️ Overflow Guards](docs/overflow-guards.md) | Token limit enforcement |
+
+### Operations
+
+| Document | Description |
+|:---------|:------------|
+| [📡 Observability](docs/observability.md) | Tracing, logging, metrics |
+| [🧪 Experimentation](docs/experimentation.md) | A/B testing, feature flags |
+| [🚀 CI/CD Pipeline](docs/ci-cd-pipeline.md) | Deployment strategy |
+| [⏪ Rollback Playbook](docs/rollback-playbook.md) | Incident response |
+
+### Development Progress
+
+| Week | Focus | Status |
+|:-----|:------|:------:|
+| Week 1 | Naive RAG Pipeline | ✅ |
+| Week 2 | Caching, Providers, Quality | ✅ |
+| Week 3 | Hybrid Retrieval & Fusion | ✅ |
+| Week 4 | Metadata Filtering | ✅ |
+| Week 5 | Evaluation & Guardrails | ✅ |
+| Week 6 | Schema Consolidation | ✅ |
+| Week 7 | Agentic RAG | ✅ |
+| Week 8 | Production Operations | ✅ |
+
+---
+
+## 🚢 CI/CD & Deployment
+
+### Workflows
 
 | Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| [ci.yml](.github/workflows/ci.yml) | Push, PR | Run tests, linting, security checks |
-| [eval_gate.yml](.github/workflows/eval_gate.yml) | PR | RAG quality evaluation gate |
-| [deploy.yml](.github/workflows/deploy.yml) | Push (main), manual | Build → staging → canary → production |
-| [rollback.yml](.github/workflows/rollback.yml) | Manual | Rollback to previous version |
+|:---------|:--------|:--------|
+| [ci.yml](.github/workflows/ci.yml) | Push, PR | Tests, linting, security |
+| [eval_gate.yml](.github/workflows/eval_gate.yml) | PR | RAG quality evaluation |
+| [deploy.yml](.github/workflows/deploy.yml) | Push (main) | Full deployment pipeline |
+| [rollback.yml](.github/workflows/rollback.yml) | Manual | Emergency rollback |
 
-**Deployment Pipeline:**
+### Deployment Pipeline
+
 ```
-Build → Test → Eval Gate → Staging → Canary (5%→25%) → Production
+┌─────────┐    ┌──────┐    ┌───────────┐    ┌─────────┐    ┌────────┐    ┌────────────┐
+│  Build  │ → │ Test │ → │ Eval Gate │ → │ Staging │ → │ Canary │ → │ Production │
+└─────────┘    └──────┘    └───────────┘    └─────────┘    └────────┘    └────────────┘
+                                                              5% → 25%        100%
 ```
 
-**Key Commands:**
+### Commands
+
 ```bash
-make docker-build      # Build Docker image
-make deploy-staging    # Deploy to staging
-make deploy-canary     # Deploy canary (5% traffic)
-make deploy-prod       # Deploy to production
-make rollback ENV=prod # Rollback deployment
-make canary-health     # Check canary health
-make rehearse-rollback # Practice rollback procedures
+make docker-build       # Build Docker image
+make deploy-staging     # Deploy to staging
+make deploy-canary      # Deploy canary (5%)
+make deploy-prod        # Deploy to production
+make rollback ENV=prod  # Rollback deployment
+make canary-health      # Check canary health
+make rehearse-rollback  # Practice rollback
 ```
 
-See [docs/ci-cd-pipeline.md](docs/ci-cd-pipeline.md) and [docs/rollback-playbook.md](docs/rollback-playbook.md) for details.
+---
 
-## Special Thanks
+## 📁 Project Structure
 
-- [uv](https://github.com/astral-sh/uv) for fast, modern Python packaging/workflows.
-- [Ruff](https://github.com/astral-sh/ruff) for linting/formatting.
-- [Mother of AI project (arxiv-paper-curator)](https://github.com/jamwithai/arxiv-paper-curator.git) for inspiration and learning resources.
-- The open-source ecosystem that makes this project possible, including:
-   - [FastAPI](https://github.com/fastapi/fastapi) and [Uvicorn](https://github.com/encode/uvicorn)
-   - [Qdrant](https://github.com/qdrant/qdrant) and [qdrant-client](https://github.com/qdrant/qdrant-client)
-   - [LangChain](https://github.com/langchain-ai/langchain)
-   - [Transformers](https://github.com/huggingface/transformers) and [PyTorch](https://github.com/pytorch/pytorch)
-   - [Pydantic](https://github.com/pydantic/pydantic)
+<details>
+<summary><b>Click to expand full structure</b></summary>
+
+```
+src/
+├── main.py                     # FastAPI entry point
+├── config.py                   # Configuration management
+├── dependencies.py             # Dependency injection
+├── exceptions.py               # Custom exceptions
+│
+├── api/
+│   ├── router/
+│   │   ├── agent_router.py     # Agentic RAG endpoints
+│   │   ├── rag_router.py       # Traditional RAG endpoints
+│   │   └── health_router.py    # Health checks
+│   └── v1/endpoints/
+│       └── rag.py              # RAG endpoints
+│
+├── schemas/                    # Pydantic schemas
+│   ├── api/                    # API request/response
+│   └── services/               # Service data structures
+│
+└── services/
+    ├── agent/                  # Agentic RAG
+    │   ├── graph.py            # LangGraph state machine
+    │   ├── nodes.py            # Agent nodes
+    │   ├── reflection.py       # Answer critique
+    │   ├── planning.py         # Query decomposition
+    │   ├── feedback.py         # User feedback
+    │   ├── benchmarking.py     # Task benchmarking
+    │   ├── tools/              # Tool implementations
+    │   └── metrics/            # Confidence scoring
+    │
+    ├── observability/          # Production monitoring
+    │   ├── tracing.py          # Distributed tracing
+    │   ├── logging.py          # Structured logging
+    │   ├── metrics.py          # Metrics dashboard
+    │   ├── slo.py              # SLO monitoring
+    │   └── golden_traces.py    # Regression testing
+    │
+    ├── experimentation/        # A/B testing
+    │   ├── experiments.py      # Experiment management
+    │   ├── feature_flags.py    # Feature flags
+    │   ├── analysis.py         # Statistical analysis
+    │   ├── canary.py           # Canary deployments
+    │   └── reports.py          # Experiment reports
+    │
+    ├── guardrails/             # Safety
+    │   ├── pii_detector.py     # PII detection
+    │   ├── toxicity_filter.py  # Toxicity filtering
+    │   ├── jailbreak_detector.py
+    │   └── audit_log.py        # Audit logging
+    │
+    ├── cache/                  # Caching
+    ├── chunking/               # Document chunking
+    ├── cost/                   # Cost tracking
+    ├── embeddings/             # Text embeddings
+    ├── evaluation/             # Evaluation harness
+    ├── generation/             # LLM generation
+    ├── ingestion/              # Document loading
+    ├── performance/            # Performance profiling
+    ├── pipeline/               # RAG orchestration
+    ├── query_understanding/    # Query processing
+    ├── reranker/               # Re-ranking
+    ├── retry.py                # Retry logic
+    ├── truncation.py           # Text truncation
+    └── vectorstore/            # Qdrant integration
+
+tests/
+├── unit/                       # Unit tests (1600+)
+├── integration/                # Integration tests
+├── fixtures/                   # Test data
+└── helpers/                    # Test utilities
+
+scripts/
+├── ci_eval_gate.py             # CI evaluation
+├── check_canary_health.py      # Canary health
+├── rehearse_rollback.py        # Rollback practice
+└── generate_dashboard.py       # Metrics dashboard
+
+docs/                           # Documentation
+config/                         # Configuration files
+examples/                       # Example scripts
+infra/                          # Infrastructure (Docker)
+```
+
+</details>
+
+---
+
+## 🙏 Acknowledgments
+
+Special thanks to:
+
+- **[uv](https://github.com/astral-sh/uv)** - Fast, modern Python packaging
+- **[Ruff](https://github.com/astral-sh/ruff)** - Lightning-fast linting/formatting
+- **[arxiv-paper-curator](https://github.com/jamwithai/arxiv-paper-curator.git)** - Inspiration
+
+And the amazing open-source ecosystem:
+
+<p align="center">
+  <a href="https://github.com/fastapi/fastapi">FastAPI</a> •
+  <a href="https://github.com/qdrant/qdrant">Qdrant</a> •
+  <a href="https://github.com/langchain-ai/langchain">LangChain</a> •
+  <a href="https://github.com/huggingface/transformers">Transformers</a> •
+  <a href="https://github.com/pydantic/pydantic">Pydantic</a>
+</p>
+
+---
+
+<p align="center">
+  <sub>Built with ❤️ for production RAG systems</sub>
+</p>
