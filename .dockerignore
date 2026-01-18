@@ -1,0 +1,105 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+env
+ENV
+*.egg-info
+.eggs
+dist
+build
+*.whl
+pip-log.txt
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*.sublime-*
+.project
+.pydevproject
+.settings
+
+# Testing
+.pytest_cache
+.coverage
+.coverage.*
+coverage.xml
+htmlcov
+.tox
+.nox
+.hypothesis
+*.cover
+nosetests.xml
+
+# CI/CD
+.github
+.circleci
+.travis.yml
+azure-pipelines.yml
+Jenkinsfile
+
+# Documentation
+docs
+*.md
+!README.md
+*.rst
+*.txt
+!requirements*.txt
+
+# Data and logs
+data
+logs
+*.log
+tmp
+temp
+
+# Local config
+.env
+.env.*
+!.env.example
+*.local
+
+# Other
+infra
+scripts
+tests
+examples
+other
+Makefile
+*.json
+!config/*.json
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker
+
+# Misc large/unnecessary files
+*.tar
+*.tar.gz
+*.zip
+*.rar
+*.7z
+*.pkl
+*.pickle
+*.parquet
+*.csv
+*.xlsx
+*.db
+*.sqlite
+*.sqlite3
+node_modules
+.npm
+*.lock
+!uv.lock

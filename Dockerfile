@@ -2,13 +2,17 @@
 # Stage 1: Build stage with uv
 # Stage 2: Production runtime
 
+# Pin versions for reproducibility
+ARG PYTHON_VERSION=3.11
+ARG UV_VERSION=0.5
+
 # ============================================
 # Stage 1: Builder
 # ============================================
-FROM python:3.11-slim AS builder
+FROM python:${PYTHON_VERSION}-slim AS builder
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Install uv (pinned version for reproducibility)
+COPY --from=ghcr.io/astral-sh/uv:${UV_VERSION} /uv /usr/local/bin/uv
 
 # Set working directory
 WORKDIR /app
@@ -17,8 +21,32 @@ WORKDIR /app
 # README.md is needed because pyproject.toml references it
 COPY pyproject.toml uv.lock README.md ./
 
-# Install dependencies using uv
-RUN uv sync --frozen --no-dev --no-editable
+# Install dependencies using uv with CPU-only PyTorch to reduce image size
+# This avoids downloading ~3GB of CUDA libraries
+# Use cache mount to speed up rebuilds
+ENV UV_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-editable
+
+# Remove unnecessary files from venv to reduce image size significantly
+RUN find /app/.venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
+    find /app/.venv -type f -name "*.pyc" -delete 2>/dev/null || true && \
+    find /app/.venv -type f -name "*.pyo" -delete 2>/dev/null || true && \
+    find /app/.venv -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true && \
+    find /app/.venv -type d -name "test" -exec rm -rf {} + 2>/dev/null || true && \
+    find /app/.venv -type d -name "docs" -exec rm -rf {} + 2>/dev/null || true && \
+    find /app/.venv -type d -name "examples" -exec rm -rf {} + 2>/dev/null || true && \
+    find /app/.venv -type f -name "*.md" -delete 2>/dev/null || true && \
+    find /app/.venv -type f -name "*.rst" -delete 2>/dev/null || true && \
+    find /app/.venv -type f -name "*.txt" ! -name "RECORD" -delete 2>/dev/null || true && \
+    find /app/.venv -type f -name "LICENSE*" -delete 2>/dev/null || true && \
+    find /app/.venv -type f -name "NOTICE*" -delete 2>/dev/null || true && \
+    find /app/.venv -type f -name "AUTHORS*" -delete 2>/dev/null || true && \
+    find /app/.venv -type f -name "CHANGELOG*" -delete 2>/dev/null || true && \
+    find /app/.venv -type f -name "*.c" -delete 2>/dev/null || true && \
+    find /app/.venv -type f -name "*.h" -delete 2>/dev/null || true && \
+    find /app/.venv -type f -name "*.pxd" -delete 2>/dev/null || true && \
+    rm -rf /app/.venv/share/man /app/.venv/share/doc 2>/dev/null || true
 
 # Copy source code
 COPY src/ ./src/
@@ -27,37 +55,35 @@ COPY config/ ./config/
 # ============================================
 # Stage 2: Production Runtime
 # ============================================
-FROM python:3.11-slim AS production
+FROM python:${PYTHON_VERSION}-slim AS production
 
-# Install runtime dependencies
+# Add labels for container metadata
+LABEL org.opencontainers.image.source="https://github.com/ms-kumar/rag-journey-poc-to-prod"
+LABEL org.opencontainers.image.description="RAG API Production Image"
+
+# Install runtime dependencies in single layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash appuser
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash appuser
 
 # Set working directory
 WORKDIR /app
 
-# Copy virtual environment from builder
-COPY --from=builder /app/.venv /app/.venv
-
-# Copy application code
-COPY --from=builder /app/src /app/src
-COPY --from=builder /app/config /app/config
-
-# Set ownership
-RUN chown -R appuser:appuser /app
+# Copy virtual environment and application code with ownership set
+# Using --chown avoids extra chown layer
+COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
+COPY --from=builder --chown=appuser:appuser /app/src /app/src
+COPY --from=builder --chown=appuser:appuser /app/config /app/config
 
 # Switch to non-root user
 USER appuser
 
 # Set environment variables
-ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONPATH="/app"
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -82,11 +108,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy uv from builder
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /usr/local/bin/uv
 
-# Install dev dependencies
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-editable
+# Install dev dependencies (README.md needed for pyproject.toml)
+COPY pyproject.toml uv.lock README.md ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-editable
 
 USER appuser
 

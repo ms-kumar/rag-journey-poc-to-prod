@@ -70,6 +70,29 @@ jobs:
           --health-retries 5
 
     steps:
+      - name: Check initial disk space
+        run: |
+          echo "📊 Initial disk space:"
+          df -h /
+          echo ""
+          echo "Largest directories in /usr:"
+          du -sh /usr/* 2>/dev/null | sort -rh | head -10 || true
+          echo ""
+          echo "Largest directories in /opt:"
+          du -sh /opt/* 2>/dev/null | sort -rh | head -10 || true
+
+      - name: Free up disk space
+        run: |
+          echo "🧹 Cleaning up disk space..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune -af
+          echo ""
+          echo "📊 Disk space after cleanup:"
+          df -h /
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
