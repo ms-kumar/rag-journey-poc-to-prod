@@ -21,11 +21,7 @@ jobs:
         image: qdrant/qdrant:latest
         ports:
           - 6333:6333
-        options: >-
-          --health-cmd "curl -f http://localhost:6333/health || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          - 6334:6334
       redis:
         image: redis:7-alpine
         ports:
@@ -54,14 +50,25 @@ jobs:
         run: |
           uv sync --all-extras
 
+      - name: Wait for Qdrant to be ready
+        run: |
+          echo "Waiting for Qdrant to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:6333/healthz > /dev/null 2>&1; then
+              echo "Qdrant is ready!"
+              break
+            fi
+            echo "Waiting for Qdrant... ($i/30)"
+            sleep 2
+          done
+          curl -f http://localhost:6333/healthz || (echo "Qdrant failed to start" && exit 1)
+
       - name: Create evaluation datasets
         run: |
           uv run python scripts/create_eval_datasets.py
 
       - name: Ingest sample documents for evaluation
         run: |
-          # Wait for Qdrant to be ready
-          sleep 5
           # Run ingestion via Python script
           uv run python -c "
           from src.config import settings
