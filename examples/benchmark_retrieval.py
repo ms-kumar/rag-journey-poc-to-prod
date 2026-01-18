@@ -49,11 +49,7 @@ class RetrievalBenchmark:
         
         self.vectorstore_client = get_vectorstore_client(
             embeddings=embeddings_adapter,
-            qdrant_url=config.qdrant_url,
-            api_key=config.qdrant_api_key,
-            collection_name=config.qdrant_collection_name,
-            prefer_grpc=config.qdrant_prefer_grpc,
-            vector_size=config.embed_dim,
+            settings=config.vectorstore,
         )
         self.generation_client = get_generator()
 

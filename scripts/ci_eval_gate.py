@@ -64,12 +64,7 @@ def create_retrieval_function(config: Settings):
     embeddings_adapter = LangChainEmbeddingsAdapter(embed_client)
     vectorstore = get_vectorstore_client(
         embeddings=embeddings_adapter,
-        qdrant_url=config.vectorstore.url,
-        api_key=config.vectorstore.api_key,
-        collection_name=config.vectorstore.collection_name,
-        prefer_grpc=config.vectorstore.prefer_grpc,
-        vector_size=config.embedding.dim,
-        enable_bm25=config.vectorstore.enable_bm25,
+        settings=config.vectorstore,
     )
 
     def retrieval_fn(query: str, k: int = 20):
