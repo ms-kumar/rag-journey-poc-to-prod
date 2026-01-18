@@ -200,6 +200,7 @@ jobs:
         image: qdrant/qdrant:latest
         ports:
           - 6333:6333
+          - 6334:6334
       redis:
         image: redis:7-alpine
         ports:
@@ -248,6 +249,7 @@ jobs:
           "
         env:
           QDRANT__URL: http://localhost:6333
+          VECTORSTORE__PREFER_GRPC: "false"
           REDIS__HOST: localhost
           REDIS__PORT: 6379
 
@@ -263,6 +265,7 @@ jobs:
             --output results/eval_result.json || true
         env:
           QDRANT__URL: http://localhost:6333
+          VECTORSTORE__PREFER_GRPC: "false"
           REDIS__HOST: localhost
           REDIS__PORT: 6379
 
