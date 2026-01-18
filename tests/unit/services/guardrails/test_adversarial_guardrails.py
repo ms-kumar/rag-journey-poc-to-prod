@@ -16,12 +16,12 @@ from src.services.guardrails.coordinator import GuardrailsCoordinator
 class TestAdversarialGuardrails:
     """Adversarial testing for guardrails system."""
 
-    @pytest.fixture
-    def coordinator(self, tmp_path):
-        """Create guardrails coordinator for testing."""
+    @pytest.fixture(scope="class")
+    def coordinator(self, tmp_path_factory):
+        """Create guardrails coordinator for testing (shared across class)."""
         from src.services.guardrails.audit_log import AuditLogger
 
-        log_file = tmp_path / "audit.log"
+        log_file = tmp_path_factory.mktemp("logs") / "audit.log"
         audit_logger = AuditLogger(log_file=log_file, log_to_console=False)
 
         return GuardrailsCoordinator(
@@ -33,9 +33,9 @@ class TestAdversarialGuardrails:
             block_on_toxicity=True,
         )
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def adversarial_prompts(self):
-        """Load adversarial prompts from dataset."""
+        """Load adversarial prompts from dataset (shared across class)."""
         # Navigate to data directory at project root
         prompts_file = (
             Path(__file__).parent.parent.parent.parent.parent / "data" / "adversarial_prompts.json"
@@ -271,12 +271,12 @@ class TestAdversarialGuardrails:
 class TestRefusalBehavior:
     """Test that the system correctly refuses inappropriate requests."""
 
-    @pytest.fixture
-    def coordinator(self, tmp_path):
-        """Create guardrails coordinator for testing."""
+    @pytest.fixture(scope="class")
+    def coordinator(self, tmp_path_factory):
+        """Create guardrails coordinator for testing (shared across class)."""
         from src.services.guardrails.audit_log import AuditLogger
 
-        log_file = tmp_path / "audit.log"
+        log_file = tmp_path_factory.mktemp("logs") / "audit.log"
         audit_logger = AuditLogger(log_file=log_file, log_to_console=False)
 
         return GuardrailsCoordinator(
@@ -332,12 +332,12 @@ class TestRefusalBehavior:
 class TestCanaryTests:
     """Canary tests for CI - quick smoke tests for guardrails."""
 
-    @pytest.fixture
-    def coordinator(self, tmp_path):
-        """Create guardrails coordinator for testing."""
+    @pytest.fixture(scope="class")
+    def coordinator(self, tmp_path_factory):
+        """Create guardrails coordinator for testing (shared across class)."""
         from src.services.guardrails.audit_log import AuditLogger
 
-        log_file = tmp_path / "audit.log"
+        log_file = tmp_path_factory.mktemp("logs") / "audit.log"
         audit_logger = AuditLogger(log_file=log_file, log_to_console=False)
 
         return GuardrailsCoordinator(

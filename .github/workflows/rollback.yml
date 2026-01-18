@@ -34,6 +34,11 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+permissions:
+  contents: read
+  packages: write
+  issues: write
+
 jobs:
   validate:
     name: Validate Rollback

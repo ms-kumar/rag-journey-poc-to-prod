@@ -37,6 +37,11 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   DOCKER_BUILDKIT: 1
 
+permissions:
+  contents: read
+  packages: write
+  issues: write
+
 jobs:
   # ===========================================
   # Build Stage
