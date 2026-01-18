@@ -1,4 +1,4 @@
-.PHONY: clean format check lint run ingest test help sync install test-cov test-all type-check security quality pre-commit dev eval-datasets eval eval-ci dashboard eval-full test-canary test-adversarial test-guardrails test-violation-threshold guardrails-report guardrails-audit-review test-agent test-cache test-embeddings test-evaluation test-retrieval test-ingestion test-performance test-observability docker-build docker-push deploy-staging deploy-canary deploy-prod rollback canary-health rehearse-rollback
+.PHONY: clean format check lint run ingest test help sync install test-cov test-all type-check security quality pre-commit dev eval-datasets eval eval-ci dashboard eval-full test-canary test-adversarial test-guardrails test-violation-threshold guardrails-report guardrails-audit-review test-agent test-cache test-cost test-embeddings test-evaluation test-experimentation test-retrieval test-ingestion test-performance test-observability docker-build docker-push deploy-staging deploy-canary deploy-prod rollback canary-health rehearse-rollback
 
 # Python and project settings
 PYTHON := uv run python
@@ -35,10 +35,12 @@ help:
 	@echo "Module-specific test targets:"
 	@echo "  make test-agent       - Run agent module tests"
 	@echo "  make test-cache       - Run cache module tests"
+	@echo "  make test-cost        - Run cost module tests"
 	@echo "  make test-embeddings  - Run embeddings module tests"
 	@echo "  make test-evaluation  - Run evaluation module tests"
 	@echo "  make test-guardrails  - Run guardrails module tests"
 	@echo "  make test-observability - Run observability module tests"
+	@echo "  make test-experimentation - Run experimentation module tests"
 	@echo "  make test-retrieval   - Run retrieval module tests"
 	@echo "  make test-ingestion   - Run ingestion module tests"
 	@echo "  make test-performance - Run performance module tests"
@@ -154,6 +156,7 @@ test-all: sync
 	@echo "Running tests in batches to avoid memory issues..."
 	@uv run python -m pytest $(TESTS_DIR)/unit/services/agent -p no:cacheprovider --tb=line -q || true
 	@uv run python -m pytest $(TESTS_DIR)/unit/services/cache -p no:cacheprovider --tb=line -q || true
+	@uv run python -m pytest $(TESTS_DIR)/unit/services/cost -p no:cacheprovider --tb=line -q || true
 	@uv run python -m pytest $(TESTS_DIR)/unit/services/embeddings -p no:cacheprovider --tb=line -q || true
 	@uv run python -m pytest $(TESTS_DIR)/unit/services/observability -p no:cacheprovider --tb=line -q || true
 	@uv run python -m pytest $(TESTS_DIR)/unit/services/experimentation -p no:cacheprovider --tb=line -q || true
@@ -200,6 +203,10 @@ test-observability: sync
 test-experimentation: sync
 	@echo "Running experimentation module tests..."
 	uv run python -m pytest $(TESTS_DIR)/unit/services/experimentation/ -v
+
+test-cost: sync
+	@echo "Running cost module tests..."
+	uv run python -m pytest $(TESTS_DIR)/unit/services/cost/ -v
 
 # Create evaluation datasets
 eval-datasets: sync

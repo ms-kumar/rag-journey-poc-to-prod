@@ -63,7 +63,7 @@ Query → Embedding → Similarity Search → Cross-Encoder Re-ranking → Retri
 
 📦 **Schema-First Architecture**: Centralized Pydantic schemas with domain separation (api/ vs services/) for type safety and validation
 
-🧪 **Comprehensive Tests**: 1500+ tests with professional organization mirroring source structure
+🧪 **Comprehensive Tests**: 1600+ tests with professional organization mirroring source structure
 
 🛠️ **Quality Tooling**: Ruff (lint/format), mypy (type-check), bandit (security), pre-commit hooks
 
@@ -142,14 +142,16 @@ src/
     ├── guardrails/         # Safety (PII, toxicity, audit)
     ├── ingestion/          # Document loading
     ├── pipeline/           # RAG orchestration
+    ├── cost/               # Cost tracking & model selection
     ├── query_understanding/  # Query rewriting & expansion
     └── vectorstore/        # Qdrant integration & search
 
 tests/
-├── unit/                   # Unit tests (1500+ tests organized by module)
+├── unit/                   # Unit tests (1600+ tests organized by module)
 │   └── services/
 │       ├── agent/         # Agent framework tests (275 tests)
 │       ├── cache/         # Caching tests (5 tests)
+│       ├── cost/          # Cost tracking tests (50+ tests)
 │       ├── embeddings/    # Embedding tests (2 tests)
 │       ├── evaluation/    # Evaluation tests (3 tests)
 │       ├── experimentation/ # A/B & feature flag tests (180+ tests)
@@ -663,16 +665,29 @@ Comprehensive guides for all major features:
 
 | Document | Description |
 |----------|-------------|
+| [AGENT_QUICKSTART.md](docs/AGENT_QUICKSTART.md) | Quick start guide for the agentic RAG system |
 | [retry-backoff.md](docs/retry-backoff.md) | Exponential backoff retry system with jitter for resilient service calls |
 | [health-check.md](docs/health-check.md) | Health monitoring with Kubernetes-ready readiness/liveness probes |
 | [performance-profiling.md](docs/performance-profiling.md) | Performance profiling with timers, percentile tracking, throughput tests, and SLA monitoring |
 | [embedding-cache.md](docs/embedding-cache.md) | LRU embedding cache with 83x speedup and disk persistence |
+| [cache-architecture.md](docs/cache-architecture.md) | Cache architecture design and implementation details |
 | [token-budgets.md](docs/token-budgets.md) | Token limits and cost estimation for all embedding/generation models |
 | [truncation.md](docs/truncation.md) | Text truncation strategies (HEAD/TAIL/MIDDLE) with word boundaries |
 | [overflow-guards.md](docs/overflow-guards.md) | Automatic token limit enforcement to prevent API errors |
 | [bm25-filters.md](docs/bm25-filters.md) | BM25 keyword search and metadata filtering with query builders |
 | [index-mappings.md](docs/index-mappings.md) | Payload index optimization for 10-100x faster filtering |
+| [metadata-filters.md](docs/metadata-filters.md) | Advanced metadata filtering with operators ($in, $gte, $not) |
+| [reranking.md](docs/reranking.md) | Cross-encoder re-ranking for improved retrieval precision |
+| [query-understanding.md](docs/query-understanding.md) | Query rewriting, synonym expansion, and intent classification |
 | [guardrails-implementation.md](docs/guardrails-implementation.md) | Comprehensive safety: PII detection, toxicity filtering, audit logging |
+| [adversarial-testing-runbook.md](docs/adversarial-testing-runbook.md) | Red-team testing procedures and jailbreak prevention |
+| [evaluation-harness.md](docs/evaluation-harness.md) | Evaluation framework with NDCG, MRR, recall metrics |
+| [cost-tracking.md](docs/cost-tracking.md) | Cost tracking, model selection, and budget management |
+| [self-reflection-planning.md](docs/self-reflection-planning.md) | Self-reflection, answer critique, and query decomposition |
+| [observability.md](docs/observability.md) | Distributed tracing, structured logging, and metrics |
+| [experimentation.md](docs/experimentation.md) | A/B testing, feature flags, and statistical analysis |
+| [ci-cd-pipeline.md](docs/ci-cd-pipeline.md) | CI/CD pipeline architecture and deployment strategy |
+| [rollback-playbook.md](docs/rollback-playbook.md) | Rollback procedures and incident response |
 
 **Development Progress:**
 - [Week 1](docs/week-plans/week-1.md): Naive RAG Pipeline
