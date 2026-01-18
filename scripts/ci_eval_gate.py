@@ -22,27 +22,34 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def load_config() -> ThresholdConfig:
+def load_config(config_path: str | None = None) -> ThresholdConfig:
     """
     Load threshold configuration from file or use defaults.
+
+    Args:
+        config_path: Optional path to threshold config file
 
     Returns:
         ThresholdConfig with evaluation thresholds
     """
-    config_path = Path("config/eval_thresholds.json")
+    config_path = Path(config_path) if config_path else Path("config/eval_thresholds.json")
 
     if config_path.exists():
         logger.info(f"Loading thresholds from {config_path}")
         with open(config_path) as f:
             config_data = json.load(f)
 
+        # Support both flat and nested JSON structures
+        retrieval = config_data.get("retrieval_thresholds", config_data)
+        performance = config_data.get("performance_thresholds", config_data)
+
         return ThresholdConfig(
-            min_precision_at_5=config_data.get("min_precision_at_5", 0.6),
-            min_recall_at_10=config_data.get("min_recall_at_10", 0.7),
-            min_mrr=config_data.get("min_mrr", 0.5),
-            min_ndcg_at_10=config_data.get("min_ndcg_at_10", 0.65),
-            min_map=config_data.get("min_map", 0.6),
-            max_latency_p95=config_data.get("max_latency_p95", 2000.0),
+            min_precision_at_5=retrieval.get("min_precision_at_5", 0.6),
+            min_recall_at_10=retrieval.get("min_recall_at_10", 0.7),
+            min_mrr=retrieval.get("min_mrr", 0.5),
+            min_ndcg_at_10=retrieval.get("min_ndcg_at_10", 0.65),
+            min_map=retrieval.get("min_map", 0.6),
+            max_latency_p95=performance.get("max_latency_p95", 2000.0),
         )
     else:
         logger.info("Using default thresholds")
@@ -152,12 +159,18 @@ def main():
         action="store_true",
         help="Use stricter thresholds for evaluation",
     )
+    parser.add_argument(
+        "--thresholds",
+        type=str,
+        default=None,
+        help="Path to threshold config file (default: config/eval_thresholds.json)",
+    )
 
     args = parser.parse_args()
 
     # Load configuration
     config = Settings()
-    thresholds = load_config()
+    thresholds = load_config(args.thresholds)
 
     # Apply strict thresholds if requested
     if args.strict:

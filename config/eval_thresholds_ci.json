@@ -1,0 +1,31 @@
+{
+  "description": "Relaxed evaluation thresholds for CI testing with hash embeddings",
+  "version": "1.0",
+  "last_updated": "2026-01-18",
+  
+  "retrieval_thresholds": {
+    "min_precision_at_5": 0.0,
+    "min_recall_at_10": 0.0,
+    "min_mrr": 0.0,
+    "min_ndcg_at_10": 0.0,
+    "min_map": 0.0
+  },
+  
+  "generation_thresholds": {
+    "min_faithfulness": 0.0,
+    "min_relevance": 0.0,
+    "min_answer_quality": 0.0
+  },
+  
+  "performance_thresholds": {
+    "max_latency_p95": 5000.0,
+    "max_latency_p99": 10000.0
+  },
+  
+  "notes": [
+    "These thresholds are intentionally set to 0 for CI testing",
+    "CI uses hash embeddings which don't produce meaningful retrieval results",
+    "This config validates the evaluation pipeline runs without errors",
+    "For production evaluation, use config/eval_thresholds.json with real embeddings"
+  ]
+}

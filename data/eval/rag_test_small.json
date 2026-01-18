@@ -1,7 +1,7 @@
 {
   "name": "rag_test_small",
   "description": "Small test dataset for quick evaluation (5 queries)",
-  "created_at": "2026-01-09T03:05:23.638429",
+  "created_at": "2026-01-18T07:20:09.706166",
   "metadata": {},
   "examples": [
     {
@@ -9,7 +9,7 @@
       "relevant_doc_ids": [
         "doc_rag_basics"
       ],
-      "query_id": "q_755243",
+      "query_id": "q_694951",
       "metadata": {
         "category": "rag_basics"
       },
@@ -21,7 +21,7 @@
       "relevant_doc_ids": [
         "doc_embeddings"
       ],
-      "query_id": "q_510901",
+      "query_id": "q_872214",
       "metadata": {
         "category": "embeddings"
       },
@@ -33,7 +33,7 @@
       "relevant_doc_ids": [
         "doc_bm25"
       ],
-      "query_id": "q_614907",
+      "query_id": "q_710820",
       "metadata": {
         "category": "retrieval"
       },
@@ -45,7 +45,7 @@
       "relevant_doc_ids": [
         "doc_python_fastapi"
       ],
-      "query_id": "q_378518",
+      "query_id": "q_039706",
       "metadata": {
         "category": "api"
       },
@@ -57,7 +57,7 @@
       "relevant_doc_ids": [
         "doc_ml_short"
       ],
-      "query_id": "q_639127",
+      "query_id": "q_659098",
       "metadata": {
         "category": "ml"
       },

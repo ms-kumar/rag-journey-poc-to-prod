@@ -1,7 +1,7 @@
 {
   "name": "rag_default_eval",
   "description": "Default evaluation dataset for RAG system covering core topics",
-  "created_at": "2026-01-09T03:05:23.635554",
+  "created_at": "2026-01-18T07:20:09.702673",
   "metadata": {},
   "examples": [
     {
@@ -10,7 +10,7 @@
         "doc_rag_basics",
         "doc_rag_intro"
       ],
-      "query_id": "q_755243",
+      "query_id": "q_694951",
       "metadata": {
         "category": "rag_basics",
         "difficulty": "easy"
@@ -24,7 +24,7 @@
         "doc_rag_basics",
         "doc_rag_architecture"
       ],
-      "query_id": "q_027409",
+      "query_id": "q_610591",
       "metadata": {
         "category": "rag_basics",
         "difficulty": "medium"
@@ -38,7 +38,7 @@
         "doc_embeddings",
         "doc_vector_search"
       ],
-      "query_id": "q_880165",
+      "query_id": "q_699238",
       "metadata": {
         "category": "embeddings",
         "difficulty": "easy"
@@ -52,7 +52,7 @@
         "doc_embeddings",
         "doc_sentence_transformers"
       ],
-      "query_id": "q_858105",
+      "query_id": "q_298986",
       "metadata": {
         "category": "embeddings",
         "difficulty": "medium"
@@ -66,7 +66,7 @@
         "doc_bm25",
         "doc_sparse_retrieval"
       ],
-      "query_id": "q_614907",
+      "query_id": "q_710820",
       "metadata": {
         "category": "retrieval",
         "difficulty": "medium"
@@ -80,7 +80,7 @@
         "doc_bm25_implementation",
         "doc_qdrant_sparse"
       ],
-      "query_id": "q_000331",
+      "query_id": "q_541595",
       "metadata": {
         "category": "retrieval",
         "difficulty": "hard"
@@ -94,7 +94,7 @@
         "doc_qdrant_notes",
         "doc_qdrant_basics"
       ],
-      "query_id": "q_435766",
+      "query_id": "q_723671",
       "metadata": {
         "category": "vectordb",
         "difficulty": "medium"
@@ -108,7 +108,7 @@
         "doc_qdrant_filters",
         "doc_metadata_filters"
       ],
-      "query_id": "q_233725",
+      "query_id": "q_642267",
       "metadata": {
         "category": "vectordb",
         "difficulty": "medium"
@@ -122,7 +122,7 @@
         "doc_python_fastapi",
         "doc_fastapi_basics"
       ],
-      "query_id": "q_206581",
+      "query_id": "q_496700",
       "metadata": {
         "category": "api",
         "difficulty": "medium"
@@ -136,7 +136,7 @@
         "doc_python_fastapi",
         "doc_async_programming"
       ],
-      "query_id": "q_226468",
+      "query_id": "q_309448",
       "metadata": {
         "category": "api",
         "difficulty": "hard"
@@ -150,7 +150,7 @@
         "doc_ml_short",
         "doc_ml_basics"
       ],
-      "query_id": "q_987242",
+      "query_id": "q_298764",
       "metadata": {
         "category": "ml",
         "difficulty": "easy"
@@ -164,7 +164,7 @@
         "doc_ml_training",
         "doc_pytorch_basics"
       ],
-      "query_id": "q_243210",
+      "query_id": "q_874277",
       "metadata": {
         "category": "ml",
         "difficulty": "hard"
@@ -178,7 +178,7 @@
         "doc_reranking",
         "doc_cross_encoder"
       ],
-      "query_id": "q_064239",
+      "query_id": "q_788318",
       "metadata": {
         "category": "reranking",
         "difficulty": "medium"
@@ -192,7 +192,7 @@
         "doc_reranking",
         "doc_retrieval_optimization"
       ],
-      "query_id": "q_007829",
+      "query_id": "q_674250",
       "metadata": {
         "category": "reranking",
         "difficulty": "hard"
@@ -206,7 +206,7 @@
         "doc_query_understanding",
         "doc_query_expansion"
       ],
-      "query_id": "q_998117",
+      "query_id": "q_654049",
       "metadata": {
         "category": "query_processing",
         "difficulty": "medium"
@@ -220,7 +220,7 @@
         "doc_query_understanding",
         "doc_spell_correction"
       ],
-      "query_id": "q_450437",
+      "query_id": "q_785665",
       "metadata": {
         "category": "query_processing",
         "difficulty": "medium"
@@ -234,7 +234,7 @@
         "doc_chunking",
         "doc_text_splitting"
       ],
-      "query_id": "q_235138",
+      "query_id": "q_484415",
       "metadata": {
         "category": "preprocessing",
         "difficulty": "easy"
@@ -248,7 +248,7 @@
         "doc_chunking_strategies",
         "doc_overlap"
       ],
-      "query_id": "q_837117",
+      "query_id": "q_187763",
       "metadata": {
         "category": "preprocessing",
         "difficulty": "hard"
@@ -262,7 +262,7 @@
         "doc_embedding_cache",
         "doc_caching"
       ],
-      "query_id": "q_996702",
+      "query_id": "q_453364",
       "metadata": {
         "category": "optimization",
         "difficulty": "medium"
@@ -276,7 +276,7 @@
         "doc_performance",
         "doc_optimization"
       ],
-      "query_id": "q_005146",
+      "query_id": "q_475739",
       "metadata": {
         "category": "performance",
         "difficulty": "hard"
@@ -290,7 +290,7 @@
         "doc_performance",
         "doc_latency_optimization"
       ],
-      "query_id": "q_291725",
+      "query_id": "q_982120",
       "metadata": {
         "category": "performance",
         "difficulty": "medium"
