@@ -110,8 +110,8 @@ jobs:
             --cov=src --cov-report=xml \
             -p no:cacheprovider --tb=line
         env:
-          CACHE__REDIS_HOST: localhost
-          CACHE__REDIS_PORT: 6379
+          REDIS__HOST: localhost
+          REDIS__PORT: 6379
 
       - name: Upload coverage
         if: ${{ !inputs.skip_tests }}
@@ -205,8 +205,8 @@ jobs:
             --dataset data/eval/rag_test_small.json \
             --output results/eval_result.json
         env:
-          CACHE__REDIS_HOST: localhost
-          CACHE__REDIS_PORT: 6379
+          REDIS__HOST: localhost
+          REDIS__PORT: 6379
 
       - name: Upload evaluation results
         uses: actions/upload-artifact@v4

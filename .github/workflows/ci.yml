@@ -94,5 +94,5 @@ jobs:
 
           echo "✅ All test batches completed"
         env:
-          CACHE__REDIS_HOST: localhost
-          CACHE__REDIS_PORT: 6379
+          REDIS__HOST: localhost
+          REDIS__PORT: 6379
