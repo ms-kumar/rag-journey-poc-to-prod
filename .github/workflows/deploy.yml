@@ -321,11 +321,15 @@ jobs:
       - name: Deploy to staging
         run: |
           echo "🚀 Deploying to staging..."
-          echo "Image: ${{ needs.build.outputs.image_tag }}"
           echo "Version: ${{ needs.build.outputs.version }}"
+          echo "SHA: ${{ needs.build.outputs.sha_short }}"
+          
+          # Use version-specific tag for deployment
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.sha_short }}"
+          echo "Image: $IMAGE"
           
           # Example deployment commands (customize for your infrastructure)
-          # kubectl set image deployment/rag-api rag-api=${{ needs.build.outputs.image_tag }} -n staging
+          # kubectl set image deployment/rag-api rag-api=$IMAGE -n staging
           # or
           # aws ecs update-service --cluster staging --service rag-api --force-new-deployment
           
@@ -379,7 +383,8 @@ jobs:
       - name: Deploy canary (5% traffic)
         run: |
           echo "🐤 Deploying canary with 5% traffic..."
-          echo "Image: ${{ needs.build.outputs.image_tag }}"
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.sha_short }}"
+          echo "Image: $IMAGE"
           
           # Example: Deploy canary with traffic split
           # kubectl apply -f infra/k8s/canary-5.yaml
@@ -483,10 +488,11 @@ jobs:
       - name: Deploy to production (rolling)
         run: |
           echo "🚀 Deploying to production..."
-          echo "Image: ${{ needs.build.outputs.image_tag }}"
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.sha_short }}"
+          echo "Image: $IMAGE"
           
           # Example: Rolling deployment
-          # kubectl set image deployment/rag-api rag-api=${{ needs.build.outputs.image_tag }} -n production
+          # kubectl set image deployment/rag-api rag-api=$IMAGE -n production
           # kubectl rollout status deployment/rag-api -n production --timeout=5m
           
           # Or blue-green deployment
